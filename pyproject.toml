@@ -1,0 +1,25 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "wsme-gpcr"
+version = "0.1.0"
+description = "Python port of the blocked WSME (bWSME) statistical mechanical model for GPCR/protein conformational free-energy landscapes"
+readme = "README.md"
+requires-python = ">=3.9"
+dependencies = [
+    "numpy>=1.23",
+    "scipy>=1.9",
+    "biopython>=1.80",
+    "matplotlib>=3.6",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=7.0"]
+
+[project.scripts]
+wsme-gpcr = "wsme_gpcr.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["wsme_gpcr*"]
