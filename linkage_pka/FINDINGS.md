@@ -120,29 +120,54 @@ Shifts here exceed 20 units.
    unchanged** (95.2 kJ/mol, if anything marginally worse than
    Coulomb-only).
 
+6. **Multi-residue relaxation (real geometric neighborhood, 8 Å, titratable
+   or not)**: extended `CHI_ATOMS` to `EXTRA_CHI_ATOMS`, covering all 12
+   remaining standard rotatable side chains (verified against PDB2PQR's
+   own AMBER.DAT, not assumed), kept strictly separate from
+   `IONIZABLE_RESNAMES` so non-titratable residues can't leak into
+   structure_prep's protonation-relevant residue selection. Built
+   `titration.find_relaxation_neighbors` +
+   `titration.optimize_rotamers_with_neighbors`: relaxes the target site,
+   then every real geometric neighbor within radius, titratable or not.
+
+   Result: **active conformer's His169 swing dropped to +5.2 kJ/mol** —
+   small, near-neutral, physically unremarkable. **The inactive conformer
+   remained unchanged again** (93.9 kJ/mol — statistically indistinguishable
+   from every earlier variant: 93.6 with no relaxation, 91.1 Coulomb-only,
+   95.2 Coulomb+repulsion single-residue). An 8 Å real geometric
+   neighborhood, covering every standard rotatable side chain and not just
+   the titratable cluster, still did not move it.
+
 ## Current conclusion
 
-Two things are now well-supported by direct evidence, not guesswork:
+Two things are now well-supported by direct evidence across six
+independent variants, not guesswork:
 
-- The active-conformer anomaly is a real single-residue rotamer-packing
-  artifact, fixable by per-microstate conformational relaxation — but the
+- The active-conformer anomaly is a real, local rotamer-packing artifact,
+  resolvable by per-microstate conformational relaxation — but the
   *specific* relaxed geometry (and hence the resulting pKa) is sensitive
-  to the scoring function used, which is itself only a cheap proxy for
-  the real PB solvation energy. This sensitivity should itself be
-  reported as an uncertainty band, not resolved by picking one scoring
-  function and reporting its answer as ground truth.
-- The inactive-conformer anomaly is **not** a simple target-residue
-  chi1/chi2 clash: it was untouched by every single-residue relaxation
-  variant tried, including one that already loops over and relaxes all
-  four cluster members sequentially (`compute_cluster_joint_energies`'s
-  existing per-site loop under `optimize_rotamer=True` — i.e. "relax the
-  other *titratable* cluster neighbors too" was implicitly already tried
-  here and did not help). This points toward the real constraint being a
-  **non-titratable neighboring side chain** not currently covered by
-  `CHI_ATOMS` (which only defines chi geometry for the 5 ionizable
-  residue types) — motivating the next phase of work: multi-residue
-  relaxation across a real, wider neighborhood, not just the titratable
-  cluster.
+  to which scoring function/neighborhood is used (apparent pKa moved
+  ≈6.7 → <5.0 → ≈unremarkable across three relaxation variants that all
+  "fixed" it). This sensitivity should itself be reported as an
+  uncertainty band, not resolved by picking one variant and reporting its
+  answer as ground truth.
+- The inactive-conformer anomaly is **not resolvable by any local
+  chi-angle relaxation tried** — target-only, Coulomb-only, Coulomb+
+  repulsion, or a full real 8 Å neighborhood of every rotatable residue
+  type, titratable or not. All six variants land within ~4 kJ/mol of each
+  other (91-96 kJ/mol), a genuinely stable, unmoved number. This rules
+  out "wrong scoring function" and "neighborhood too narrow" as the
+  explanation. What's left, in decreasing order of plausibility:
+  (a) the real constraint is a **backbone** degree of freedom, not a
+  side-chain rotamer — outside what any chi-angle search can reach;
+  (b) a genuinely large relaxation radius (>8 Å, e.g. transmitted through
+  a longer packing network) is needed; (c) this is a real, if extreme,
+  structural feature of this specific inactive GPCRdb model. None of
+  these are quick fixes, and distinguishing them meaningfully requires
+  either MD-scale sampling (outside this pipeline's no-MD design) or Gate
+  A calibration data to know whether the distinction even matters for the
+  pipeline's actual accuracy. **This thread is a reasonable place to
+  stop** rather than continue iterating on local rotamer search.
 
 ## Gate A dataset sourcing (separately blocked)
 
@@ -174,19 +199,30 @@ this sandbox.
   `compute_pairwise_coupling`, `compute_cluster_joint_energies`.
 - `titration._pairwise_coulomb_energy`, `titration._pairwise_repulsion_energy`
   — the two scoring terms (§4-5 above).
+- `structure_prep.EXTRA_CHI_ATOMS`, `titration.ALL_CHI_ATOMS`,
+  `titration.find_relaxation_neighbors`,
+  `titration.optimize_rotamers_with_neighbors` — multi-residue real-
+  neighborhood relaxation (§6 above), `neighbor_radius_ang` parameter
+  threaded through the same four PB energy functions.
 
-Full test suite: 155 passed as of this writing (`pytest` from the repo
+Full test suite: 164 passed as of this writing (`pytest` from the repo
 root).
 
 ## Open questions / next steps
 
-1. **Multi-residue relaxation** (in progress next): extend rotamer
-   relaxation to a real geometric neighborhood, not just the titratable
-   cluster — requires extending `CHI_ATOMS` beyond the 5 ionizable
-   residue types to cover standard rotatable side chains generally.
-2. Report the Coulomb-vs-Coulomb+repulsion sensitivity as an explicit
-   band (matching `linkage.sensitivity_band`'s existing convention) once
-   multi-residue relaxation is in place, rather than picking one.
+1. **Local rotamer relaxation is exhausted as a lever for the inactive
+   conformer's anomaly** (see "Current conclusion" above) — six variants,
+   all landing within ~4 kJ/mol of each other. Further progress here
+   needs a categorically different approach (backbone sampling, or MD-
+   scale conformational search), not another scoring-function tweak.
+   Recommend treating this as a documented, stable finding rather than
+   continuing to iterate.
+2. Report the relaxation-variant sensitivity as an explicit band (matching
+   `linkage.sensitivity_band`'s existing convention) for any site where
+   different relaxation variants disagree, rather than picking one and
+   reporting it as ground truth (the active conformer's His169 is a
+   concrete example: three variants gave three different apparent pKa's,
+   all "fixed" relative to the unrelaxed case).
 3. Gate A calibration remains blocked on dataset access (see above).
 4. Explicit Na⁺ ion modeling at D2.50 (pipeline spec step 4) not yet
    started.
