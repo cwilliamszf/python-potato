@@ -3,16 +3,25 @@
 Status: exploratory pipeline-validation work, not a validated result. **No
 number in this document should be read as a real prediction about GPR68's
 proton-sensing behavior.** Gate A (SNase buried-ionizable calibration) has
-now been run against the real experimental dataset and **fails** by a
-wide margin in every variant tried — RMSE 7.9-11.0 pKa units against a
-1.0-unit threshold (see "Gate A calibration: FAIL" below). Per the
+now been run against the real experimental dataset and **fails**, and the
+failure is now understood precisely. The original runs failed by a wide
+margin (RMSE 7.9-11.0 pKa units against a 1.0-unit threshold) largely
+because of a single undocumented error -- the protein interior dielectric
+was hardcoded to `pdie=2.0`, indefensibly low for rigid single-structure
+PB; fixing it to a literature-standard value drops aggregate RMSE to
+~1.4. But at any benchmark-independent dielectric the gate still fails,
+and metric decomposition shows why: the pipeline's computed pKa's for
+SNase's buried carboxylates are *anti-correlated* with experiment
+(negative Pearson/Spearman within the Asp/Glu set), so a low aggregate
+RMSE at very high pdie is a range-compression artifact, not real
+predictive skill (see "Gate A, path (a) executed" below). Per the
 pipeline spec's own acceptance criterion, this means **no PB pKa produced
 by this pipeline, on GPR68 or anywhere else, should be treated as
 quantitatively calibrated** — only as pipeline-mechanics validation. This
 document exists to record what was learned about the *pipeline's own
 behavior* at real-protein scale, since that surfaced a genuine,
-previously-undetected methodological gap, and now a genuine, decisive
-calibration failure.
+previously-undetected methodological gap, and now a genuine, decisive,
+and specifically-diagnosed calibration failure.
 
 ## Context
 
@@ -1246,3 +1255,84 @@ RMSE on the rest -- so a threshold-crossing claim isn't self-referential.
 Neither has been done yet. This is real, substantial progress and a
 genuine, well-evidenced mechanistic finding, but "Gate A passes" is not
 yet a claim this document is prepared to stand behind.
+
+## Gate A, path (a) executed: committed to literature pdie=20, reframed
+## the metric -- and found the "pass" at pdie=40 is an artifact, while
+## the pipeline's buried-carboxylate physics is actually anti-correlated
+
+Chose path (a) over the train/test split, because with a single scalar
+parameter across ~17 near-consensus sites a held-out split is
+statistical theatre (the fitted pdie is stable across folds by
+construction -> held-out RMSE approximately equals the full-set RMSE, so
+it would rubber-stamp whatever pdie search produced, not test it). Path
+(a): commit to a pdie chosen for physical reasons independent of this
+benchmark (the literature's ~20 for rigid single-structure PB), and
+judge the result on correlation + per-class residuals, not RMSE alone.
+
+**Reframed metric across the pdie arc** (comparable sites, same
+exclusions `compute_gate_a_rmse` uses; Pearson r and Spearman rho of
+computed vs. experimental, plus computed dynamic range relative to the
+experimental range):
+
+| Variant | RMSE | Pearson r | Spearman | comp.range / expt.range |
+|---|---|---|---|---|
+| pdie=2 rigid (orig) | 10.99 | -0.584 | -0.754 | 8.54 |
+| pdie=8 rigid | 3.28 | -0.419 | -0.587 | 1.87 |
+| pdie=20 rigid | 1.62 | +0.299 | +0.161 | 0.59 |
+| pdie=20 +neighbors | 1.40 | +0.593 | +0.362 | 0.65 |
+| pdie=40 +neighbors | 0.95 | +0.834 | +0.414 | 0.52 |
+
+At first glance pdie=40 looks genuinely good (Pearson 0.834). **But
+decomposing by residue class destroys that reading.** Restricting to the
+13 carboxylates (Asp/Glu -- the buried, strongly-shifted, scientifically
+interesting sites this benchmark exists to test), His excluded:
+
+| Variant | Pearson r (carboxylates) | Spearman (carboxylates) | comp.range |
+|---|---|---|---|
+| pdie=2 rigid | -0.570 | -0.600 | 37.25 |
+| pdie=20 rigid | -0.510 | -0.600 | 2.39 |
+| pdie=20 +neighbors | -0.482 | -0.426 | 2.12 |
+| pdie=40 +neighbors | -0.339 | -0.308 | 0.78 |
+
+The carboxylate-only correlation is **negative at every pdie** -- the
+pipeline ranks SNase's buried carboxylates *backwards* relative to
+experiment (experimental carboxylate range 2.33 pKa units; computed
+range at pdie=40 collapses to 0.78, about a third). The apparently good
+full-set Pearson of 0.834 was carried **entirely** by the His-vs-
+carboxylate separation (the 4 His sit high, ~6, and the carboxylates
+low, ~4, on both axes -- so a linear fit through the two clusters looks
+correlated even though neither cluster is internally ordered correctly).
+Raising pdie doesn't fix the physics; it compresses a wrong-signed
+prediction toward the mean until the squared error stops mattering.
+That is exactly how the RMSE crosses 1.0 at pdie=40 without any real
+gain in buried-charge predictive skill -- a benchmark artifact, now
+demonstrated, not just suspected.
+
+**Path (a) verdict**: at the physically-principled, benchmark-independent
+pdie=20, Gate A **fails honestly** -- RMSE 1.40-1.62 (a near miss on the
+aggregate), but more tellingly a *negative* carboxylate rank
+correlation. This is the real scientific finding: this single-structure
+PB pipeline, even with a literature-standard elevated dielectric and the
+neighbor-relaxation lever, does not capture the determinants of SNase's
+buried carboxylate pKa's -- it gets their relative order wrong. That is
+consistent with the Garcia-Moreno lab's own framing of why this dataset
+is hard (buried-charge pKa's are set by specific local
+desolvation/H-bonding/reorganization that a single static structure with
+a uniform interior dielectric cannot represent), and it means the honest
+path to a real Gate A pass is not more dielectric tuning but a
+categorically better treatment of buried-site conformational response
+(explicit reorganization/multi-conformer with PB-validated -- not
+classically-prescreened -- ensembles), which remains future work.
+
+**Net for the ultimate goal**: the pH-titration axis of the double-funnel
+landscape depends on this same PB machinery. The honest status is
+unchanged in kind but now much more precisely characterized: pdie=2 was
+a real, large, previously-undocumented error (fixing it drops aggregate
+RMSE from 11 to ~1.4 at a principled dielectric), but the pipeline still
+cannot be said to have *passed* Gate A, because at any benchmark-
+independent setting it fails, and the failure is now understood
+specifically -- wrong-signed buried-carboxylate ordering, not just large
+scatter. Every pH-dependent number downstream (delta_g_activation(pH),
+the double-funnel colour axis) continues to carry the "pipeline-mechanics
+demonstration, not calibrated prediction" caveat, but the reason is now
+concrete and diagnostic rather than a blanket disclaimer.
