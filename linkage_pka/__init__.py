@@ -51,6 +51,7 @@ from .titration import (
     charge_delta,
     compute_environment_energies,
     compute_intrinsic_pka,
+    compute_cluster_joint_energies,
     compute_pairwise_coupling,
     compute_solvation_energy,
     load_amber_charges,
@@ -65,6 +66,7 @@ from .multisite import (
     MultiSiteTitrationResult,
     cluster_sites,
     solve_cluster_titration,
+    solve_cluster_titration_exact,
     solve_titration,
 )
 from .pipeline import (
@@ -111,6 +113,7 @@ __all__ = [
     "charge_delta",
     "compute_environment_energies",
     "compute_intrinsic_pka",
+    "compute_cluster_joint_energies",
     "compute_pairwise_coupling",
     "compute_solvation_energy",
     "load_amber_charges",
@@ -123,6 +126,7 @@ __all__ = [
     "MultiSiteTitrationResult",
     "cluster_sites",
     "solve_cluster_titration",
+    "solve_cluster_titration_exact",
     "solve_titration",
     "ActivationLinkageResult",
     "StructureTitrationResult",

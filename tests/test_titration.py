@@ -13,6 +13,7 @@ from linkage_pka.titration import (
     build_microstate,
     build_model_compound_atoms,
     charge_delta,
+    compute_cluster_joint_energies,
     compute_intrinsic_pka,
     compute_pairwise_coupling,
     compute_solvation_energy,
@@ -282,3 +283,39 @@ def test_compute_pairwise_coupling_runs_and_is_finite(ci2_pqr, tmp_path):
         work_dir=tmp_path / "coupling", extra_h_position_i=h_pos_i, extra_h_position_j=h_pos_j,
     )
     assert np.isfinite(w_ij)
+
+
+@pytest.mark.skipif(not APBS_AVAILABLE, reason="requires apbs and pdb2pqr30 on PATH")
+def test_compute_cluster_joint_energies_matches_pairwise_coupling_double_difference(ci2_pqr, tmp_path):
+    """compute_cluster_joint_energies computes the same 4 whole-system
+    energies compute_pairwise_coupling does (for a 2-site cluster), just
+    returning them directly instead of collapsing them into W_ij -- so its
+    own double-difference of the returned energies must reproduce
+    compute_pairwise_coupling's W_ij exactly (same physics, different
+    packaging)."""
+    atoms = read_pqr(ci2_pqr)
+    asp_resnums = sorted({a.resnum for a in atoms if a.resname == "ASP"})
+    glu_resnums = sorted({a.resnum for a in atoms if a.resname == "GLU"})
+    resnum_i, resnum_j = asp_resnums[0], glu_resnums[0]
+    h_pos_i = place_titratable_hydrogen(atoms, resnum_i, "ASP")
+    h_pos_j = place_titratable_hydrogen(atoms, resnum_j, "GLU")
+
+    grid = GridParams(dime=(33, 33, 33), glen=(50.0, 50.0, 50.0), gcent="mol 1",
+                       pdie=2.0, sdie=78.54, ion_strength_m=0.150)
+
+    sites = [(resnum_i, "ASP"), (resnum_j, "GLU")]
+    energies = compute_cluster_joint_energies(
+        atoms, sites, frame=None, grid_params=grid, work_dir=tmp_path / "joint",
+        extra_h_positions={resnum_i: h_pos_i, resnum_j: h_pos_j},
+    )
+    assert set(energies) == {(False, False), (True, False), (False, True), (True, True)}
+    assert all(np.isfinite(e) for e in energies.values())
+
+    w_ij_from_joint = (energies[(True, True)] - energies[(True, False)]
+                        - energies[(False, True)] + energies[(False, False)])
+
+    w_ij_direct = compute_pairwise_coupling(
+        atoms, resnum_i, "ASP", resnum_j, "GLU", frame=None, grid_params=grid,
+        work_dir=tmp_path / "coupling_ref", extra_h_position_i=h_pos_i, extra_h_position_j=h_pos_j,
+    )
+    assert w_ij_from_joint == pytest.approx(w_ij_direct, rel=1e-6)

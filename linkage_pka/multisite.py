@@ -43,6 +43,23 @@ DeltaDeltaG_act(pH) to the coupled case (DeltaDeltaG_act(pH) =
 re-adds the shift (-g_min/RT) into the returned ln(Z), and cluster ln(Z)
 values are additive across independent clusters (``ln_z_total`` in
 ``solve_titration``) -- see ``linkage.delta_g_act_from_ln_z``.
+
+Beyond pairwise coupling: exact joint-microstate clusters
+-----------------------------------------------------------
+``solve_cluster_titration`` (above) builds G(x, pH) from per-site intrinsic
+pKa's (each computed holding every *other* site frozen at a reference
+state -- the Bashford-Karplus reduced-site approximation) plus pairwise
+coupling corrections. That decomposition was found, in this pipeline's
+development, to break down for a real tightly-interacting cluster (a 4-
+residue GPCR loop, all within ~4-12 A of each other): individual intrinsic
+pKa's shifted by >20 units from their model values, far beyond anything
+documented in the literature, and the anomaly did not resolve with more
+surrounding structural context or finer PB grids. ``solve_cluster_titration
+_exact`` (below) sidesteps the decomposition for small clusters by
+consuming *directly computed* whole-cluster joint microstate energies
+(``titration.compute_cluster_joint_energies``) instead -- exact given those
+energies, with no assumption that the electrostatics is additive over
+sites plus pairwise terms.
 """
 
 from __future__ import annotations
@@ -197,6 +214,97 @@ def solve_cluster_titration(
         theta[resnum] = (weights @ occ) / z_shifted  # (n_ph,)
 
     return ClusterTitrationResult(resnums=list(cluster_resnums), ph=ph, theta=theta, ln_z=ln_z)
+
+
+def solve_cluster_titration_exact(
+    sites: list,
+    joint_energies: dict,
+    model_pka: dict,
+    dg_ion_model: dict,
+    ph_values,
+    temp_k: float = 298.15,
+) -> ClusterTitrationResult:
+    """Exact multi-site titration for one tightly-coupled cluster using
+    DIRECTLY computed whole-system joint microstate energies
+    (``titration.compute_cluster_joint_energies``), rather than
+    ``solve_cluster_titration``'s intrinsic-pKa + pairwise-coupling
+    decomposition. This avoids the Bashford-Karplus reduced-site
+    approximation (freezing every *other* cluster member at a fixed
+    reference state while computing each site's own intrinsic pKa) --
+    which was found, in this pipeline's development, to break down for a
+    real tightly-interacting GPCR loop cluster (see
+    ``compute_cluster_joint_energies``'s docstring for the numbers).
+
+    Derivation: for an isolated single site (n=1), matching
+    ``linkage.protonation_fraction``'s convention, the protonated state
+    (x=1) energy relative to deprotonated (x=0) must equal
+    ``RT*ln10*(pH - intrinsic_pka)``, where (per
+    ``titration.compute_intrinsic_pka``) ``intrinsic_pka = model_pka +
+    (dG_ion_protein - dG_ion_model)/(RT ln10)`` and ``dG_ion_protein =
+    E_protein(deprot) - E_protein(prot) = -(E_protein(x=1)-E_protein(x=0))``.
+    Substituting and generalizing to a joint microstate x (sum over sites,
+    plus the *directly computed* whole-cluster protein energy difference
+    in place of a per-site decomposition) gives
+
+        G(x, pH) = sum_i x_i*[RT*ln10*(pH - model_pka_i) + dG_ion_model_i]
+                   + [E_protein(x) - E_protein(x=all-deprotonated)]
+
+    which reduces exactly to ``solve_cluster_titration``'s single-site
+    result, without assuming ``E_protein(x)`` decomposes into per-site plus
+    pairwise terms (it needn't, which is the whole point of computing it
+    directly for small, tightly-coupled clusters).
+
+    ``sites``: ``[(resnum, resname), ...]`` in the same order used to build
+    ``joint_energies``' occupancy-tuple keys.
+    ``joint_energies``: ``{occupancy_tuple: E_protein(x) kJ/mol}`` from
+    ``compute_cluster_joint_energies`` -- must include the
+    all-``False`` (fully deprotonated) key as the reference state.
+    ``model_pka``, ``dg_ion_model``: resnum -> float, the model-compound
+    terms already computed per-site (e.g. from ``SiteEnergyResult``),
+    unaffected by cluster context.
+    """
+    resnums = [r for r, _ in sites]
+    n = len(sites)
+    if n > MAX_EXACT_CLUSTER_SIZE:
+        raise ValueError(
+            f"cluster of {n} sites exceeds MAX_EXACT_CLUSTER_SIZE={MAX_EXACT_CLUSTER_SIZE} "
+            f"(2^{n} joint microstates is not tractable for exact enumeration)"
+        )
+
+    RT = R_KJ_PER_MOL_K * temp_k
+    ph = np.asarray(list(ph_values), dtype=float)
+
+    n_states = 2 ** n
+    states = ((np.arange(n_states)[:, None] >> np.arange(n)[None, :]) & 1).astype(bool)  # (n_states, n)
+
+    all_deprot = tuple(False for _ in range(n))
+    if all_deprot not in joint_energies:
+        raise ValueError("joint_energies must include the all-deprotonated reference state")
+    e_ref = joint_energies[all_deprot]
+
+    e_state = np.array([joint_energies[tuple(bool(b) for b in row)] for row in states]) - e_ref  # (n_states,)
+
+    site_model_pka = np.array([model_pka[r] for r in resnums])   # (n,)
+    site_dg_model = np.array([dg_ion_model[r] for r in resnums])  # (n,)
+
+    states_f = states.astype(float)
+    linear_per_site = RT * LN10 * (ph[:, None] - site_model_pka[None, :])  # (n_ph, n)
+    g_linear = linear_per_site @ states_f.T                                 # (n_ph, n_states)
+    g_const_model = states_f @ site_dg_model                                # (n_states,)
+
+    G = g_linear + (g_const_model + e_state)[None, :]  # (n_ph, n_states) kJ/mol
+
+    g_min = G.min(axis=1, keepdims=True)
+    weights = np.exp(-(G - g_min) / RT)
+    z_shifted = weights.sum(axis=1)
+    ln_z = np.log(z_shifted) - g_min[:, 0] / RT
+
+    theta = {}
+    for idx, resnum in enumerate(resnums):
+        occ = states_f[:, idx]
+        theta[resnum] = (weights @ occ) / z_shifted
+
+    return ClusterTitrationResult(resnums=resnums, ph=ph, theta=theta, ln_z=ln_z)
 
 
 @dataclass

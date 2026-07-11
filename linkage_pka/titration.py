@@ -471,3 +471,60 @@ def compute_pairwise_coupling(protein_atoms: list, resnum_i: int, resname_i: str
 
     return (energies[(True, True)] - energies[(True, False)]
             - energies[(False, True)] + energies[(False, False)])
+
+
+def compute_cluster_joint_energies(protein_atoms: list, sites: list, frame, grid_params: GridParams, work_dir,
+                                    amber_charges: dict = None, membrane_dielectric: float = 2.0,
+                                    extra_h_positions: dict = None) -> dict:
+    """Whole-system Born-cycle solvation energy E_protein(x) for every one
+    of a small cluster's 2^n joint protonation microstates x -- the exact,
+    non-perturbative alternative to ``compute_intrinsic_pka`` (which freezes
+    every *other* titratable site at a fixed reference charge state while
+    computing one site's own pKa -- the standard Bashford-Karplus
+    reduced-site approximation) plus ``compute_pairwise_coupling``.
+
+    That reduced-site approximation is known to degrade for *tightly
+    interacting* clusters (multiple charged residues within a few Angstrom
+    of each other): freezing every other cluster member at its default
+    reference state is a poor description of the local electrostatic
+    environment exactly when those neighbors are close enough to matter
+    most. Discovered directly in this pipeline's development: a real
+    4-site GPCR loop cluster (Glu/Asp/Glu/His, all within ~4-12 A of each
+    other) gave individual intrinsic pKa's shifted by >20 units from their
+    model values -- far beyond anything in the buried-ionizable literature
+    (the most extreme published shifts, for engineered cavity Lys in
+    staphylococcal nuclease, are ~5 units) -- and the anomaly barely moved
+    when the surrounding truncated environment was doubled (30 A -> 40 A
+    radius), ruling out truncation as the cause, while still-unconverged
+    grid refinement (dime 33->65) moved it by several pKa units without
+    resolving it. This function sidesteps the reduced-site approximation
+    entirely for small clusters by computing every joint microstate's whole-
+    system energy directly, rather than decomposing it into per-site
+    intrinsic terms plus pairwise corrections.
+
+    Returns ``{occupancy: energy}`` where ``occupancy`` is a tuple of bools
+    (True=protonated) in the same order as ``sites``, and ``energy`` is the
+    Born-cycle solvation energy (kJ/mol, see ``compute_solvation_energy``)
+    of the whole given atom set with every site in ``sites`` simultaneously
+    set to that occupancy, all other atoms held fixed.
+
+    Cost: 2^n calls to ``compute_solvation_energy`` (each itself 2 APBS
+    solves: solvated + reference), i.e. 2^(n+1) solves total -- tractable
+    only for small n, matching ``multisite.MAX_EXACT_CLUSTER_SIZE``.
+    """
+    amber_charges = amber_charges or load_amber_charges()
+    extra_h_positions = extra_h_positions or {}
+    work_dir = Path(work_dir)
+    n = len(sites)
+
+    energies = {}
+    for state_idx in range(2 ** n):
+        occupancy = tuple(bool((state_idx >> i) & 1) for i in range(n))
+        atoms = protein_atoms
+        for (resnum, resname), protonated in zip(sites, occupancy):
+            atoms = build_microstate(atoms, resnum, resname, protonated, amber_charges,
+                                      extra_h_position=extra_h_positions.get(resnum) if protonated else None)
+        label = "".join("p" if b else "d" for b in occupancy)
+        energies[occupancy] = compute_solvation_energy(atoms, grid_params, work_dir / label, frame, membrane_dielectric)
+
+    return energies

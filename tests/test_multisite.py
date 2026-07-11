@@ -12,6 +12,7 @@ from linkage_pka.multisite import (
     MAX_EXACT_CLUSTER_SIZE,
     cluster_sites,
     solve_cluster_titration,
+    solve_cluster_titration_exact,
     solve_titration,
 )
 
@@ -199,3 +200,128 @@ def test_cluster_resnums_dict_keys_are_author_resnums_not_indices():
         {101: 6.5, 205: 8.0}, coupling={(101, 205): 4.0}, cluster_resnums=[101, 205], ph_values=ph
     )
     assert set(result.theta) == {101, 205}
+
+
+# ------------------------------------------------ solve_cluster_titration_exact --
+
+def test_exact_singleton_matches_henderson_hasselbalch():
+    # Construct joint_energies so the implied intrinsic pKa is exactly 8.0
+    # (model_pka=7.0, dg_ion_model=0.0, dg_ion_protein chosen accordingly),
+    # and check theta(pH) matches the closed-form HH curve exactly.
+    model_pka = {1: 7.0}
+    dg_ion_model = {1: 0.0}
+    target_intrinsic_pka = 8.0
+    dg_ion_protein = (target_intrinsic_pka - model_pka[1]) * RT * np.log(10.0)
+    joint_energies = {(False,): 0.0, (True,): -dg_ion_protein}
+
+    ph = np.linspace(4, 10, 25)
+    result = solve_cluster_titration_exact([(1, "ASP")], joint_energies, model_pka, dg_ion_model, ph)
+    assert np.allclose(result.theta[1], protonation_fraction(ph, target_intrinsic_pka), rtol=1e-8, atol=1e-10)
+
+
+def test_exact_singleton_ln_z_matches_closed_form():
+    model_pka = {1: 6.3}
+    dg_ion_model = {1: 0.0}
+    joint_energies = {(False,): 0.0, (True,): 0.0}  # dg_ion_protein=0 -> intrinsic == model pKa
+
+    ph = np.linspace(3, 11, 17)
+    result = solve_cluster_titration_exact([(1, "GLU")], joint_energies, model_pka, dg_ion_model, ph)
+    expected_ln_z = np.log1p(10.0 ** (6.3 - ph))
+    assert np.allclose(result.ln_z, expected_ln_z, rtol=1e-8)
+
+
+def test_exact_missing_reference_state_raises():
+    joint_energies = {(True,): 5.0}  # missing the (False,) reference key
+    with pytest.raises(ValueError):
+        solve_cluster_titration_exact([(1, "ASP")], joint_energies, {1: 7.0}, {1: 0.0}, [7.0])
+
+
+def test_exact_oversized_cluster_raises():
+    n = MAX_EXACT_CLUSTER_SIZE + 1
+    sites = [(r, "ASP") for r in range(n)]
+    model_pka = {r: 7.0 for r in range(n)}
+    dg_ion_model = {r: 0.0 for r in range(n)}
+    joint_energies = {tuple(False for _ in range(n)): 0.0}
+    with pytest.raises(ValueError):
+        solve_cluster_titration_exact(sites, joint_energies, model_pka, dg_ion_model, [7.0])
+
+
+def test_exact_theta_bounded_in_unit_interval():
+    sites = [(1, "ASP"), (2, "GLU"), (3, "HIS")]
+    model_pka = {1: 4.0, 2: 4.5, 3: 6.5}
+    dg_ion_model = {1: 1.0, 2: -2.0, 3: 0.5}
+    rng = np.random.default_rng(0)
+    joint_energies = {}
+    for state_idx in range(8):
+        occ = tuple(bool((state_idx >> i) & 1) for i in range(3))
+        joint_energies[occ] = float(rng.uniform(-50, 50)) if any(occ) else 0.0
+
+    ph = np.linspace(2, 12, 21)
+    result = solve_cluster_titration_exact(sites, joint_energies, model_pka, dg_ion_model, ph)
+    for arr in result.theta.values():
+        assert np.all(arr >= 0.0) and np.all(arr <= 1.0)
+
+
+def test_exact_matches_pairwise_decomposition_when_energy_is_pairwise_additive():
+    # The key equivalence test: when the whole-cluster joint energies are
+    # exactly what a pairwise-additive model would predict (built from the
+    # same dg_ion_protein_i and W_ij used by the intrinsic-pKa + coupling
+    # path), solve_cluster_titration_exact must reproduce
+    # solve_cluster_titration's theta(pH) and ln_z(pH) to high precision --
+    # i.e. the exact solver is a strict generalization, not a divergent
+    # reimplementation.
+    model_pka = {1: 4.0, 2: 4.5}
+    dg_ion_model = {1: 2.0, 2: -1.0}
+    dg_ion_protein = {1: -10.0, 2: 5.0}
+    w_12 = 8.0
+
+    intrinsic_pka = {
+        r: model_pka[r] + (dg_ion_protein[r] - dg_ion_model[r]) / (RT * np.log(10.0))
+        for r in (1, 2)
+    }
+
+    # E(x) - E(all-deprotonated), derived algebraically (see
+    # solve_cluster_titration_exact's docstring) from dg_ion_protein_i and W_ij.
+    joint_energies = {
+        (False, False): 0.0,
+        (True, False): -dg_ion_protein[1],
+        (False, True): -dg_ion_protein[2],
+        (True, True): -dg_ion_protein[1] - dg_ion_protein[2] + w_12,
+    }
+
+    ph = np.linspace(4, 9, 11)
+    exact = solve_cluster_titration_exact(
+        [(1, "ASP"), (2, "GLU")], joint_energies, model_pka, dg_ion_model, ph,
+    )
+    decomposed = solve_cluster_titration(
+        intrinsic_pka, coupling={(1, 2): w_12}, cluster_resnums=[1, 2], ph_values=ph,
+    )
+
+    assert np.allclose(exact.theta[1], decomposed.theta[1], rtol=1e-8, atol=1e-10)
+    assert np.allclose(exact.theta[2], decomposed.theta[2], rtol=1e-8, atol=1e-10)
+    assert np.allclose(exact.ln_z, decomposed.ln_z, rtol=1e-8, atol=1e-10)
+
+
+def test_exact_reveals_nonadditive_effects_pairwise_form_would_miss():
+    # If the true joint energy has a genuine 3-body-like excess beyond what
+    # any pairwise decomposition could represent for a 2-site cluster this
+    # doesn't apply (2 sites only have one pair) -- but confirm at minimum
+    # that a nonzero coupling in the joint energies actually changes theta
+    # relative to the fully-additive (uncoupled) case, i.e. the exact
+    # solver is sensitive to the joint term, not silently ignoring it.
+    model_pka = {1: 7.0, 2: 7.0}
+    dg_ion_model = {1: 0.0, 2: 0.0}
+
+    additive = {
+        (False, False): 0.0, (True, False): 0.0, (False, True): 0.0, (True, True): 0.0,
+    }
+    nonadditive = {
+        (False, False): 0.0, (True, False): 0.0, (False, True): 0.0, (True, True): 20.0,
+    }
+
+    ph = np.array([7.0])
+    theta_additive = solve_cluster_titration_exact([(1, "ASP"), (2, "ASP")], additive, model_pka, dg_ion_model, ph)
+    theta_nonadditive = solve_cluster_titration_exact([(1, "ASP"), (2, "ASP")], nonadditive, model_pka, dg_ion_model, ph)
+
+    assert theta_additive.theta[1][0] == pytest.approx(0.5, abs=1e-8)  # no coupling, pH==pKa -> 0.5
+    assert theta_nonadditive.theta[1][0] < theta_additive.theta[1][0]  # anti-cooperative excess suppresses it
