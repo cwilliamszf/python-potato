@@ -284,9 +284,36 @@ def _pairwise_coulomb_energy(moving_coords: np.ndarray, moving_charges: np.ndarr
     return float(np.sum(np.where(mask, COULOMB_CONSTANT_KJ_ANG_PER_MOL_E2 * qq / (dielectric * dist), 0.0)))
 
 
+def _pairwise_repulsion_energy(moving_coords: np.ndarray, moving_radii: np.ndarray,
+                                other_coords: np.ndarray, other_radii: np.ndarray,
+                                epsilon_kj_mol: float = 1.0, distance_cutoff_ang: float = None) -> float:
+    """Soft-sphere steric repulsion (kJ/mol), (sigma_ij/dist)^12 with
+    sigma_ij = r_i+r_j (the two atoms' AMBER radii, i.e. their contact
+    distance) -- added to ``_pairwise_coulomb_energy`` so
+    ``optimize_rotamer_for_microstate`` cannot select a candidate purely
+    because it is electrostatically favorable while two atoms are
+    physically overlapping (pure Coulomb has no such penalty, and can even
+    reward close approach between opposite charges). Repulsive-only by
+    design (no attractive well): the electrostatics term already supplies
+    the physically meaningful attraction/repulsion between this residue
+    and its environment; this term's only job is to rule out geometrically
+    invalid overlaps, matching how it's actually used (a real close-
+    contact clash was found, in this pipeline's development, between a
+    real GPCR loop's His and its Asp/Glu neighbors that a Coulomb-only
+    scoring function left unresolved on one of two real conformers)."""
+    if len(other_coords) == 0:
+        return 0.0
+    diff = moving_coords[:, None, :] - other_coords[None, :, :]  # (n_moving, n_other, 3)
+    dist = np.maximum(np.linalg.norm(diff, axis=2), 1e-3)
+    mask = dist <= distance_cutoff_ang if distance_cutoff_ang is not None else np.ones_like(dist, dtype=bool)
+    sigma = moving_radii[:, None] + other_radii[None, :]
+    return float(np.sum(np.where(mask, epsilon_kj_mol * (sigma / dist) ** 12, 0.0)))
+
+
 def optimize_rotamer_for_microstate(atoms: list, resnum: int, resname: str,
                                      candidate_angles=STAGGERED_ANGLES_DEG,
-                                     dielectric: float = 2.0, distance_cutoff_ang: float = 15.0) -> tuple:
+                                     dielectric: float = 2.0, distance_cutoff_ang: float = 15.0,
+                                     repulsion_epsilon_kj_mol: float = 1.0) -> tuple:
     """Re-select one residue's chi1/chi2 rotamer for its CURRENT charge
     state -- call this after ``build_microstate`` has already swapped
     ``resnum`` to its protonated/deprotonated AMBER charges, so the
@@ -300,9 +327,17 @@ def optimize_rotamer_for_microstate(atoms: list, resnum: int, resname: str,
     reason documented there: the empirical Dunbrack/Lovell-Richardson
     rotamer library could not be verified/fetched in this environment) --
     but scores candidates by cheap pairwise Coulomb energy
-    (``_pairwise_coulomb_energy``) rather than OpenMM single-point energy,
-    since this module's ``PqrAtom`` representation carries AMBER partial
-    charges directly and has no OpenMM force-field context of its own.
+    (``_pairwise_coulomb_energy``) plus a soft steric repulsion term
+    (``_pairwise_repulsion_energy``) rather than OpenMM single-point
+    energy, since this module's ``PqrAtom`` representation carries AMBER
+    partial charges and radii directly and has no OpenMM force-field
+    context of its own. The repulsion term matters in practice: on a real
+    GPCR loop cluster (this pipeline's motivating case), Coulomb-only
+    scoring fixed an implausible pKa on one conformer but left an
+    equally-implausible one unresolved on the other -- consistent with
+    a candidate being picked for favorable electrostatics while two atoms
+    still overlapped, which pure Coulomb cannot penalize and can even
+    reward (opposite charges pulled arbitrarily close).
 
     ASP/GLU fixup: their titratable hydrogen (HD2/HE2) is not part of
     ``CHI_ATOMS``' moving-atom sets (that table predates per-microstate
@@ -327,10 +362,12 @@ def optimize_rotamer_for_microstate(atoms: list, resnum: int, resname: str,
     name_to_local = {atoms[i].name: j for j, i in enumerate(target_idx)}
     base_coords = np.array([[atoms[i].x, atoms[i].y, atoms[i].z] for i in target_idx])
     target_charges = np.array([atoms[i].charge for i in target_idx])
+    target_radii = np.array([atoms[i].radius for i in target_idx])
 
     other_idx = [i for i, a in enumerate(atoms) if a.resnum != resnum]
     other_coords = np.array([[atoms[i].x, atoms[i].y, atoms[i].z] for i in other_idx])
     other_charges = np.array([atoms[i].charge for i in other_idx])
+    other_radii = np.array([atoms[i].radius for i in other_idx])
 
     candidates = [(a,) for a in candidate_angles] if n_chi == 1 else \
         [(a, b) for a in candidate_angles for b in candidate_angles]
@@ -352,8 +389,10 @@ def optimize_rotamer_for_microstate(atoms: list, resnum: int, resname: str,
             if moving_local:
                 trial[moving_local] = _rotate_about_axis(trial[moving_local], axis_point, axis_end - axis_point, delta)
 
-        energy = _pairwise_coulomb_energy(trial, target_charges, other_coords, other_charges,
-                                           dielectric, distance_cutoff_ang)
+        energy = (_pairwise_coulomb_energy(trial, target_charges, other_coords, other_charges,
+                                            dielectric, distance_cutoff_ang)
+                  + _pairwise_repulsion_energy(trial, target_radii, other_coords, other_radii,
+                                                repulsion_epsilon_kj_mol, distance_cutoff_ang))
         if energy < best_energy:
             best_energy, best_coords, best_chi = energy, trial, cand
 

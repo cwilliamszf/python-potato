@@ -12,6 +12,7 @@ from linkage_pka.titration import (
     PqrAtom,
     TITRATABLE_RESIDUES,
     _pairwise_coulomb_energy,
+    _pairwise_repulsion_energy,
     build_microstate,
     build_model_compound_atoms,
     charge_delta,
@@ -391,6 +392,69 @@ def test_pairwise_coulomb_energy_respects_distance_cutoff():
     e = _pairwise_coulomb_energy(moving_coords, moving_charges, other_coords, other_charges,
                                   dielectric=2.0, distance_cutoff_ang=15.0)
     assert e == 0.0
+
+
+def test_pairwise_repulsion_energy_matches_manual_formula():
+    moving_coords = np.array([[0.0, 0.0, 0.0]])
+    moving_radii = np.array([1.7])
+    other_coords = np.array([[3.0, 0.0, 0.0]])
+    other_radii = np.array([1.5])
+    e = _pairwise_repulsion_energy(moving_coords, moving_radii, other_coords, other_radii, epsilon_kj_mol=1.0)
+    sigma = 1.7 + 1.5
+    expected = 1.0 * (sigma / 3.0) ** 12
+    assert e == pytest.approx(expected, rel=1e-10)
+
+
+def test_pairwise_repulsion_energy_respects_distance_cutoff():
+    moving_coords = np.array([[0.0, 0.0, 0.0]])
+    moving_radii = np.array([1.7])
+    other_coords = np.array([[100.0, 0.0, 0.0]])
+    other_radii = np.array([1.5])
+    e = _pairwise_repulsion_energy(moving_coords, moving_radii, other_coords, other_radii,
+                                    epsilon_kj_mol=1.0, distance_cutoff_ang=15.0)
+    assert e == 0.0
+
+
+def test_pairwise_repulsion_energy_empty_other_returns_zero():
+    moving_coords = np.array([[0.0, 0.0, 0.0]])
+    moving_radii = np.array([1.7])
+    other_coords = np.array([]).reshape(0, 3)
+    other_radii = np.array([])
+    assert _pairwise_repulsion_energy(moving_coords, moving_radii, other_coords, other_radii) == 0.0
+
+
+def test_pairwise_repulsion_energy_dominates_at_short_range():
+    # A near-overlap (dist << sigma) must give a huge penalty regardless of
+    # how small epsilon is -- this is what lets a steric-only clash (see
+    # test_optimize_rotamer_for_microstate_avoids_steric_only_clash) beat
+    # out an otherwise-favorable Coulomb score.
+    moving_coords = np.array([[0.0, 0.0, 0.0]])
+    moving_radii = np.array([1.7])
+    other_coords = np.array([[0.5, 0.0, 0.0]])  # well inside the 1.7+1.5=3.2 A contact distance
+    other_radii = np.array([1.5])
+    e = _pairwise_repulsion_energy(moving_coords, moving_radii, other_coords, other_radii, epsilon_kj_mol=1.0)
+    assert e > 1e4  # kJ/mol -- unambiguously dominant over any realistic Coulomb term
+
+
+def test_optimize_rotamer_for_microstate_avoids_steric_only_clash():
+    # A purely steric clash: the "other" atom carries zero charge, so
+    # _pairwise_coulomb_energy alone is exactly 0 everywhere and cannot
+    # distinguish candidates -- only the repulsion term can detect this,
+    # proving it is actually applied (not just present in the signature).
+    atoms = _synthetic_asp_atoms()
+    coords_by_name = {a.name: np.array([a.x, a.y, a.z]) for a in atoms}
+
+    clash_atoms = []
+    for i, chi1 in enumerate((-60.0, 60.0, 180.0)):
+        result_coords = _apply_chi_sequence(coords_by_name, "ASP", (chi1, 180.0))
+        p = result_coords["OD1"]
+        clash_atoms.append(PqrAtom(serial=300 + i, name=f"Y{i}", resname="XXX", resnum=98,
+                                    x=float(p[0]), y=float(p[1]), z=float(p[2]), charge=0.0, radius=1.6))
+
+    new_atoms, chosen_chi = optimize_rotamer_for_microstate(
+        atoms + clash_atoms, 1, "ASP", dielectric=2.0, distance_cutoff_ang=50.0,
+    )
+    assert chosen_chi[1] != 180.0
 
 
 def test_optimize_rotamer_for_microstate_avoids_engineered_clash():
