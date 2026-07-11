@@ -234,58 +234,91 @@ this sandbox.
 Full test suite: 181 passed as of this writing (`pytest` from the repo
 root).
 
-## Na+ ion comparison across the full pH grid
+## Na+ ion comparison across the full pH grid (superseded -- see below)
 
-Extended the single-pH validation above to both conformers and the full
-pH 5-8 grid, using `linkage.compute_linkage`/`protonation_fraction` on
-the four intrinsic pKa's already obtained (D2.50 treated as an isolated
-site here -- see caveat below):
+*(Initial pass, kept for the record of what changed and why.)* Extended
+the single-pH validation above to both conformers and the full pH 5-8
+grid using `linkage.compute_linkage`/`protonation_fraction` on the four
+intrinsic pKa's already obtained, treating D2.50 as an **isolated**
+titratable site:
 
 | structure | without ion | with ion |
 |---|---|---|
 | active   | 9.509  | 15.392 |
 | inactive | 5.977  | 9.346  |
 
-Both conformers shift in the same direction with the ion present (as
-expected: a bound +1 charge stabilizes the neutral/protonated carboxylate
-in either conformation), but the active conformer's baseline pKa (9.5,
-already a >5-unit shift from the model value before the ion is even
-added) is itself large by literature standards -- plausible for a
-genuinely buried, functionally special position like D2.50, but
-unvalidated without Gate A, and a separate finding from the with/without
-ion comparison itself.
+This gave Delta_n_H(pH) peaking near +0.96 (no ion) collapsing to
+near-zero (with ion) -- i.e. "the ion switches off D2.50's contribution
+to the proton-linkage signal." **This conclusion does not survive
+checking the coupling it was flagged as skipping** (see next section) --
+the real pairwise couplings to Asp282/Glu103 turned out to be 13-27
+kJ/mol (5-11 kT), 5-11x the multisite solver's own clustering threshold,
+so isolated-site treatment was never a valid approximation here. Left in
+this document as the concrete illustration of why the caveat mattered.
 
-**Delta_n_H(pH) at D2.50 (active theta minus inactive theta):**
+## Coupled 3-site cluster (D2.50 + Asp282 + Glu103): the corrected result
+
+Checked the coupling the isolated-site treatment skipped:
+`compute_pairwise_coupling` between D2.50 (Asp67) and its two titratable
+neighbors within ~9-11 A, on both conformers:
+
+| pair | active W_ij | inactive W_ij | CA distance |
+|---|---|---|---|
+| D2.50-Asp282 | -27.0 kJ/mol | -19.2 kJ/mol | ~9.0 A |
+| D2.50-Glu103 | -13.7 kJ/mol | -13.0 kJ/mol | ~9.3-10.8 A |
+
+All four couplings are 5-11x `multisite.DEFAULT_COUPLING_THRESHOLD_KJ_MOL`
+(2.5 kJ/mol ~ 1 kT) -- real, substantial, not negligible. Negative sign
+makes physical sense: when one carboxylate protonates, it relieves
+electrostatic repulsion for its neighbors, making their protonation
+easier too (cooperative protonation among nearby acidic groups).
+
+Redid the calculation properly: full 2^3=8 joint-microstate cluster
+(`compute_cluster_joint_energies` + `solve_cluster_titration_exact`),
+with and without the ion, on both conformers. Result is qualitatively
+different from the isolated-site version, not just quantitatively:
+
+- **D2.50 itself**: coupling pulls its apparent pKa down substantially
+  from the isolated-site estimate (crosses theta=0.5 around pH 6.0-6.5,
+  not staying protonated to pH 8) -- the negative coupling terms mean
+  nearby deprotonation makes D2.50's own deprotonation easier, the
+  opposite pull from what the isolated-site number implied.
+- **Glu103 is a striking, genuine conformer-differentiator**: titrates
+  normally in the active conformer (theta 1.0->0.0 across pH 5-8, apparent
+  pKa~6.4) but is **completely, uniformly deprotonated (theta=0.0) across
+  the entire pH 5-8 range in the inactive conformer, with or without the
+  ion**. That is a conformational difference, not a pH effect.
+- **With the ion**, D2.50 and Asp282 both get pinned to theta~1.0 in
+  *both* conformers identically (matching the isolated-site finding for
+  D2.50 alone) -- but this means **Glu103 becomes essentially the entire
+  Delta_n_H(pH) signal for the cluster once the ion is bound** (its
+  per-residue contribution at pH 7.0 is +0.9999 out of a cluster total of
+  +1.004, with D2.50 and Asp282 contributing ~0).
+
+**Revised mechanistic picture**: the ion does not silence the cluster's
+proton-linkage signal (the isolated-site conclusion above). It silences
+D2.50 and Asp282 specifically, while the conformational proton-sensing
+signal routes entirely through Glu103. Delta_n_H(pH) summed over the
+cluster:
 
 | pH  | without ion | with ion |
 |---|---|---|
-| 5.0 | +0.095 | +0.000 |
-| 6.0 | +0.513 | +0.001 |
-| 7.0 | +0.910 | +0.005 |
-| 7.5 | +0.961 | +0.014 |
-| 8.0 | +0.961 | +0.043 |
+| 5.0 | +1.127 | +1.000 |
+| 6.0 | +1.975 | +1.000 |
+| 6.5 | +0.568 | +1.001 |
+| 7.0 | -0.026 | +1.004 |
+| 7.5 | -0.016 | +1.014 |
+| 8.0 | -0.005 | +1.043 |
 
-**Result: the ion doesn't just shift D2.50's pKa, it essentially switches
-off its contribution to the proton-linkage signal across the entire pH
-5-8 range.** Without the ion, D2.50 differentiates the two conformers
-substantially (peaking near Delta_n_H=+0.96 around pH 7.5) since their
-pKa's (9.51 vs 5.98) are different enough to matter in this range. With
-the ion, both conformers' pKa's (15.4, 9.3) sit high enough above pH 8
-that theta saturates to ~1.0 in both -- with both states pinned the same
-way, the difference between them collapses to near zero. Physically: a
-bound Na+ locks the carboxylate neutral regardless of conformational
-state, so it stops acting as a pH sensor at all once occupied.
-
-Caveats on this specific result (beyond the pipeline-wide ones already
-noted): (1) D2.50 was treated as an isolated titratable site -- there are
-two other titratable residues within ~9-9.3 A CA distance (Asp282,
-Glu103) whose real pairwise coupling has not been computed, so this is a
-single-site approximation, not the full coupled multisite treatment
-built earlier this session. (2) Only a single grid/rotamer-relaxation
-variant was run for these four pKa's (no grid-convergence or rotamer-
-relaxation sensitivity check, unlike the ECL2 cluster investigation
-above) -- these specific numbers should be treated as a first pass, not
-a converged result.
+Without the ion, the total signal is non-monotonic -- large and positive
+at low pH (dominated by all three sites protonating together), crossing
+through ~0 and going slightly *negative* around neutral-to-basic pH. With
+the ion, it locks to a clean, nearly pH-independent +1.0 (essentially
+"Glu103 alone, fully switched between conformers"). Both remain
+unvalidated pipeline output (no Gate A calibration), and (as with the
+ECL2 cluster) only one grid/rotamer-relaxation variant was run here -- no
+convergence or relaxation-sensitivity check has been done for this
+cluster specifically.
 
 ## Open questions / next steps
 
@@ -303,8 +336,18 @@ a converged result.
    concrete example: three variants gave three different apparent pKa's,
    all "fixed" relative to the unrelaxed case).
 3. Gate A calibration remains blocked on dataset access (see above).
-4. ~~Explicit Na⁺ ion modeling at D2.50~~ — done and validated (see above).
-   Not yet done: running the ion with/without comparison across the full
-   pH grid via `multisite`/`compute_activation_linkage` (only a single-pH
-   intrinsic-pKa comparison has been run so far), and comparing active vs.
-   inactive conformers' sensitivity to the ion.
+4. ~~Explicit Na⁺ ion modeling at D2.50~~ — done. ~~pH-grid with/without
+   comparison~~ — done, then corrected: the initial isolated-site version
+   was superseded after checking (and confirming significant) coupling to
+   Asp282/Glu103 (see "Coupled 3-site cluster" above).
+5. The corrected 3-site cluster result has not itself been through a
+   grid-convergence or rotamer-relaxation-sensitivity check (unlike the
+   ECL2 cluster, which got both) — Glu103's striking active/inactive
+   difference (θ=0 across the *entire* pH range in inactive) is exactly
+   the kind of large, clean-looking result that should be stress-tested
+   the same way before treating it as more than a first-pass hypothesis.
+6. Neither the ECL2 cluster nor the D2.50/Asp282/Glu103 cluster has been
+   checked for coupling *to each other* or to any other titratable site
+   beyond the ~9-12 Å searched so far — a genuinely complete treatment
+   would need a wider coupling search across the whole receptor, which is
+   real-production-run territory, not a smoke test.
