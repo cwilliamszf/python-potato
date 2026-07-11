@@ -20,13 +20,15 @@ from linkage_pka.titration import (
     compute_intrinsic_pka,
     compute_pairwise_coupling,
     compute_solvation_energy,
+    find_relaxation_neighbors,
     load_amber_charges,
     optimize_rotamer_for_microstate,
+    optimize_rotamers_with_neighbors,
     place_titratable_hydrogen,
     read_pqr,
     write_pqr,
 )
-from linkage_pka.structure_prep import CHI_ATOMS, _dihedral_deg, _rotate_about_axis
+from linkage_pka.structure_prep import CHI_ATOMS, EXTRA_CHI_ATOMS, _dihedral_deg, _rotate_about_axis
 
 CI2 = Path(__file__).parent.parent / "examples" / "data" / "CI2.pdb"
 PDB2PQR_AVAILABLE = shutil.which("pdb2pqr30") is not None
@@ -356,9 +358,10 @@ def _apply_chi_sequence(coords_by_name: dict, resname: str, chi_values) -> dict:
     to construct scenarios with a known geometric outcome (an engineered
     clash), not to reimplement or duplicate-check the function under
     test's own selection logic."""
+    all_chi_atoms = {**CHI_ATOMS, **EXTRA_CHI_ATOMS}
     coords = dict(coords_by_name)
     for k, target_deg in enumerate(chi_values):
-        defining_atoms, moving_names = CHI_ATOMS[resname][k]
+        defining_atoms, moving_names = all_chi_atoms[resname][k]
         if not all(n in coords for n in defining_atoms):
             continue
         current = _dihedral_deg(*[coords[n] for n in defining_atoms])
@@ -545,5 +548,144 @@ def test_compute_intrinsic_pka_with_optimize_rotamer_runs_and_is_finite(ci2_pqr,
         atoms, resnum, "ASP", frame=None,
         protein_grid_params=protein_grid, model_grid_params=model_grid,
         work_dir=tmp_path / "pka_rotamer", extra_h_position=h_pos, optimize_rotamer=True,
+    )
+    assert np.isfinite(result.intrinsic_pka)
+
+
+# ------------------------------------------------- multi-residue relaxation --
+
+def _ca_only_atoms(specs):
+    """specs: [(resnum, resname, (x,y,z)), ...] -- CA-only stand-ins,
+    sufficient for find_relaxation_neighbors (which only reads CA atoms)."""
+    return [
+        PqrAtom(serial=i + 1, name="CA", resname=resname, resnum=resnum,
+                x=float(pos[0]), y=float(pos[1]), z=float(pos[2]), charge=0.0, radius=1.7)
+        for i, (resnum, resname, pos) in enumerate(specs)
+    ]
+
+
+def _synthetic_leu_atoms(resnum, center=(0.0, 0.0, 0.0)):
+    c = np.array(center)
+    coords = {
+        "N": c + np.array([0.0, 0.0, 0.0]),
+        "CA": c + np.array([1.46, 0.0, 0.0]),
+        "CB": c + np.array([2.0, 1.4, 0.0]),
+        "CG": c + np.array([3.5, 1.4, 0.0]),
+        "CD1": c + np.array([4.0, 2.5, 0.0]),
+        "CD2": c + np.array([4.2, 0.5, 1.0]),
+    }
+    return [
+        PqrAtom(serial=i + 1, name=name, resname="LEU", resnum=resnum,
+                x=float(pos[0]), y=float(pos[1]), z=float(pos[2]), charge=0.0, radius=1.7)
+        for i, (name, pos) in enumerate(coords.items())
+    ]
+
+
+def test_find_relaxation_neighbors_filters_by_radius():
+    atoms = _ca_only_atoms([
+        (1, "ASP", (0, 0, 0)),
+        (2, "LEU", (5, 0, 0)),   # within default 8 A radius
+        (3, "SER", (20, 0, 0)),  # far outside
+    ])
+    neighbors = find_relaxation_neighbors(atoms, 1)
+    assert neighbors == [(2, "LEU")]
+
+
+def test_find_relaxation_neighbors_excludes_residues_without_chi_geometry():
+    atoms = _ca_only_atoms([
+        (1, "ASP", (0, 0, 0)),
+        (2, "GLY", (3, 0, 0)),  # close, but no rotatable side chain at all
+    ])
+    assert find_relaxation_neighbors(atoms, 1) == []
+
+
+def test_find_relaxation_neighbors_canonicalizes_protonation_variants():
+    atoms = _ca_only_atoms([
+        (1, "ASP", (0, 0, 0)),
+        (2, "HIE", (4, 0, 0)),  # a His protonation-state variant, not "HIS" literally
+    ])
+    assert find_relaxation_neighbors(atoms, 1) == [(2, "HIS")]
+
+
+def test_find_relaxation_neighbors_sorted_by_distance():
+    atoms = _ca_only_atoms([
+        (1, "ASP", (0, 0, 0)),
+        (2, "LEU", (6, 0, 0)),
+        (3, "SER", (3, 0, 0)),
+    ])
+    assert find_relaxation_neighbors(atoms, 1) == [(3, "SER"), (2, "LEU")]
+
+
+def test_find_relaxation_neighbors_missing_target_ca_raises():
+    atoms = _ca_only_atoms([(2, "LEU", (5, 0, 0))])
+    with pytest.raises(KeyError):
+        find_relaxation_neighbors(atoms, 1)
+
+
+def test_optimize_rotamers_with_neighbors_relaxes_target_and_neighbor():
+    target = _synthetic_asp_atoms(resnum=1)
+    # Position LEU's CA close to ASP's CA (well within an 8 A neighbor radius).
+    neighbor = _synthetic_leu_atoms(resnum=2, center=(3.0, -3.0, 0.0))
+    atoms = target + neighbor
+
+    new_atoms, chi_choices = optimize_rotamers_with_neighbors(atoms, 1, "ASP", neighbor_radius_ang=8.0)
+
+    assert set(chi_choices) == {1, 2}  # both target and the one real neighbor got relaxed
+    assert len(new_atoms) == len(atoms)
+
+
+def test_optimize_rotamers_with_neighbors_avoids_clash_on_the_neighbor_itself():
+    # The engineered clash sits on LEU's own moving atoms, not on the ASP
+    # target -- proving the neighbor's rotamer is actually being
+    # independently optimized, not just carried along unchanged.
+    target = _synthetic_asp_atoms(resnum=1)
+    neighbor = _synthetic_leu_atoms(resnum=2, center=(3.0, -3.0, 0.0))
+    leu_coords_by_name = {a.name: np.array([a.x, a.y, a.z]) for a in neighbor}
+
+    clash_atoms = []
+    for i, chi1 in enumerate((-60.0, 60.0, 180.0)):
+        result_coords = _apply_chi_sequence(leu_coords_by_name, "LEU", (chi1, 180.0))
+        p = result_coords["CD1"]
+        clash_atoms.append(PqrAtom(serial=400 + i, name=f"Z{i}", resname="XXX", resnum=99,
+                                    x=float(p[0]), y=float(p[1]), z=float(p[2]), charge=0.0, radius=1.6))
+
+    atoms = target + neighbor + clash_atoms
+    new_atoms, chi_choices = optimize_rotamers_with_neighbors(atoms, 1, "ASP", neighbor_radius_ang=8.0)
+
+    assert chi_choices[2][1] != 180.0  # LEU (resnum 2)'s chi2 avoided the engineered clash
+
+
+def test_optimize_rotamers_with_neighbors_leaves_distant_residues_untouched():
+    target = _synthetic_asp_atoms(resnum=1)
+    neighbor = _synthetic_leu_atoms(resnum=2, center=(3.0, -3.0, 0.0))
+    distant = PqrAtom(serial=99, name="CA", resname="SER", resnum=50, x=500.0, y=500.0, z=500.0,
+                       charge=0.0, radius=1.7)
+    atoms = target + neighbor + [distant]
+
+    new_atoms, chi_choices = optimize_rotamers_with_neighbors(atoms, 1, "ASP", neighbor_radius_ang=8.0)
+
+    assert 50 not in chi_choices
+    distant_after = next(a for a in new_atoms if a.resnum == 50)
+    assert (distant_after.x, distant_after.y, distant_after.z) == (500.0, 500.0, 500.0)
+
+
+@pytest.mark.skipif(not APBS_AVAILABLE, reason="requires apbs and pdb2pqr30 on PATH")
+def test_compute_intrinsic_pka_with_neighbor_relaxation_runs_and_is_finite(ci2_pqr, tmp_path):
+    """End-to-end wiring check for neighbor_radius_ang -- plumbing only,
+    not an accuracy claim."""
+    atoms = read_pqr(ci2_pqr)
+    resnum = sorted({a.resnum for a in atoms if a.resname == "ASP"})[0]
+    h_pos = place_titratable_hydrogen(atoms, resnum, "ASP")
+
+    protein_grid = GridParams(dime=(33, 33, 33), glen=(50.0, 50.0, 50.0), gcent="mol 1",
+                               pdie=2.0, sdie=78.54, ion_strength_m=0.150)
+    model_grid = GridParams(dime=(33, 33, 33), glen=(25.0, 25.0, 25.0), gcent="mol 1",
+                             pdie=2.0, sdie=78.54, ion_strength_m=0.150)
+
+    result = compute_intrinsic_pka(
+        atoms, resnum, "ASP", frame=None,
+        protein_grid_params=protein_grid, model_grid_params=model_grid,
+        work_dir=tmp_path / "pka_neighbor_rotamer", extra_h_position=h_pos,
+        optimize_rotamer=True, neighbor_radius_ang=8.0,
     )
     assert np.isfinite(result.intrinsic_pka)

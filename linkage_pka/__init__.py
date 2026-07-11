@@ -22,6 +22,7 @@ from .linkage import (
 )
 from .structure_prep import (
     CHI_ATOMS,
+    EXTRA_CHI_ATOMS,
     IONIZABLE_RESNAMES,
     PrepResult,
     RotamerChoice,
@@ -45,6 +46,7 @@ from .dielectric_map import (
     write_maps,
 )
 from .titration import (
+    ALL_CHI_ATOMS,
     COULOMB_CONSTANT_KJ_ANG_PER_MOL_E2,
     GridParams,
     SiteEnergyResult,
@@ -58,8 +60,10 @@ from .titration import (
     compute_cluster_joint_energies,
     compute_pairwise_coupling,
     compute_solvation_energy,
+    find_relaxation_neighbors,
     load_amber_charges,
     optimize_rotamer_for_microstate,
+    optimize_rotamers_with_neighbors,
     place_titratable_hydrogen,
     read_pqr,
     write_pqr,
@@ -92,6 +96,7 @@ __all__ = [
     "protonation_fraction",
     "sensitivity_band",
     "CHI_ATOMS",
+    "EXTRA_CHI_ATOMS",
     "IONIZABLE_RESNAMES",
     "PrepResult",
     "RotamerChoice",
@@ -109,6 +114,7 @@ __all__ = [
     "splice_membrane_slab",
     "write_dx",
     "write_maps",
+    "ALL_CHI_ATOMS",
     "COULOMB_CONSTANT_KJ_ANG_PER_MOL_E2",
     "GridParams",
     "SiteEnergyResult",
@@ -122,8 +128,10 @@ __all__ = [
     "compute_cluster_joint_energies",
     "compute_pairwise_coupling",
     "compute_solvation_energy",
+    "find_relaxation_neighbors",
     "load_amber_charges",
     "optimize_rotamer_for_microstate",
+    "optimize_rotamers_with_neighbors",
     "place_titratable_hydrogen",
     "read_pqr",
     "write_pqr",

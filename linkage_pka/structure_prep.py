@@ -78,6 +78,74 @@ CHI_ATOMS = {
 
 IONIZABLE_RESNAMES = frozenset(CHI_ATOMS)  # {"ASP", "GLU", "HIS", "LYS", "ARG"}
 
+# Chi-angle geometry for the remaining standard residues with a rotatable
+# side chain (i.e. every residue except ALA/GLY, which have no heavy atom
+# beyond CB to rotate, and PRO, whose ring closure back to N makes a
+# simple independent-bond rotation geometrically invalid). Kept separate
+# from CHI_ATOMS/IONIZABLE_RESNAMES deliberately: IONIZABLE_RESNAMES is
+# derived directly from CHI_ATOMS' keys and drives structure_prep's own
+# protonation/titration-relevant residue selection -- these residues are
+# not titratable, and must never leak into that set. Built for
+# linkage_pka's per-microstate *neighbor* rotamer relaxation (see
+# titration.optimize_rotamers_with_neighbors and
+# linkage_pka/FINDINGS.md), where a real finding showed that relaxing
+# only the titratable site(s) themselves was insufficient. Same
+# moving-atom-set convention as CHI_ATOMS above (see that comment): the
+# axis-end heavy atom's own directly-attached hydrogens stay fixed, every
+# atom downstream of the pivot heavy atom (including its own hydrogens)
+# moves. Atom names verified directly against PDB2PQR's bundled AMBER.DAT
+# (the same file load_amber_charges() parses), not assumed from memory.
+EXTRA_CHI_ATOMS = {
+    "SER": [
+        (("N", "CA", "CB", "OG"), ("OG", "HG")),
+    ],
+    "THR": [
+        (("N", "CA", "CB", "OG1"), ("OG1", "HG1", "CG2", "HG21", "HG22", "HG23")),
+    ],
+    "CYS": [
+        (("N", "CA", "CB", "SG"), ("SG", "HG")),
+    ],
+    "VAL": [
+        (("N", "CA", "CB", "CG1"), ("CG1", "HG11", "HG12", "HG13", "CG2", "HG21", "HG22", "HG23")),
+    ],
+    "LEU": [
+        (("N", "CA", "CB", "CG"), ("CG", "HG", "CD1", "HD11", "HD12", "HD13", "CD2", "HD21", "HD22", "HD23")),
+        (("CA", "CB", "CG", "CD1"), ("CD1", "HD11", "HD12", "HD13", "CD2", "HD21", "HD22", "HD23")),
+    ],
+    "ILE": [
+        (("N", "CA", "CB", "CG1"), ("CG1", "HG12", "HG13", "CD1", "HD11", "HD12", "HD13", "CG2", "HG21", "HG22", "HG23")),
+        (("CA", "CB", "CG1", "CD1"), ("CD1", "HD11", "HD12", "HD13")),
+    ],
+    "MET": [
+        (("N", "CA", "CB", "CG"), ("CG", "HG2", "HG3", "SD", "CE", "HE1", "HE2", "HE3")),
+        (("CA", "CB", "CG", "SD"), ("SD", "CE", "HE1", "HE2", "HE3")),
+        (("CB", "CG", "SD", "CE"), ("CE", "HE1", "HE2", "HE3")),
+    ],
+    "PHE": [
+        (("N", "CA", "CB", "CG"), ("CG", "CD1", "HD1", "CD2", "HD2", "CE1", "HE1", "CE2", "HE2", "CZ", "HZ")),
+        (("CA", "CB", "CG", "CD1"), ("CD1", "HD1", "CE1", "HE1", "CZ", "HZ", "CD2", "HD2", "CE2", "HE2")),
+    ],
+    "TYR": [
+        (("N", "CA", "CB", "CG"), ("CG", "CD1", "HD1", "CD2", "HD2", "CE1", "HE1", "CE2", "HE2", "CZ", "OH", "HH")),
+        (("CA", "CB", "CG", "CD1"), ("CD1", "HD1", "CE1", "HE1", "CZ", "OH", "HH", "CD2", "HD2", "CE2", "HE2")),
+    ],
+    "TRP": [
+        (("N", "CA", "CB", "CG"),
+         ("CG", "CD1", "HD1", "CD2", "NE1", "HE1", "CE2", "CE3", "HE3", "CZ2", "HZ2", "CZ3", "HZ3", "CH2", "HH2")),
+        (("CA", "CB", "CG", "CD1"),
+         ("CD1", "HD1", "NE1", "HE1", "CE2", "CZ2", "HZ2", "CH2", "HH2", "CZ3", "HZ3", "CE3", "HE3", "CD2")),
+    ],
+    "ASN": [
+        (("N", "CA", "CB", "CG"), ("CG", "OD1", "ND2", "HD21", "HD22")),
+        (("CA", "CB", "CG", "OD1"), ("OD1", "ND2", "HD21", "HD22")),
+    ],
+    "GLN": [
+        (("N", "CA", "CB", "CG"), ("CG", "HG2", "HG3", "CD", "OE1", "NE2", "HE21", "HE22")),
+        (("CA", "CB", "CG", "CD"), ("CD", "OE1", "NE2", "HE21", "HE22")),
+        (("CB", "CG", "CD", "OE1"), ("OE1", "NE2", "HE21", "HE22")),
+    ],
+}
+
 
 def _package_version(name: str) -> str:
     from importlib.metadata import PackageNotFoundError, version

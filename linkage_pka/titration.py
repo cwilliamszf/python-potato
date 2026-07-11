@@ -71,7 +71,16 @@ from pathlib import Path
 import numpy as np
 
 from wsme_gpcr.structure import DEFAULT_PKA
-from .structure_prep import CHI_ATOMS, STAGGERED_ANGLES_DEG, _dihedral_deg, _rotate_about_axis
+from .structure_prep import CHI_ATOMS, EXTRA_CHI_ATOMS, STAGGERED_ANGLES_DEG, _dihedral_deg, _rotate_about_axis
+
+# Every residue with known chi-angle geometry, titratable or not -- used by
+# optimize_rotamer_for_microstate/optimize_rotamers_with_neighbors so the
+# same relaxation logic works on the titratable target site (CHI_ATOMS) and
+# on a real geometric neighbor of any type (EXTRA_CHI_ATOMS) -- see the
+# module docstring and linkage_pka/FINDINGS.md for why the neighbor case
+# was added (relaxing only titratable sites left a real GPR68 conformer's
+# anomaly unresolved).
+ALL_CHI_ATOMS = {**CHI_ATOMS, **EXTRA_CHI_ATOMS}
 
 R_KJ_PER_MOL_K = 8.31446261815324e-3
 LN10 = np.log(10.0)
@@ -322,10 +331,14 @@ def optimize_rotamer_for_microstate(atoms: list, resnum: int, resname: str,
     module docstring's "Per-microstate conformational sampling" section
     for why this matters).
 
-    Reuses ``structure_prep.py``'s chi-angle geometry (``CHI_ATOMS``) and
-    the same staggered gauche-/gauche+/trans candidate set (for the same
-    reason documented there: the empirical Dunbrack/Lovell-Richardson
-    rotamer library could not be verified/fetched in this environment) --
+    Reuses ``structure_prep.py``'s chi-angle geometry (``ALL_CHI_ATOMS`` --
+    titratable residues from ``CHI_ATOMS`` plus every other standard
+    rotatable side chain from ``EXTRA_CHI_ATOMS``, so this same function
+    works for a titratable target site or a real geometric neighbor of any
+    type -- see ``optimize_rotamers_with_neighbors``) and the same
+    staggered gauche-/gauche+/trans candidate set (for the same reason
+    documented there: the empirical Dunbrack/Lovell-Richardson rotamer
+    library could not be verified/fetched in this environment) --
     but scores candidates by cheap pairwise Coulomb energy
     (``_pairwise_coulomb_energy``) plus a soft steric repulsion term
     (``_pairwise_repulsion_energy``) rather than OpenMM single-point
@@ -352,9 +365,9 @@ def optimize_rotamer_for_microstate(atoms: list, resnum: int, resname: str,
 
     Returns ``(new_atoms, chosen_chi_deg)``.
     """
-    if resname not in CHI_ATOMS:
+    if resname not in ALL_CHI_ATOMS:
         raise KeyError(f"no chi-angle geometry defined for {resname!r}")
-    n_chi = min(2, len(CHI_ATOMS[resname]))
+    n_chi = min(2, len(ALL_CHI_ATOMS[resname]))
 
     target_idx = [i for i, a in enumerate(atoms) if a.resnum == resnum]
     if not target_idx:
@@ -378,7 +391,7 @@ def optimize_rotamer_for_microstate(atoms: list, resnum: int, resname: str,
     for cand in candidates:
         trial = base_coords.copy()
         for k, target_deg in enumerate(cand):
-            defining_atoms, moving_names = CHI_ATOMS[resname][k]
+            defining_atoms, moving_names = ALL_CHI_ATOMS[resname][k]
             if not all(n in name_to_local for n in defining_atoms):
                 continue  # a chi-defining atom is missing from this residue's atom set (e.g. truncated cap); skip
             pts = [trial[name_to_local[n]] for n in defining_atoms]
@@ -409,6 +422,102 @@ def optimize_rotamer_for_microstate(atoms: list, resnum: int, resname: str,
             new_atoms[h_idx] = replace(new_atoms[h_idx], x=float(new_pos[0]), y=float(new_pos[1]), z=float(new_pos[2]))
 
     return new_atoms, list(best_chi)
+
+
+# Canonical (protonation-state-independent) resname for every TITRATABLE_
+# RESIDUES entry, derived from that table rather than duplicated by hand --
+# e.g. {"ASP": "ASP", "ASH": "ASP", "HIP": "HIS", "HIE": "HIS", ...}. Needed
+# because a neighbor residue's *current* atoms may carry a protonation-
+# state variant name (e.g. a base structure's His already built as HIE),
+# but ALL_CHI_ATOMS/optimize_rotamer_for_microstate are keyed by the
+# canonical type. Non-titratable residues (SER, LEU, ...) have no variant
+# names in AMBER, so they need no entry here -- their atoms' own resname
+# is already canonical.
+_VARIANT_TO_CANONICAL_RESNAME = {}
+for _canonical, _info in TITRATABLE_RESIDUES.items():
+    _VARIANT_TO_CANONICAL_RESNAME[_canonical] = _canonical
+    _VARIANT_TO_CANONICAL_RESNAME[_info["protonated_resname"]] = _canonical
+    _VARIANT_TO_CANONICAL_RESNAME[_info["deprotonated_resname"]] = _canonical
+
+
+def find_relaxation_neighbors(atoms: list, resnum: int, radius_ang: float = 8.0) -> list:
+    """Every OTHER residue within ``radius_ang`` of ``resnum``'s CA that has
+    known chi-angle geometry (``ALL_CHI_ATOMS`` -- titratable or not),
+    sorted by CA distance (closest first). CA-CA distance is a coarse,
+    cheap filter (not the closest-approach atom distance
+    ``pipeline.residue_min_distance`` uses for coupling-pair selection) --
+    adequate here since this only picks a neighborhood to relax, not a
+    precision cutoff.
+
+    Motivated by a real finding (see ``optimize_rotamers_with_neighbors``
+    and ``linkage_pka/FINDINGS.md``): relaxing only a titratable target
+    site -- or even every titratable member of its coupled cluster --
+    left one real GPCR conformer's implausible pKa completely unresolved,
+    pointing at a likely non-titratable neighboring side chain that
+    earlier relaxation never reached.
+    """
+    ca_by_resnum, resname_by_resnum = {}, {}
+    for a in atoms:
+        if a.name == "CA":
+            ca_by_resnum[a.resnum] = np.array([a.x, a.y, a.z])
+            resname_by_resnum[a.resnum] = a.resname
+    if resnum not in ca_by_resnum:
+        raise KeyError(f"resnum {resnum} has no CA atom in atoms")
+    target_ca = ca_by_resnum[resnum]
+
+    candidates = []
+    for other_resnum, ca in ca_by_resnum.items():
+        if other_resnum == resnum:
+            continue
+        canonical = _VARIANT_TO_CANONICAL_RESNAME.get(resname_by_resnum[other_resnum], resname_by_resnum[other_resnum])
+        if canonical not in ALL_CHI_ATOMS:
+            continue
+        dist = float(np.linalg.norm(ca - target_ca))
+        if dist <= radius_ang:
+            candidates.append((dist, other_resnum, canonical))
+    candidates.sort(key=lambda t: t[0])
+    return [(r, n) for _, r, n in candidates]
+
+
+def optimize_rotamers_with_neighbors(atoms: list, resnum: int, resname: str,
+                                      neighbor_radius_ang: float = 8.0,
+                                      candidate_angles=STAGGERED_ANGLES_DEG,
+                                      dielectric: float = 2.0, distance_cutoff_ang: float = 15.0,
+                                      repulsion_epsilon_kj_mol: float = 1.0) -> tuple:
+    """Relax ``resnum``'s own rotamer for its current charge state, then
+    sequentially relax every real geometric neighbor within
+    ``neighbor_radius_ang`` that has known chi-angle geometry (titratable
+    or not -- see ``find_relaxation_neighbors``). Each neighbor's
+    optimization sees the previously-relaxed geometry -- the same
+    sequential-pass simplification ``structure_prep.optimize_rotamers``
+    already documents (not a fully self-consistent multi-pass packing
+    algorithm).
+
+    Directly motivated by a real GPR68 finding (see
+    ``linkage_pka/FINDINGS.md``): relaxing only the target titratable
+    residue (``optimize_rotamer_for_microstate``) -- or every titratable
+    cluster member, which ``compute_cluster_joint_energies``'s per-site
+    loop already effectively does -- left one real conformer's
+    implausible pKa completely unresolved, pointing at a likely non-
+    titratable neighboring side chain neither of those reached.
+
+    Returns ``(new_atoms, chi_choices)`` where ``chi_choices`` maps
+    resnum -> chosen chi angles (degrees) for the target site and every
+    relaxed neighbor.
+    """
+    new_atoms, target_chi = optimize_rotamer_for_microstate(
+        atoms, resnum, resname, candidate_angles, dielectric, distance_cutoff_ang, repulsion_epsilon_kj_mol,
+    )
+    chi_choices = {resnum: target_chi}
+
+    for neighbor_resnum, neighbor_resname in find_relaxation_neighbors(new_atoms, resnum, neighbor_radius_ang):
+        new_atoms, chosen = optimize_rotamer_for_microstate(
+            new_atoms, neighbor_resnum, neighbor_resname, candidate_angles, dielectric,
+            distance_cutoff_ang, repulsion_epsilon_kj_mol,
+        )
+        chi_choices[neighbor_resnum] = chosen
+
+    return new_atoms, chi_choices
 
 
 def charge_delta(resname: str, amber_charges: dict) -> float:
@@ -527,7 +636,7 @@ def compute_solvation_energy(atoms: list, grid_params: GridParams, work_dir, fra
 def compute_environment_energies(atoms: list, resnum: int, resname: str, amber_charges: dict,
                                   grid_params: GridParams, work_dir, frame=None,
                                   membrane_dielectric: float = 2.0, extra_h_position=None,
-                                  optimize_rotamer: bool = False) -> tuple:
+                                  optimize_rotamer: bool = False, neighbor_radius_ang: float = None) -> tuple:
     """Return (E_deprotonated, E_protonated): Born-cycle solvation energy
     (see ``compute_solvation_energy``) of the whole given atom set
     (protein, or an isolated single-residue model compound) with site
@@ -539,14 +648,24 @@ def compute_environment_energies(atoms: list, resnum: int, resname: str, amber_c
     ``optimize_rotamer_for_microstate`` and the module docstring's
     "Per-microstate conformational sampling" section) before scoring --
     default False preserves the original single-fixed-geometry behavior.
+    ``neighbor_radius_ang`` (only meaningful together with
+    ``optimize_rotamer=True``) additionally relaxes every real geometric
+    neighbor within that radius (titratable or not) via
+    ``optimize_rotamers_with_neighbors`` -- see
+    ``linkage_pka/FINDINGS.md`` for why this matters: relaxing only the
+    target site was insufficient on a real GPCR conformer.
     """
     work_dir = Path(work_dir)
     deprot_atoms = build_microstate(atoms, resnum, resname, protonated=False, amber_charges=amber_charges)
     prot_atoms = build_microstate(atoms, resnum, resname, protonated=True, amber_charges=amber_charges,
                                    extra_h_position=extra_h_position)
     if optimize_rotamer:
-        deprot_atoms, _ = optimize_rotamer_for_microstate(deprot_atoms, resnum, resname)
-        prot_atoms, _ = optimize_rotamer_for_microstate(prot_atoms, resnum, resname)
+        if neighbor_radius_ang is not None:
+            deprot_atoms, _ = optimize_rotamers_with_neighbors(deprot_atoms, resnum, resname, neighbor_radius_ang)
+            prot_atoms, _ = optimize_rotamers_with_neighbors(prot_atoms, resnum, resname, neighbor_radius_ang)
+        else:
+            deprot_atoms, _ = optimize_rotamer_for_microstate(deprot_atoms, resnum, resname)
+            prot_atoms, _ = optimize_rotamer_for_microstate(prot_atoms, resnum, resname)
 
     e_deprot = compute_solvation_energy(deprot_atoms, grid_params, work_dir / "deprot", frame, membrane_dielectric)
     e_prot = compute_solvation_energy(prot_atoms, grid_params, work_dir / "prot", frame, membrane_dielectric)
@@ -601,7 +720,7 @@ def compute_intrinsic_pka(protein_atoms: list, resnum: int, resname: str, frame,
                            protein_grid_params: GridParams, model_grid_params: GridParams, work_dir,
                            amber_charges: dict = None, membrane_dielectric: float = 2.0,
                            temp_k: float = 298.15, extra_h_position=None,
-                           optimize_rotamer: bool = False) -> SiteEnergyResult:
+                           optimize_rotamer: bool = False, neighbor_radius_ang: float = None) -> SiteEnergyResult:
     """One site's intrinsic pKa: PB energies in the full protein/membrane
     environment (``frame`` gives the membrane slab; pass ``frame=None`` for
     a soluble-protein calculation with no membrane) minus the same in an
@@ -611,7 +730,10 @@ def compute_intrinsic_pka(protein_atoms: list, resnum: int, resname: str, frame,
 
     ``optimize_rotamer=True`` re-optimizes this site's rotamer per
     microstate on both the protein and model-compound sides -- see
-    ``compute_environment_energies``.
+    ``compute_environment_energies``. ``neighbor_radius_ang`` additionally
+    relaxes real geometric neighbors on the protein side (the model
+    compound is too small a fragment for this to find any -- it has no
+    other residue's CA present).
     """
     amber_charges = amber_charges or load_amber_charges()
     work_dir = Path(work_dir)
@@ -619,7 +741,7 @@ def compute_intrinsic_pka(protein_atoms: list, resnum: int, resname: str, frame,
     e_prot_deprot, e_prot_prot = compute_environment_energies(
         protein_atoms, resnum, resname, amber_charges, protein_grid_params, work_dir / "protein",
         frame=frame, membrane_dielectric=membrane_dielectric, extra_h_position=extra_h_position,
-        optimize_rotamer=optimize_rotamer,
+        optimize_rotamer=optimize_rotamer, neighbor_radius_ang=neighbor_radius_ang,
     )
 
     model_atoms = build_model_compound_atoms(protein_atoms, resnum)
@@ -646,7 +768,7 @@ def compute_pairwise_coupling(protein_atoms: list, resnum_i: int, resname_i: str
                                resnum_j: int, resname_j: str, frame, grid_params: GridParams, work_dir,
                                amber_charges: dict = None, membrane_dielectric: float = 2.0,
                                extra_h_position_i=None, extra_h_position_j=None,
-                               optimize_rotamer: bool = False) -> float:
+                               optimize_rotamer: bool = False, neighbor_radius_ang: float = None) -> float:
     """W_ij (kJ/mol): the standard double-difference of four whole-system
     PB energies, isolating the pure electrostatic interaction between site
     i's and site j's charge differences (protonated - deprotonated) --
@@ -657,7 +779,11 @@ def compute_pairwise_coupling(protein_atoms: list, resnum_i: int, resname_i: str
 
     ``optimize_rotamer=True`` re-optimizes both i's and j's rotamers for
     each of the 4 joint microstates before scoring -- see
-    ``optimize_rotamer_for_microstate``.
+    ``optimize_rotamer_for_microstate``. ``neighbor_radius_ang``
+    additionally relaxes each site's real geometric neighbors (see
+    ``optimize_rotamers_with_neighbors``); i and j may end up relaxing
+    each other as a "neighbor" too, which is harmless (just repeated,
+    idempotent-per-call work), not a correctness issue.
     """
     amber_charges = amber_charges or load_amber_charges()
     work_dir = Path(work_dir)
@@ -669,8 +795,12 @@ def compute_pairwise_coupling(protein_atoms: list, resnum_i: int, resname_i: str
             atoms = build_microstate(atoms, resnum_j, resname_j, j_prot, amber_charges,
                                       extra_h_position=extra_h_position_j if j_prot else None)
             if optimize_rotamer:
-                atoms, _ = optimize_rotamer_for_microstate(atoms, resnum_i, resname_i)
-                atoms, _ = optimize_rotamer_for_microstate(atoms, resnum_j, resname_j)
+                if neighbor_radius_ang is not None:
+                    atoms, _ = optimize_rotamers_with_neighbors(atoms, resnum_i, resname_i, neighbor_radius_ang)
+                    atoms, _ = optimize_rotamers_with_neighbors(atoms, resnum_j, resname_j, neighbor_radius_ang)
+                else:
+                    atoms, _ = optimize_rotamer_for_microstate(atoms, resnum_i, resname_i)
+                    atoms, _ = optimize_rotamer_for_microstate(atoms, resnum_j, resname_j)
             label = f"i{'p' if i_prot else 'd'}_j{'p' if j_prot else 'd'}"
             energies[(i_prot, j_prot)] = compute_solvation_energy(
                 atoms, grid_params, work_dir / label, frame, membrane_dielectric,
@@ -682,7 +812,8 @@ def compute_pairwise_coupling(protein_atoms: list, resnum_i: int, resname_i: str
 
 def compute_cluster_joint_energies(protein_atoms: list, sites: list, frame, grid_params: GridParams, work_dir,
                                     amber_charges: dict = None, membrane_dielectric: float = 2.0,
-                                    extra_h_positions: dict = None, optimize_rotamer: bool = False) -> dict:
+                                    extra_h_positions: dict = None, optimize_rotamer: bool = False,
+                                    neighbor_radius_ang: float = None) -> dict:
     """Whole-system Born-cycle solvation energy E_protein(x) for every one
     of a small cluster's 2^n joint protonation microstates x -- the exact,
     non-perturbative alternative to ``compute_intrinsic_pka`` (which freezes
@@ -727,11 +858,20 @@ def compute_cluster_joint_energies(protein_atoms: list, sites: list, frame, grid
 
     ``optimize_rotamer=True`` re-optimizes every site's rotamer for each
     joint microstate before scoring -- see
-    ``optimize_rotamer_for_microstate``.
+    ``optimize_rotamer_for_microstate``. ``neighbor_radius_ang``
+    additionally relaxes each site's real geometric neighbors (titratable
+    or not) via ``optimize_rotamers_with_neighbors`` -- motivated by a
+    real finding that relaxing only the cluster's own titratable members
+    (which this function's per-site loop already effectively does) left
+    one real conformer's anomaly unresolved; see
+    ``linkage_pka/FINDINGS.md``.
 
     Cost: 2^n calls to ``compute_solvation_energy`` (each itself 2 APBS
     solves: solvated + reference), i.e. 2^(n+1) solves total -- tractable
-    only for small n, matching ``multisite.MAX_EXACT_CLUSTER_SIZE``.
+    only for small n, matching ``multisite.MAX_EXACT_CLUSTER_SIZE``. With
+    ``neighbor_radius_ang`` set, each of those 2^n solves does additional
+    (cheap, non-APBS) rotamer search work proportional to the neighborhood
+    size.
     """
     amber_charges = amber_charges or load_amber_charges()
     extra_h_positions = extra_h_positions or {}
@@ -747,7 +887,10 @@ def compute_cluster_joint_energies(protein_atoms: list, sites: list, frame, grid
                                       extra_h_position=extra_h_positions.get(resnum) if protonated else None)
         if optimize_rotamer:
             for resnum, resname in sites:
-                atoms, _ = optimize_rotamer_for_microstate(atoms, resnum, resname)
+                if neighbor_radius_ang is not None:
+                    atoms, _ = optimize_rotamers_with_neighbors(atoms, resnum, resname, neighbor_radius_ang)
+                else:
+                    atoms, _ = optimize_rotamer_for_microstate(atoms, resnum, resname)
         label = "".join("p" if b else "d" for b in occupancy)
         energies[occupancy] = compute_solvation_energy(atoms, grid_params, work_dir / label, frame, membrane_dielectric)
 
