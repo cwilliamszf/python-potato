@@ -63,6 +63,7 @@ from .titration import (
     build_na_ion_atom,
     charge_delta,
     compute_environment_energies,
+    compute_environment_energies_ensemble,
     compute_intrinsic_pka,
     compute_cluster_joint_energies,
     compute_pairwise_coupling,
@@ -75,6 +76,7 @@ from .titration import (
     place_na_ion,
     place_titratable_hydrogen,
     read_pqr,
+    select_rotamer_ensemble,
     write_pqr,
 )
 from .multisite import (
@@ -143,6 +145,7 @@ __all__ = [
     "build_na_ion_atom",
     "charge_delta",
     "compute_environment_energies",
+    "compute_environment_energies_ensemble",
     "compute_intrinsic_pka",
     "compute_cluster_joint_energies",
     "compute_pairwise_coupling",
@@ -155,6 +158,7 @@ __all__ = [
     "place_na_ion",
     "place_titratable_hydrogen",
     "read_pqr",
+    "select_rotamer_ensemble",
     "write_pqr",
     "MAX_EXACT_CLUSTER_SIZE",
     "DEFAULT_COUPLING_THRESHOLD_KJ_MOL",

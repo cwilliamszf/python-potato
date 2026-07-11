@@ -8,6 +8,7 @@ import pytest
 
 from linkage_pka.titration import (
     COULOMB_CONSTANT_KJ_ANG_PER_MOL_E2,
+    R_KJ_PER_MOL_K,
     GridParams,
     PqrAtom,
     TITRATABLE_RESIDUES,
@@ -18,6 +19,7 @@ from linkage_pka.titration import (
     build_na_ion_atom,
     charge_delta,
     compute_cluster_joint_energies,
+    compute_environment_energies_ensemble,
     compute_intrinsic_pka,
     compute_pairwise_coupling,
     compute_solvation_energy,
@@ -29,6 +31,7 @@ from linkage_pka.titration import (
     place_na_ion,
     place_titratable_hydrogen,
     read_pqr,
+    select_rotamer_ensemble,
     write_pqr,
 )
 from linkage_pka.structure_prep import CHI_ATOMS, EXTRA_CHI_ATOMS, _dihedral_deg, _rotate_about_axis
@@ -530,6 +533,139 @@ def test_optimize_rotamer_for_microstate_missing_chi_atom_does_not_crash():
     new_atoms, chosen_chi = optimize_rotamer_for_microstate(atoms, 1, "ASP", distance_cutoff_ang=50.0)
     assert len(new_atoms) == len(atoms)
     assert chosen_chi is not None
+
+
+# ------------------------------------------------- rotamer ensemble (MCCE-style) --
+
+def test_select_rotamer_ensemble_top_candidate_matches_single_best():
+    # ensemble_size=1 must pick exactly the same candidate as
+    # optimize_rotamer_for_microstate -- both rank by the same classical
+    # proxy, so the top-1 ensemble candidate is that function's answer.
+    atoms = _synthetic_asp_atoms()
+    best_atoms, best_chi = optimize_rotamer_for_microstate(atoms, 1, "ASP", distance_cutoff_ang=50.0)
+    ensemble = select_rotamer_ensemble(atoms, 1, "ASP", ensemble_size=1, distance_cutoff_ang=50.0)
+    assert len(ensemble) == 1
+    ens_atoms, ens_chi = ensemble[0]
+    assert ens_chi == best_chi
+    coords_best = {a.name: (a.x, a.y, a.z) for a in best_atoms}
+    coords_ens = {a.name: (a.x, a.y, a.z) for a in ens_atoms}
+    assert coords_best == coords_ens
+
+
+def test_select_rotamer_ensemble_returns_requested_size_when_available():
+    atoms = _synthetic_asp_atoms()
+    ensemble = select_rotamer_ensemble(atoms, 1, "ASP", ensemble_size=4, distance_cutoff_ang=50.0)
+    assert len(ensemble) == 4  # ASP has 2 chis x 3 staggered angles = 9 combos, plenty available
+
+
+def test_select_rotamer_ensemble_caps_at_available_candidate_count():
+    atoms = _synthetic_asp_atoms()
+    ensemble = select_rotamer_ensemble(atoms, 1, "ASP", ensemble_size=100, distance_cutoff_ang=50.0)
+    assert len(ensemble) == 9  # 2 chis x 3 staggered angles, not 100 -- no crash, no padding
+
+
+def test_select_rotamer_ensemble_preserves_charges_and_other_residues():
+    atoms = _synthetic_asp_atoms()
+    other = PqrAtom(serial=50, name="CA", resname="GLY", resnum=2, x=10.0, y=10.0, z=10.0, charge=0.1, radius=1.7)
+    ensemble = select_rotamer_ensemble(atoms + [other], 1, "ASP", ensemble_size=3, distance_cutoff_ang=50.0)
+    charges_before = {(a.resnum, a.name): a.charge for a in atoms + [other]}
+    for cand_atoms, _ in ensemble:
+        charges_after = {(a.resnum, a.name): a.charge for a in cand_atoms}
+        assert charges_before == charges_after
+        other_after = next(a for a in cand_atoms if a.resnum == 2)
+        assert (other_after.x, other_after.y, other_after.z) == (10.0, 10.0, 10.0)
+
+
+def test_select_rotamer_ensemble_unknown_resname_raises():
+    atoms = _synthetic_asp_atoms()
+    with pytest.raises(KeyError):
+        select_rotamer_ensemble(atoms, 1, "NOTAREALRESNAME")
+
+
+def test_compute_environment_energies_ensemble_single_candidate_matches_direct_energy(monkeypatch, tmp_path):
+    # ensemble_size=1: G_eff = E_0 - RT*ln(1) = E_0 exactly (log-sum-exp
+    # over one term is the identity) -- verified against a monkeypatched
+    # compute_solvation_energy so this is a pure math check, no APBS needed.
+    from linkage_pka import titration as titration_module
+
+    calls = []
+
+    def fake_solvation_energy(atoms, grid_params, work_dir, frame=None, membrane_dielectric=2.0):
+        calls.append(work_dir)
+        return -42.0
+
+    monkeypatch.setattr(titration_module, "compute_solvation_energy", fake_solvation_energy)
+
+    atoms = _synthetic_asp_atoms()
+    h_pos = place_titratable_hydrogen(atoms, 1, "ASP")
+    grid = GridParams(dime=(9, 9, 9), glen=(10.0, 10.0, 10.0), gcent="mol 1",
+                       pdie=2.0, sdie=78.54, ion_strength_m=0.150)
+    e_deprot, e_prot = compute_environment_energies_ensemble(
+        atoms, 1, "ASP", load_amber_charges(), grid, tmp_path / "ens1", extra_h_position=h_pos, ensemble_size=1,
+    )
+    assert e_deprot == pytest.approx(-42.0, abs=1e-9)
+    assert e_prot == pytest.approx(-42.0, abs=1e-9)
+    assert len(calls) == 2  # exactly one APBS call per microstate (deprot, prot)
+
+
+def test_compute_environment_energies_ensemble_lower_than_any_single_candidate(monkeypatch, tmp_path):
+    # G_eff = -RT*ln(sum(exp(-E_k/RT))) must be <= min(E_k) for >1 candidate
+    # (adding accessible states can only lower the free energy) -- the
+    # defining thermodynamic property of the ensemble average vs. picking
+    # one candidate.
+    from linkage_pka import titration as titration_module
+
+    fake_energies = iter([-40.0, -42.0, -38.0, -41.0] * 2)  # 4 candidates x 2 microstates
+
+    def fake_solvation_energy(atoms, grid_params, work_dir, frame=None, membrane_dielectric=2.0):
+        return next(fake_energies)
+
+    monkeypatch.setattr(titration_module, "compute_solvation_energy", fake_solvation_energy)
+
+    atoms = _synthetic_asp_atoms()
+    h_pos = place_titratable_hydrogen(atoms, 1, "ASP")
+    grid = GridParams(dime=(9, 9, 9), glen=(10.0, 10.0, 10.0), gcent="mol 1",
+                       pdie=2.0, sdie=78.54, ion_strength_m=0.150)
+    e_deprot, e_prot = compute_environment_energies_ensemble(
+        atoms, 1, "ASP", load_amber_charges(), grid, tmp_path / "ens4", extra_h_position=h_pos, ensemble_size=4,
+    )
+    assert e_deprot < -42.0  # strictly below the best individual candidate (-42.0)
+    assert e_prot < -42.0
+    assert np.isfinite(e_deprot) and np.isfinite(e_prot)
+
+
+def test_compute_intrinsic_pka_rejects_ensemble_size_with_optimize_rotamer(tmp_path):
+    atoms = _synthetic_asp_atoms()
+    grid = GridParams(dime=(9, 9, 9), glen=(10.0, 10.0, 10.0), gcent="mol 1",
+                       pdie=2.0, sdie=78.54, ion_strength_m=0.150)
+    with pytest.raises(ValueError):
+        compute_intrinsic_pka(
+            atoms, 1, "ASP", frame=None, protein_grid_params=grid, model_grid_params=grid,
+            work_dir=tmp_path, optimize_rotamer=True, ensemble_size=4,
+        )
+
+
+@pytest.mark.skipif(not APBS_AVAILABLE, reason="requires apbs and pdb2pqr30 on PATH")
+def test_compute_intrinsic_pka_with_ensemble_size_runs_and_is_finite(ci2_pqr, tmp_path):
+    """End-to-end wiring check: ensemble_size must thread through
+    compute_environment_energies_ensemble on both the protein and
+    model-compound sides without breaking the calculation (no accuracy
+    claim -- this is a plumbing test, not a validated-number test)."""
+    atoms = read_pqr(ci2_pqr)
+    resnum = sorted({a.resnum for a in atoms if a.resname == "ASP"})[0]
+    h_pos = place_titratable_hydrogen(atoms, resnum, "ASP")
+
+    protein_grid = GridParams(dime=(33, 33, 33), glen=(50.0, 50.0, 50.0), gcent="mol 1",
+                               pdie=2.0, sdie=78.54, ion_strength_m=0.150)
+    model_grid = GridParams(dime=(33, 33, 33), glen=(25.0, 25.0, 25.0), gcent="mol 1",
+                             pdie=2.0, sdie=78.54, ion_strength_m=0.150)
+
+    result = compute_intrinsic_pka(
+        atoms, resnum, "ASP", frame=None,
+        protein_grid_params=protein_grid, model_grid_params=model_grid,
+        work_dir=tmp_path / "pka_ensemble", extra_h_position=h_pos, ensemble_size=2,
+    )
+    assert np.isfinite(result.intrinsic_pka)
 
 
 @pytest.mark.skipif(not APBS_AVAILABLE, reason="requires apbs and pdb2pqr30 on PATH")

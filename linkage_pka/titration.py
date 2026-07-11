@@ -449,6 +449,83 @@ def _pairwise_repulsion_energy(moving_coords: np.ndarray, moving_radii: np.ndarr
     return float(np.sum(np.where(mask, epsilon_kj_mol * (sigma / dist) ** 12, 0.0)))
 
 
+def _enumerate_rotamer_candidates(atoms: list, resnum: int, resname: str,
+                                   candidate_angles=STAGGERED_ANGLES_DEG,
+                                   dielectric: float = 2.0, distance_cutoff_ang: float = 15.0,
+                                   repulsion_epsilon_kj_mol: float = 1.0) -> list:
+    """Every chi1/chi2 rotamer combination for ``resnum`` (current charge
+    state), each scored by the cheap classical proxy (Coulomb + soft
+    repulsion, see ``optimize_rotamer_for_microstate``'s docstring for why
+    that combination and not a fixed rotamer library) and converted to a
+    full ``new_atoms`` list (including the ASP/GLU titratable-H resync
+    fixup) -- shared core for both ``optimize_rotamer_for_microstate``
+    (single best candidate) and ``select_rotamer_ensemble`` (top-K,
+    Boltzmann-averaged over real PB energies rather than argmax'd over
+    this classical proxy).
+
+    Returns a list of ``(classical_energy, new_atoms, chi_deg)``, sorted
+    ascending by ``classical_energy`` (best first).
+    """
+    if resname not in ALL_CHI_ATOMS:
+        raise KeyError(f"no chi-angle geometry defined for {resname!r}")
+    n_chi = min(2, len(ALL_CHI_ATOMS[resname]))
+
+    target_idx = [i for i, a in enumerate(atoms) if a.resnum == resnum]
+    if not target_idx:
+        raise KeyError(f"resnum {resnum} not found in atoms")
+    name_to_local = {atoms[i].name: j for j, i in enumerate(target_idx)}
+    base_coords = np.array([[atoms[i].x, atoms[i].y, atoms[i].z] for i in target_idx])
+    target_charges = np.array([atoms[i].charge for i in target_idx])
+    target_radii = np.array([atoms[i].radius for i in target_idx])
+
+    other_idx = [i for i, a in enumerate(atoms) if a.resnum != resnum]
+    other_coords = np.array([[atoms[i].x, atoms[i].y, atoms[i].z] for i in other_idx])
+    other_charges = np.array([atoms[i].charge for i in other_idx])
+    other_radii = np.array([atoms[i].radius for i in other_idx])
+
+    candidates = [(a,) for a in candidate_angles] if n_chi == 1 else \
+        [(a, b) for a in candidate_angles for b in candidate_angles]
+
+    titratable_h_name = TITRATABLE_RESIDUES.get(resname, {}).get("titratable_h")
+    needs_h_resync = resname in ("ASP", "GLU") and titratable_h_name is not None
+
+    scored = []
+    for cand in candidates:
+        trial = base_coords.copy()
+        for k, target_deg in enumerate(cand):
+            defining_atoms, moving_names = ALL_CHI_ATOMS[resname][k]
+            if not all(n in name_to_local for n in defining_atoms):
+                continue  # a chi-defining atom is missing from this residue's atom set (e.g. truncated cap); skip
+            pts = [trial[name_to_local[n]] for n in defining_atoms]
+            current = _dihedral_deg(*pts)
+            delta = target_deg - current
+            axis_point, axis_end = trial[name_to_local[defining_atoms[1]]], trial[name_to_local[defining_atoms[2]]]
+            moving_local = [name_to_local[n] for n in moving_names if n in name_to_local]
+            if moving_local:
+                trial[moving_local] = _rotate_about_axis(trial[moving_local], axis_point, axis_end - axis_point, delta)
+
+        energy = (_pairwise_coulomb_energy(trial, target_charges, other_coords, other_charges,
+                                            dielectric, distance_cutoff_ang)
+                  + _pairwise_repulsion_energy(trial, target_radii, other_coords, other_radii,
+                                                repulsion_epsilon_kj_mol, distance_cutoff_ang))
+
+        new_atoms = list(atoms)
+        for local_j, global_i in enumerate(target_idx):
+            new_atoms[global_i] = replace(new_atoms[global_i], x=float(trial[local_j, 0]),
+                                           y=float(trial[local_j, 1]), z=float(trial[local_j, 2]))
+        if needs_h_resync:
+            h_idx = next((i for i in target_idx if atoms[i].name == titratable_h_name), None)
+            if h_idx is not None:
+                new_pos = place_titratable_hydrogen(new_atoms, resnum, resname)
+                new_atoms[h_idx] = replace(new_atoms[h_idx], x=float(new_pos[0]),
+                                            y=float(new_pos[1]), z=float(new_pos[2]))
+
+        scored.append((energy, new_atoms, list(cand)))
+
+    scored.sort(key=lambda t: t[0])
+    return scored
+
+
 def optimize_rotamer_for_microstate(atoms: list, resnum: int, resname: str,
                                      candidate_angles=STAGGERED_ANGLES_DEG,
                                      dielectric: float = 2.0, distance_cutoff_ang: float = 15.0,
@@ -493,65 +570,42 @@ def optimize_rotamer_for_microstate(atoms: list, resnum: int, resname: str,
     structurally) already carry their titratable H inside ``CHI_ATOMS``'
     own moving sets and need no such fixup.
 
-    Returns ``(new_atoms, chosen_chi_deg)``.
+    Returns ``(new_atoms, chosen_chi_deg)`` -- the single best candidate by
+    the classical proxy score. See ``select_rotamer_ensemble`` for the
+    top-K variant used by ``compute_environment_energies_ensemble``.
     """
-    if resname not in ALL_CHI_ATOMS:
-        raise KeyError(f"no chi-angle geometry defined for {resname!r}")
-    n_chi = min(2, len(ALL_CHI_ATOMS[resname]))
+    scored = _enumerate_rotamer_candidates(atoms, resnum, resname, candidate_angles,
+                                            dielectric, distance_cutoff_ang, repulsion_epsilon_kj_mol)
+    _, best_atoms, best_chi = scored[0]
+    return best_atoms, best_chi
 
-    target_idx = [i for i, a in enumerate(atoms) if a.resnum == resnum]
-    if not target_idx:
-        raise KeyError(f"resnum {resnum} not found in atoms")
-    name_to_local = {atoms[i].name: j for j, i in enumerate(target_idx)}
-    base_coords = np.array([[atoms[i].x, atoms[i].y, atoms[i].z] for i in target_idx])
-    target_charges = np.array([atoms[i].charge for i in target_idx])
-    target_radii = np.array([atoms[i].radius for i in target_idx])
 
-    other_idx = [i for i, a in enumerate(atoms) if a.resnum != resnum]
-    other_coords = np.array([[atoms[i].x, atoms[i].y, atoms[i].z] for i in other_idx])
-    other_charges = np.array([atoms[i].charge for i in other_idx])
-    other_radii = np.array([atoms[i].radius for i in other_idx])
+def select_rotamer_ensemble(atoms: list, resnum: int, resname: str, ensemble_size: int = 4,
+                             candidate_angles=STAGGERED_ANGLES_DEG,
+                             dielectric: float = 2.0, distance_cutoff_ang: float = 15.0,
+                             repulsion_epsilon_kj_mol: float = 1.0) -> list:
+    """The ``ensemble_size`` best chi1/chi2 rotamer candidates for
+    ``resnum``'s current charge state, ranked by the same cheap classical
+    proxy ``optimize_rotamer_for_microstate`` uses to pick a single
+    winner -- this is the pre-screen half of the MCCE-style ensemble
+    approach: the classical score is a real, cheap approximation used only
+    to prune an intractably large combinatorial space (up to 9 chi1/chi2
+    combinations here) down to a tractable number of real PB (APBS)
+    evaluations, matching how real MCCE implementations also cull
+    obviously-clashing rotamers before the expensive electrostatics step.
+    Averaging over these top-K candidates' *actual* PB energies (see
+    ``compute_environment_energies_ensemble``) -- rather than keeping only
+    the classical-score winner, as ``optimize_rotamer_for_microstate``
+    does -- is what makes this an ensemble/Boltzmann treatment instead of
+    a single-structure approximation.
 
-    candidates = [(a,) for a in candidate_angles] if n_chi == 1 else \
-        [(a, b) for a in candidate_angles for b in candidate_angles]
-
-    best_energy = np.inf
-    best_coords = base_coords
-    best_chi = None
-    for cand in candidates:
-        trial = base_coords.copy()
-        for k, target_deg in enumerate(cand):
-            defining_atoms, moving_names = ALL_CHI_ATOMS[resname][k]
-            if not all(n in name_to_local for n in defining_atoms):
-                continue  # a chi-defining atom is missing from this residue's atom set (e.g. truncated cap); skip
-            pts = [trial[name_to_local[n]] for n in defining_atoms]
-            current = _dihedral_deg(*pts)
-            delta = target_deg - current
-            axis_point, axis_end = trial[name_to_local[defining_atoms[1]]], trial[name_to_local[defining_atoms[2]]]
-            moving_local = [name_to_local[n] for n in moving_names if n in name_to_local]
-            if moving_local:
-                trial[moving_local] = _rotate_about_axis(trial[moving_local], axis_point, axis_end - axis_point, delta)
-
-        energy = (_pairwise_coulomb_energy(trial, target_charges, other_coords, other_charges,
-                                            dielectric, distance_cutoff_ang)
-                  + _pairwise_repulsion_energy(trial, target_radii, other_coords, other_radii,
-                                                repulsion_epsilon_kj_mol, distance_cutoff_ang))
-        if energy < best_energy:
-            best_energy, best_coords, best_chi = energy, trial, cand
-
-    new_atoms = list(atoms)
-    for local_j, global_i in enumerate(target_idx):
-        new_atoms[global_i] = replace(new_atoms[global_i], x=float(best_coords[local_j, 0]),
-                                       y=float(best_coords[local_j, 1]), z=float(best_coords[local_j, 2]))
-
-    titratable_h_name = TITRATABLE_RESIDUES.get(resname, {}).get("titratable_h")
-    if resname in ("ASP", "GLU") and titratable_h_name is not None:
-        h_idx = next((i for i in target_idx if atoms[i].name == titratable_h_name), None)
-        if h_idx is not None:
-            new_pos = place_titratable_hydrogen(new_atoms, resnum, resname)
-            new_atoms[h_idx] = replace(new_atoms[h_idx], x=float(new_pos[0]), y=float(new_pos[1]), z=float(new_pos[2]))
-
-    return new_atoms, list(best_chi)
+    Returns a list of up to ``ensemble_size`` ``(new_atoms, chi_deg)``
+    tuples, best classical score first (fewer than ``ensemble_size`` if
+    the residue has fewer distinct candidates, e.g. a one-chi residue).
+    """
+    scored = _enumerate_rotamer_candidates(atoms, resnum, resname, candidate_angles,
+                                            dielectric, distance_cutoff_ang, repulsion_epsilon_kj_mol)
+    return [(a, c) for _, a, c in scored[:ensemble_size]]
 
 
 # Canonical (protonation-state-independent) resname for every TITRATABLE_
@@ -802,6 +856,66 @@ def compute_environment_energies(atoms: list, resnum: int, resname: str, amber_c
     return e_deprot, e_prot
 
 
+def compute_environment_energies_ensemble(atoms: list, resnum: int, resname: str, amber_charges: dict,
+                                           grid_params: GridParams, work_dir, frame=None,
+                                           membrane_dielectric: float = 2.0, extra_h_position=None,
+                                           ensemble_size: int = 4, candidate_angles=STAGGERED_ANGLES_DEG,
+                                           temp_k: float = 298.15) -> tuple:
+    """Ensemble/MCCE-style variant of ``compute_environment_energies``:
+    instead of one fixed geometry (or one classical-score-selected
+    rotamer, see ``optimize_rotamer``), each microstate's free energy is a
+    Boltzmann average over ``select_rotamer_ensemble``'s top
+    ``ensemble_size`` chi1/chi2 candidates' *real* PB solvation energies --
+
+        G_eff = -RT * ln( sum_k exp(-E_k / RT) )
+
+    computed via the log-sum-exp form for numerical stability. This is
+    thermodynamically the correct treatment of "this protonation state has
+    several accessible side-chain conformations" (the same partition-
+    function-marginalization idea ``multisite.solve_cluster_titration``
+    already applies to *protonation* microstates, now applied to
+    *conformational* microstates within one protonation state) -- distinct
+    from ``optimize_rotamer=True``, which keeps only the single
+    classical-score winner and runs PB once. Costs ``ensemble_size`` times
+    as many APBS solves per microstate as the single-rotamer path (one
+    per candidate, both protonation states, both protein/model
+    environments) -- built in response to Gate A (see
+    ``linkage_pka/FINDINGS.md``): single-rotamer relaxation only
+    modestly improved the real SNase RMSE (10.99 -> 10.09 -> 7.86 pKa
+    units across rigid/single-rotamer/8A-neighbor variants, all still far
+    over the 1.0-unit threshold), consistent with the literature's own
+    framing of SNase's buried carboxylates as needing genuine multi-
+    conformer treatment, not a single relaxed geometry.
+
+    Reduces exactly to the single-candidate PB energy when
+    ``ensemble_size=1`` (``G_eff = E_0 - RT*ln(1) = E_0``) -- the same
+    geometry ``optimize_rotamer_for_microstate`` would have picked, since
+    both use the same classical ranking.
+
+    Returns ``(G_eff_deprotonated, G_eff_protonated)``, matching
+    ``compute_environment_energies``'s return contract.
+    """
+    work_dir = Path(work_dir)
+    RT = R_KJ_PER_MOL_K * temp_k
+    deprot_base = build_microstate(atoms, resnum, resname, protonated=False, amber_charges=amber_charges)
+    prot_base = build_microstate(atoms, resnum, resname, protonated=True, amber_charges=amber_charges,
+                                  extra_h_position=extra_h_position)
+
+    def _ensemble_free_energy(base_atoms, subdir):
+        candidates = select_rotamer_ensemble(base_atoms, resnum, resname, ensemble_size, candidate_angles)
+        energies = np.array([
+            compute_solvation_energy(cand_atoms, grid_params, work_dir / subdir / f"rot{i}",
+                                      frame, membrane_dielectric)
+            for i, (cand_atoms, _) in enumerate(candidates)
+        ])
+        min_e = energies.min()
+        return float(min_e - RT * np.log(np.sum(np.exp(-(energies - min_e) / RT))))
+
+    e_deprot = _ensemble_free_energy(deprot_base, "deprot")
+    e_prot = _ensemble_free_energy(prot_base, "prot")
+    return e_deprot, e_prot
+
+
 @dataclass
 class SiteEnergyResult:
     resnum: int
@@ -850,7 +964,8 @@ def compute_intrinsic_pka(protein_atoms: list, resnum: int, resname: str, frame,
                            protein_grid_params: GridParams, model_grid_params: GridParams, work_dir,
                            amber_charges: dict = None, membrane_dielectric: float = 2.0,
                            temp_k: float = 298.15, extra_h_position=None,
-                           optimize_rotamer: bool = False, neighbor_radius_ang: float = None) -> SiteEnergyResult:
+                           optimize_rotamer: bool = False, neighbor_radius_ang: float = None,
+                           ensemble_size: int = None) -> SiteEnergyResult:
     """One site's intrinsic pKa: PB energies in the full protein/membrane
     environment (``frame`` gives the membrane slab; pass ``frame=None`` for
     a soluble-protein calculation with no membrane) minus the same in an
@@ -863,22 +978,42 @@ def compute_intrinsic_pka(protein_atoms: list, resnum: int, resname: str, frame,
     ``compute_environment_energies``. ``neighbor_radius_ang`` additionally
     relaxes real geometric neighbors on the protein side (the model
     compound is too small a fragment for this to find any -- it has no
-    other residue's CA present).
+    other residue's CA present). ``ensemble_size`` (mutually exclusive
+    with ``optimize_rotamer``/``neighbor_radius_ang``): use
+    ``compute_environment_energies_ensemble`` instead, Boltzmann-averaging
+    this site's rotamer over its top ``ensemble_size`` candidates on both
+    the protein and model-compound sides, rather than a single fixed or
+    single relaxed geometry.
     """
+    if ensemble_size is not None and (optimize_rotamer or neighbor_radius_ang is not None):
+        raise ValueError("ensemble_size is mutually exclusive with optimize_rotamer/neighbor_radius_ang "
+                          "-- pick one relaxation strategy")
+
     amber_charges = amber_charges or load_amber_charges()
     work_dir = Path(work_dir)
 
-    e_prot_deprot, e_prot_prot = compute_environment_energies(
-        protein_atoms, resnum, resname, amber_charges, protein_grid_params, work_dir / "protein",
-        frame=frame, membrane_dielectric=membrane_dielectric, extra_h_position=extra_h_position,
-        optimize_rotamer=optimize_rotamer, neighbor_radius_ang=neighbor_radius_ang,
-    )
-
-    model_atoms = build_model_compound_atoms(protein_atoms, resnum)
-    e_model_deprot, e_model_prot = compute_environment_energies(
-        model_atoms, resnum, resname, amber_charges, model_grid_params, work_dir / "model",
-        frame=None, extra_h_position=extra_h_position, optimize_rotamer=optimize_rotamer,
-    )
+    if ensemble_size is not None:
+        e_prot_deprot, e_prot_prot = compute_environment_energies_ensemble(
+            protein_atoms, resnum, resname, amber_charges, protein_grid_params, work_dir / "protein",
+            frame=frame, membrane_dielectric=membrane_dielectric, extra_h_position=extra_h_position,
+            ensemble_size=ensemble_size, temp_k=temp_k,
+        )
+        model_atoms = build_model_compound_atoms(protein_atoms, resnum)
+        e_model_deprot, e_model_prot = compute_environment_energies_ensemble(
+            model_atoms, resnum, resname, amber_charges, model_grid_params, work_dir / "model",
+            frame=None, extra_h_position=extra_h_position, ensemble_size=ensemble_size, temp_k=temp_k,
+        )
+    else:
+        e_prot_deprot, e_prot_prot = compute_environment_energies(
+            protein_atoms, resnum, resname, amber_charges, protein_grid_params, work_dir / "protein",
+            frame=frame, membrane_dielectric=membrane_dielectric, extra_h_position=extra_h_position,
+            optimize_rotamer=optimize_rotamer, neighbor_radius_ang=neighbor_radius_ang,
+        )
+        model_atoms = build_model_compound_atoms(protein_atoms, resnum)
+        e_model_deprot, e_model_prot = compute_environment_energies(
+            model_atoms, resnum, resname, amber_charges, model_grid_params, work_dir / "model",
+            frame=None, extra_h_position=extra_h_position, optimize_rotamer=optimize_rotamer,
+        )
 
     RT = R_KJ_PER_MOL_K * temp_k
     dg_ion_protein = e_prot_deprot - e_prot_prot
