@@ -3,6 +3,7 @@ from pathlib import Path
 import numpy as np
 import pytest
 
+from wsme_gpcr.blocking import BlockModel
 from wsme_gpcr.calibration import (
     CalibrationError,
     PAPER_TARGET_TM_K,
@@ -12,8 +13,10 @@ from wsme_gpcr.calibration import (
     calibrate_xi_isostability_mode,
     calibrate_xi_tm_mode,
     compute_delta_g_fold,
+    compute_fc,
     find_cp_peaks_and_tm,
 )
+from wsme_gpcr.coupling import CouplingResult
 from wsme_gpcr.pipeline import run_pipeline
 from wsme_gpcr.wsme import WSMEParams, WSMEResult
 
@@ -216,3 +219,77 @@ def test_isostability_provenance_and_common_delta_g():
         __import__("dataclasses").replace(params, ene=-0.054, T=310.0),
     )
     assert iso.delta_g_fold_common_kj_mol == pytest.approx(expected_dg, rel=1e-6)
+
+
+# --------------------------------------------------------------- compute_fc --
+
+def _synthetic_block_model(residues_per_block):
+    """residues_per_block: list of residue counts per block, e.g. [4,4,3]."""
+    nblocks = len(residues_per_block)
+    nres = sum(residues_per_block)
+    block_of_residue = np.repeat(np.arange(nblocks), residues_per_block)
+    block_residue_range = np.zeros((nblocks, 2), dtype=int)
+    pos = 0
+    for b, n in enumerate(residues_per_block):
+        block_residue_range[b] = [pos, pos + n - 1]
+        pos += n
+    return BlockModel(
+        nres=nres, nblocks=nblocks, block_size=4, block_of_residue=block_of_residue,
+        block_residue_range=block_residue_range, block_cmap=np.zeros((nblocks, nblocks)),
+        block_elec=np.zeros((0, 5)),
+    )
+
+
+def _synthetic_coupling(cfe: np.ndarray) -> CouplingResult:
+    nb = cfe.shape[0]
+    nan = np.full((nb, nb), np.nan)
+    return CouplingResult(
+        p_folded=np.zeros(nb), p_folded_folded=nan, p_folded_unfolded=nan, p_unfolded_unfolded=nan,
+        chi_plus=nan, chi_minus=nan, coupling_free_energy=cfe, zfin=1.0,
+    )
+
+
+def test_compute_fc_counts_residues_in_strongly_coupled_blocks():
+    # 3 blocks of size [4, 4, 2] (10 residues total). Block 0<->1 strongly
+    # coupled (above threshold); block 2 isolated (below threshold/NaN).
+    block_model = _synthetic_block_model([4, 4, 2])
+    cfe = np.array([
+        [np.nan, 5.0, 0.1],
+        [5.0, np.nan, 0.1],
+        [0.1, 0.1, np.nan],
+    ])
+    coupling = _synthetic_coupling(cfe)
+    fc = compute_fc(coupling, block_model, threshold_kj_mol=2.5)
+    # Blocks 0 and 1 (8 residues) qualify; block 2 (2 residues) does not.
+    assert fc == pytest.approx(8.0 / 10.0)
+
+
+def test_compute_fc_all_nan_gives_zero():
+    block_model = _synthetic_block_model([4, 4, 2])
+    cfe = np.full((3, 3), np.nan)
+    coupling = _synthetic_coupling(cfe)
+    fc = compute_fc(coupling, block_model, threshold_kj_mol=2.5)
+    assert fc == 0.0
+
+
+def test_compute_fc_all_strongly_coupled_gives_one():
+    block_model = _synthetic_block_model([4, 4, 2])
+    cfe = np.full((3, 3), 10.0)
+    np.fill_diagonal(cfe, np.nan)
+    coupling = _synthetic_coupling(cfe)
+    fc = compute_fc(coupling, block_model, threshold_kj_mol=2.5)
+    assert fc == 1.0
+
+
+def test_compute_fc_threshold_is_tunable():
+    block_model = _synthetic_block_model([5, 5])
+    cfe = np.array([[np.nan, 3.0], [3.0, np.nan]])
+    coupling = _synthetic_coupling(cfe)
+    assert compute_fc(coupling, block_model, threshold_kj_mol=2.0) == pytest.approx(1.0)
+    assert compute_fc(coupling, block_model, threshold_kj_mol=5.0) == pytest.approx(0.0)
+
+
+def test_compute_fc_real_plumbing_on_ci2():
+    result = run_pipeline(CI2, ph=7.0, with_coupling=True)
+    fc = compute_fc(result.coupling_result, result.block_model)
+    assert 0.0 <= fc <= 1.0

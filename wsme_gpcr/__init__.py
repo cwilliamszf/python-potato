@@ -25,9 +25,11 @@ from .calibration import (
     PAPER_XI_MEAN_J_MOL,
     PAPER_XI_STD_J_MOL,
     PAPER_TARGET_TM_K,
+    DEFAULT_FC_THRESHOLD_KJ_MOL,
     calibrate_xi_isostability_mode,
     calibrate_xi_tm_mode,
     compute_delta_g_fold,
+    compute_fc,
     find_cp_peaks_and_tm,
 )
 from .coupling import CouplingResult, compute_coupling
@@ -62,9 +64,11 @@ __all__ = [
     "PAPER_XI_MEAN_J_MOL",
     "PAPER_XI_STD_J_MOL",
     "PAPER_TARGET_TM_K",
+    "DEFAULT_FC_THRESHOLD_KJ_MOL",
     "calibrate_xi_isostability_mode",
     "calibrate_xi_tm_mode",
     "compute_delta_g_fold",
+    "compute_fc",
     "find_cp_peaks_and_tm",
     "CouplingResult",
     "compute_coupling",

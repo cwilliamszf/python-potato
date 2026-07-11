@@ -55,9 +55,19 @@ import numpy as np
 from scipy.optimize import brentq
 
 from .blocking import BlockModel
+from .coupling import CouplingResult
 from .dsc import DSCResult, compute_dsc
 from .structure import Structure
 from .wsme import WSMEParams, WSMEResult, run_wsme
+
+# "Strongly coupled" threshold for fc (see compute_fc): 1 RT at the 310 K
+# reference condition (~2.58 kJ/mol) -- a natural thermal-energy scale.
+# The paper's own exact operational definition of "strongly coupled
+# residue" could not be independently verified (network access to the
+# paper is blocked in this sandbox, same as every external host tried
+# this session) -- this is a documented, defensible default, not a
+# verified transcription of the paper's threshold.
+DEFAULT_FC_THRESHOLD_KJ_MOL = 0.008314 * 310.0
 
 # Paper's reported effective mean +/- std, over 45 receptors, in J/mol.
 PAPER_XI_MEAN_J_MOL = -48.9
@@ -410,3 +420,33 @@ def calibrate_xi_isostability_mode(
         xi_reference_kj_mol=xi_reference_kj_mol, xi_other_kj_mol=xi_other,
         delta_g_fold_common_kj_mol=target_delta_g, T_ref_k=T_ref_k, provenance=provenance,
     )
+
+
+def compute_fc(coupling_result: CouplingResult, block_model: BlockModel,
+                threshold_kj_mol: float = DEFAULT_FC_THRESHOLD_KJ_MOL) -> float:
+    """Fraction of residues belonging to at least one "strongly coupled"
+    block pair -- the paper's fc, reported as 13.0 +/- 4.5% over 45
+    receptors (a fidelity-gate target, see the regression script this
+    feeds into, NOT independently re-derivable from first principles).
+
+    A block pair (j, k) counts as strongly coupled if
+    ``|coupling_free_energy[j, k]| > threshold_kj_mol`` (default: 1 RT at
+    310 K, see ``DEFAULT_FC_THRESHOLD_KJ_MOL`` -- a documented choice,
+    not a verified transcription of the paper's own threshold). NaN
+    entries (``coupling_free_energy``'s own near-zero-probability masking,
+    see ``coupling.py``) never count as strongly coupled.
+
+    fc is computed at RESIDUE granularity (matching the paper's "fraction
+    of ... residues"): every residue in a block that has at least one
+    qualifying partner block counts, weighted by that block's real
+    residue count (not 1 count per block), so blocks of different sizes
+    contribute proportionally.
+    """
+    cfe = coupling_result.coupling_free_energy
+    with np.errstate(invalid="ignore"):
+        strong = np.abs(cfe) > threshold_kj_mol  # NaN comparisons are False, correctly excluded
+    block_is_coupled = strong.any(axis=1)  # (nblocks,) -- has >=1 qualifying partner
+
+    residues_per_block = np.bincount(block_model.block_of_residue, minlength=block_model.nblocks)
+    n_coupled_residues = int(residues_per_block[block_is_coupled].sum())
+    return n_coupled_residues / block_model.nres
