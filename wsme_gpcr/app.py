@@ -19,6 +19,7 @@ from wsme_gpcr.plotting import (
     plot_2d_landscape,
     plot_2d_landscape_surface,
     plot_2d_landscape_surface_comparison,
+    plot_comparison_grid,
     plot_coupling_matrix,
     plot_dsc,
     plot_residue_folding_probability,
@@ -46,6 +47,13 @@ with st.sidebar:
         "so the contact map and electrostatics -- not just screening -- differ per pH). Roughly 4x slower.",
     )
     ph = st.selectbox("pH (charge assignment)", options=[7.0, 5.0, 3.5, 2.0], index=0, disabled=all_ph)
+    show_comparison_grid = st.checkbox(
+        "Show combined comparison grid (3D landscape + folding probability + coupling, one column per pH)",
+        value=False, disabled=not all_ph,
+        help="One big figure: a column per pH, rows for 3D landscape / residue folding probability / "
+        "coupling (coupling row only if 'Compute residue-residue coupling free energy' is also checked). "
+        "Requires 'Run for all pH values'.",
+    )
 
     st.header("Secondary structure")
     ss_source = st.radio(
@@ -155,6 +163,15 @@ if run_button:
 
         fig = plot_2d_landscape_surface_comparison({f"pH {ph_val}": pr.result for ph_val, pr in pipeline_results.items()})
         st.pyplot(fig)
+
+        if show_comparison_grid:
+            results_by_key = {f"pH {ph_val}": pr.result for ph_val, pr in pipeline_results.items()}
+            coupling_by_key = None
+            if all(pr.coupling_result is not None for pr in pipeline_results.values()):
+                coupling_by_key = {f"pH {ph_val}": pr.coupling_result for ph_val, pr in pipeline_results.items()}
+            with st.spinner("Building comparison grid..."):
+                fig = plot_comparison_grid(results_by_key, coupling_by_key=coupling_by_key)
+            st.pyplot(fig)
 
         import pandas as pd
 

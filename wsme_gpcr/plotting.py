@@ -149,6 +149,62 @@ def plot_coupling_matrix(coupling: CouplingResult, ax=None, cmap="RdBu_r", vmax=
     return ax
 
 
+def plot_comparison_grid(
+    results_by_key: dict,
+    coupling_by_key: dict = None,
+    cmap="jet",
+    coupling_cmap="RdBu_r",
+    elev=28,
+    azim=-55,
+    figsize_per_panel=6.5,
+):
+    """Grid comparison across several runs (e.g. one column per pH):
+    rows are 3D free-energy landscape, residue folding probability, and
+    (if ``coupling_by_key`` is given) coupling free energy; columns are
+    the entries of ``results_by_key`` (label -> WSMEResult). Each row
+    shares one color scale across columns so they're directly comparable.
+    """
+    import matplotlib.pyplot as plt
+
+    keys = list(results_by_key.keys())
+    n = len(keys)
+    n_rows = 3 if coupling_by_key else 2
+
+    landscape_vals = np.concatenate([
+        results_by_key[k].fes2D[np.isfinite(results_by_key[k].fes2D)] for k in keys
+    ])
+    lvmin, lvmax = float(landscape_vals.min()), float(landscape_vals.max())
+
+    cvmax = None
+    if coupling_by_key:
+        coupling_vals = np.concatenate([
+            coupling_by_key[k].coupling_free_energy[np.isfinite(coupling_by_key[k].coupling_free_energy)]
+            for k in keys
+        ])
+        cvmax = float(np.max(np.abs(coupling_vals))) if len(coupling_vals) else 1.0
+
+    fig = plt.figure(figsize=(figsize_per_panel * n, figsize_per_panel * n_rows))
+
+    for col, key in enumerate(keys):
+        result = results_by_key[key]
+
+        ax1 = fig.add_subplot(n_rows, n, col + 1, projection="3d")
+        plot_2d_landscape_surface(result, ax=ax1, cmap=cmap, vmin=lvmin, vmax=lvmax, elev=elev, azim=azim, colorbar=False)
+        ax1.set_title(f"{key}\n3D Free Energy Landscape")
+
+        ax2 = fig.add_subplot(n_rows, n, n + col + 1)
+        plot_residue_folding_probability(result, ax=ax2, cmap=cmap)
+        ax2.set_title("Residue Folding Probability")
+
+        if coupling_by_key:
+            ax3 = fig.add_subplot(n_rows, n, 2 * n + col + 1)
+            plot_coupling_matrix(coupling_by_key[key], ax=ax3, cmap=coupling_cmap, vmax=cvmax)
+            ax3.set_title("Coupling Free Energy")
+
+    fig.tight_layout()
+    return fig
+
+
 def plot_dsc(dsc_result: DSCResult, ax=None, **kwargs):
     import matplotlib.pyplot as plt
 
