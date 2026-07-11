@@ -1336,3 +1336,69 @@ scatter. Every pH-dependent number downstream (delta_g_activation(pH),
 the double-funnel colour axis) continues to carry the "pipeline-mechanics
 demonstration, not calibrated prediction" caveat, but the reason is now
 concrete and diagnostic rather than a blanket disclaimer.
+
+## Anti-correlation root cause: the model gets the SIGN of the buried-
+## carboxylate physics wrong (desolvation vs. specific stabilization)
+
+Ran the diagnostic that decides whether a targeted fix is viable or the
+full conformational-sampling hammer is required. For the 13 comparable
+carboxylates, compared three quantities per site: burial (100 - SASA%,
+from the experimental dataset's own SASA column), the MODEL's pKa shift
+(computed - model_pKa, at pdie=40+neighbors, the pipeline's best
+variant), and the EXPERIMENTAL pKa shift (expt - model_pKa). Result is
+unambiguous:
+
+| Correlation | Pearson | Spearman |
+|---|---|---|
+| burial vs. MODEL shift | **+0.669** | +0.692 |
+| burial vs. EXPERIMENTAL shift | **+0.011** | -0.127 |
+| MODEL shift vs. EXPERIMENTAL shift | -0.587 | -0.567 |
+
+And the directions:
+- **MODEL shifts are ALL positive** (every one of the 13; mean +0.31,
+  range +0.09..+0.67). The pipeline *always* raises a buried
+  carboxylate's pKa -- the signature of a pure desolvation penalty
+  (removing a charge from water into a low-dielectric interior
+  destabilizes the ionized state, so pKa goes up), scaling with burial
+  (+0.67 correlation).
+- **EXPERIMENTAL shifts are mostly negative** (mean -0.52), and have
+  essentially *zero* correlation with burial (+0.01). The two most
+  strongly-shifted real sites go the OPPOSITE way from the model:
+  Asp95 (66% buried) real shift **-1.74**, model +0.43; Glu10 (83%
+  buried) real shift **-1.28**, model +0.61. Reality *lowers* these
+  pKa's -- the ionized (charged) state is *stabilized*, not
+  destabilized, by specific local interactions (H-bond networks, salt
+  bridges, favorable backbone/polar contacts) that hold the buried
+  charge and are entirely invisible to a uniform-interior-dielectric
+  continuum on a single static structure.
+
+**This is a sign error, not a magnitude error.** The one carboxylate
+whose real pKa actually *is* desolvation-dominated (Glu43, the only
+site with a positive experimental shift, +0.22) is the one the model
+gets essentially right (+0.16) -- confirming the model's mechanism is
+real, just not the *dominant* mechanism for most of SNase's buried
+carboxylates. No dielectric value, and no monotone correction term, can
+convert a systematically wrong-signed prediction into a right one,
+because whether a given buried carboxylate ends up shifted up (pure
+desolvation) or down (specific stabilization wins) is exactly the
+per-site question the continuum model cannot answer from burial alone.
+
+**Decision implication (directly answers the "targeted fix vs. full
+hammer" question)**: a cheap targeted patch is OFF the table. Getting
+these right requires explicitly representing the charge-stabilizing
+local interactions and their pH-coupled reorganization -- i.e.
+constant-pH MD, or a genuine multi-conformer treatment with PB-validated
+(not classically-prescreened) ensembles that can find the
+charge-stabilized states. That is a real method-development project with
+a genuinely uncertain outcome (SNase buried carboxylates sit near the
+edge of what even specialized published methods achieve), not a tuning
+step.
+
+**Asset implication**: this diagnostic is itself a clean, quantitative,
+publishable result -- it doesn't just say "the pipeline fails," it
+localizes the failure to a specific, well-understood physical mechanism
+(bulk desolvation vs. specific charge stabilization) with a decisive
+sign-level signature. For a methods/negative-results framing this
+strengthens the contribution; for a biology-prediction framing it
+confirms calibration is blocked behind conformational sampling, not
+parameter choice.
