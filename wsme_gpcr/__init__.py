@@ -18,6 +18,8 @@ from .blocking import BlockModel, build_blocks
 from .wsme import WSMEParams, WSMEResult, run_wsme
 from .dsc import compute_dsc, DSCResult
 from .coupling import CouplingResult, compute_coupling
+from .ionizable_network import IonizableNetworkResult, compute_ionizable_network, map_networks_to_blocks
+from .alanine_scan import AlanineScanResult, run_alanine_scan, scannable_positions
 from .pipeline import PipelineResult, run_pipeline, run_pipeline_multi_ph, DEFAULT_PH_VALUES
 
 __all__ = [
@@ -35,6 +37,12 @@ __all__ = [
     "DSCResult",
     "CouplingResult",
     "compute_coupling",
+    "IonizableNetworkResult",
+    "compute_ionizable_network",
+    "map_networks_to_blocks",
+    "AlanineScanResult",
+    "run_alanine_scan",
+    "scannable_positions",
     "PipelineResult",
     "run_pipeline",
     "run_pipeline_multi_ph",

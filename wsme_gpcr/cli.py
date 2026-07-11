@@ -36,8 +36,14 @@ def main(argv=None):
     p.add_argument("pdb", help="Path to a PDB or mmCIF structure file")
     p.add_argument("--chain", default=None, help="Chain ID to use (default: first chain with standard residues)")
     p.add_argument("--model", type=int, default=0, help="Model index for multi-model files (default: 0)")
-    p.add_argument("--ph", type=float, default=7.0, choices=[7.0, 5.0, 3.5, 2.0], help="pH for charge assignment (default: 7.0; ignored with --all-ph)")
-    p.add_argument("--all-ph", action="store_true", help="Run at every pH (7, 5, 3.5, 2) and write results to per-pH subdirectories, plus a comparison plot")
+    p.add_argument("--ph", type=float, default=7.0, help="pH for charge assignment via continuous Henderson-Hasselbalch titration (default: 7.0; ignored with --all-ph/--ph-values)")
+    p.add_argument("--all-ph", action="store_true", help="Run at pH 7, 5, 3.5, 2 (or --ph-values if given) and write results to per-pH subdirectories, plus a comparison plot")
+    p.add_argument("--ph-values", default=None,
+                    help="Comma-separated list of pH values for a multi-pH run (implies --all-ph), "
+                    "e.g. '6.0,6.4,6.8,7.0,7.4,7.8' for a fine sweep over a receptor's physiological range")
+    p.add_argument("--pka-override", default=None,
+                    help="Comma-separated author-resnum:pKa pairs to override the default per-residue-type pKa, "
+                    "e.g. '17:7.4,269:7.0' for candidate pH-sensor histidines with a shifted pKa")
     p.add_argument("--block-size", type=int, default=4, help="Residues per block (default: 4)")
     p.add_argument("--preset", choices=["membrane", "soluble"], default="membrane",
                     help="Parameter preset: membrane/GPCR (dielectric=4, default) or soluble protein (dielectric=29)")
@@ -67,20 +73,28 @@ def main(argv=None):
     if args.ss_codes or args.ss_file:
         ss_codes = args.ss_codes if args.ss_codes else Path(args.ss_file).read_text().strip()
 
+    pka_overrides = None
+    if args.pka_override:
+        pka_overrides = {}
+        for pair in args.pka_override.split(","):
+            resnum, pka = pair.split(":")
+            pka_overrides[int(resnum)] = float(pka)
+
     params = _build_params(args)
     dsc_T_grid = None
     if args.dsc:
         dsc_T_grid = np.arange(args.dsc_tmin, args.dsc_tmax + args.dsc_tstep / 2, args.dsc_tstep)
 
-    if args.all_ph:
-        print(f"Running at all pH values: {DEFAULT_PH_VALUES}")
+    if args.all_ph or args.ph_values:
+        ph_values = [float(v) for v in args.ph_values.split(",")] if args.ph_values else list(DEFAULT_PH_VALUES)
+        print(f"Running at pH values: {ph_values}")
 
         def progress(ph, i, total):
             print(f"[{i + 1}/{total}] pH {ph} ...")
 
         results = run_pipeline_multi_ph(
-            args.pdb, chain=args.chain, model=args.model, ss_codes=ss_codes,
-            block_size=args.block_size, params=params, with_dsc=args.dsc,
+            args.pdb, ph_values=ph_values, chain=args.chain, model=args.model, pka_overrides=pka_overrides,
+            ss_codes=ss_codes, block_size=args.block_size, params=params, with_dsc=args.dsc,
             dsc_T_grid=dsc_T_grid, with_coupling=args.coupling, progress_callback=progress,
         )
         for ph, pr in results.items():
@@ -110,7 +124,7 @@ def main(argv=None):
         return
 
     pr = run_pipeline(
-        args.pdb, chain=args.chain, model=args.model, ph=args.ph, ss_codes=ss_codes,
+        args.pdb, chain=args.chain, model=args.model, ph=args.ph, pka_overrides=pka_overrides, ss_codes=ss_codes,
         block_size=args.block_size, params=params, with_dsc=args.dsc, dsc_T_grid=dsc_T_grid,
         with_coupling=args.coupling,
     )

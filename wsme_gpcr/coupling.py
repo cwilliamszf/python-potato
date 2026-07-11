@@ -177,6 +177,12 @@ def compute_coupling(structure: Structure, block_model: BlockModel, ss_mask: np.
     _NEAR_ZERO_PROB = 1e-6
     min_quad = np.minimum(np.minimum(FF, FU), np.minimum(UU, UF))
     coupling_free_energy = np.where(min_quad < _NEAR_ZERO_PROB, np.nan, coupling_free_energy)
+    # chi_plus = RT*ln(FF/UF) only involves FF and UF; chi_minus only FU and
+    # UU -- mask each against just the quadrants it actually uses, rather
+    # than the all-four min, so a chi_plus entry isn't discarded over a
+    # near-zero UU it doesn't even depend on.
+    chi_plus = np.where(np.minimum(FF, UF) < _NEAR_ZERO_PROB, np.nan, chi_plus)
+    chi_minus = np.where(np.minimum(FU, UU) < _NEAR_ZERO_PROB, np.nan, chi_minus)
 
     np.fill_diagonal(chi_plus, np.nan)
     np.fill_diagonal(chi_minus, np.nan)

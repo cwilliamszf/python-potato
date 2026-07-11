@@ -26,17 +26,51 @@ RESNAME_TO_CODE = {
     "PRO": "P", "CYS": "C",
 }
 
-# Residues that carry a titratable side-chain charge, and the specific
-# atoms across which the unit charge is distributed. Matches charres /
-# atomc / charmag{7,5,3.5,2} in cmapCalcElecBlock.m.
-CHARGED_RESIDUES = {"HIS", "LYS", "ARG", "GLU", "ASP"}
-CHARGE_ATOMS = ["NE", "NH1", "NH2", "NZ", "OD1", "OD2", "OE1", "OE2", "ND1", "NE2"]
-CHARGE_TABLE = {
-    7.0: [0.33, 0.33, 0.33, 1.0, -0.5, -0.5, -0.5, -0.5, 0.0, 0.0],
-    5.0: [0.33, 0.33, 0.33, 1.0, -0.5, -0.5, -0.5, -0.5, 0.5, 0.5],
-    3.5: [0.33, 0.33, 0.33, 1.0, -0.25, -0.25, -0.25, -0.25, 0.5, 0.5],
-    2.0: [0.33, 0.33, 0.33, 1.0, 0.0, 0.0, 0.0, 0.0, 0.5, 0.5],
+# Residues that carry a titratable side-chain charge, the atoms across
+# which the fully-charged unit charge is distributed, and their default
+# (free-amino-acid) pKa. The original cmapCalcElecBlock.m used a fixed
+# 4-tier lookup table (pH 7/5/3.5/2) with hand-picked charge magnitudes;
+# here that's replaced with a continuous Henderson-Hasselbalch titration
+# so arbitrary/fine-grained pH values (and per-residue pKa overrides, for
+# a specific residue known/suspected to have an environment-shifted pKa
+# -- e.g. a proposed GPCR proton sensor) can be used directly. At the
+# original table's four anchor pH values this reproduces very similar
+# (not bit-identical) charges: e.g. His at pH 7 is ~9% protonated here
+# rather than the original's hard 0%, which is the physically more
+# accurate answer for a residue with pKa exactly 6, not a deviation.
+ACIDIC_RESIDUES = {"ASP", "GLU"}  # charged (deprotonated) above their pKa
+BASIC_RESIDUES = {"HIS", "LYS", "ARG"}  # charged (protonated) below their pKa
+CHARGED_RESIDUES = ACIDIC_RESIDUES | BASIC_RESIDUES
+
+DEFAULT_PKA = {
+    "ASP": 3.9,
+    "GLU": 4.1,
+    "HIS": 6.0,
+    "LYS": 10.5,
+    "ARG": 12.5,
 }
+
+# Per-atom charge at full (100%) ionization; split evenly across the atoms
+# that share the group's formal charge, matching cmapCalcElecBlock.m.
+FULL_CHARGE_ATOMS = {
+    "ASP": {"OD1": -0.5, "OD2": -0.5},
+    "GLU": {"OE1": -0.5, "OE2": -0.5},
+    "HIS": {"ND1": 0.5, "NE2": 0.5},
+    "LYS": {"NZ": 1.0},
+    "ARG": {"NE": 0.33, "NH1": 0.33, "NH2": 0.33},
+}
+
+
+def fraction_charged(ph: float, pka: float, resname: str) -> float:
+    """Henderson-Hasselbalch fraction of the group in its charged state.
+
+    Acidic groups (Asp/Glu) are charged when deprotonated, i.e. above
+    their pKa; basic groups (His/Lys/Arg) are charged when protonated,
+    i.e. below their pKa.
+    """
+    if resname in ACIDIC_RESIDUES:
+        return 1.0 / (1.0 + 10.0 ** (pka - ph))
+    return 1.0 / (1.0 + 10.0 ** (ph - pka))
 
 
 @dataclass
@@ -73,18 +107,22 @@ def _pick_chain(structure_model, chain_id):
     raise ValueError("No chain with standard amino acid residues found")
 
 
-def load_structure(path, chain: str | None = None, model: int = 0, ph: float = 7.0) -> Structure:
+def load_structure(path, chain: str | None = None, model: int = 0, ph: float = 7.0,
+                    pka_overrides: dict | None = None) -> Structure:
     """Load a PDB or mmCIF file into a curated heavy-atom Structure.
 
     Only ATOM records for the 20 standard amino acids are kept; hydrogens,
     waters, ligands, and alternate (non-primary) conformers are dropped.
+
+    Charges are assigned by continuous Henderson-Hasselbalch titration
+    (see ``fraction_charged``) using ``DEFAULT_PKA`` per residue type,
+    unless overridden. ``pka_overrides`` maps an *author* residue number
+    to a custom pKa -- e.g. for a specific histidine proposed to have an
+    environment-shifted pKa (a candidate pH-sensor residue).
     """
     from Bio.PDB import MMCIFParser, PDBParser
 
-    if ph not in CHARGE_TABLE:
-        raise ValueError(f"ph must be one of {sorted(CHARGE_TABLE)}, got {ph}")
-    charmag = CHARGE_TABLE[ph]
-
+    pka_overrides = pka_overrides or {}
     path = Path(path)
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
@@ -107,7 +145,14 @@ def load_structure(path, chain: str | None = None, model: int = 0, ph: float = 7
         if hetflag != " " or rname not in STANDARD_RESIDUES:
             continue
         resname.append(rname)
-        author_resnum.append(residue.get_id()[1])
+        this_author_resnum = residue.get_id()[1]
+        author_resnum.append(this_author_resnum)
+
+        group_charge = None
+        if rname in CHARGED_RESIDUES:
+            pka = pka_overrides.get(this_author_resnum, DEFAULT_PKA[rname])
+            group_charge = FULL_CHARGE_ATOMS[rname]
+            frac = fraction_charged(ph, pka, rname)
 
         for atom in residue:
             if atom.is_disordered():
@@ -125,8 +170,8 @@ def load_structure(path, chain: str | None = None, model: int = 0, ph: float = 7
             atom_resindex.append(ridx)
 
             q = 0.0
-            if rname in CHARGED_RESIDUES and name in CHARGE_ATOMS:
-                q = charmag[CHARGE_ATOMS.index(name)]
+            if group_charge is not None and name in group_charge:
+                q = group_charge[name] * frac
             charge.append(q)
         ridx += 1
 

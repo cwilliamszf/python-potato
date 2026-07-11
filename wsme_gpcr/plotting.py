@@ -7,6 +7,7 @@ import numpy as np
 
 from .coupling import CouplingResult
 from .dsc import DSCResult
+from .ionizable_network import IonizableNetworkResult
 from .wsme import WSMEResult
 
 
@@ -203,6 +204,41 @@ def plot_comparison_grid(
 
     fig.tight_layout()
     return fig
+
+
+_BURIAL_COLOR = {"buried": "#8B0000", "margin": "#DAA520", "exposed": "#4682B4"}
+
+
+def plot_ionizable_network(result: IonizableNetworkResult, ax=None, label_his: bool = True, **kwargs):
+    """3D scatter of ionizable residues (pHinder-style), edges from the
+    trimmed Delaunay network, colored by approximate burial class.
+    Histidines are labeled by author residue number by default, since
+    they're the most likely pH-sensor candidates."""
+    import matplotlib.pyplot as plt
+
+    if ax is None:
+        fig = plt.figure(figsize=(8, 8))
+        ax = fig.add_subplot(projection="3d")
+
+    pos = result.position
+    for i, j in result.edges:
+        ax.plot(*zip(pos[i], pos[j]), color="gray", linewidth=0.6, alpha=0.6, zorder=1)
+
+    colors = [_BURIAL_COLOR[c] for c in result.burial_class]
+    ax.scatter(pos[:, 0], pos[:, 1], pos[:, 2], c=colors, s=40, zorder=2, **kwargs)
+
+    if label_his:
+        for i, rname in enumerate(result.resname):
+            if rname == "HIS":
+                ax.text(*pos[i], f"H{result.author_resnum[i]}", fontsize=8, zorder=3)
+
+    handles = [plt.Line2D([0], [0], marker="o", color="w", markerfacecolor=c, markersize=8, label=k)
+               for k, c in _BURIAL_COLOR.items()]
+    ax.legend(handles=handles, title="Burial (approx.)")
+    ax.set_xlabel("x (A)")
+    ax.set_ylabel("y (A)")
+    ax.set_zlabel("z (A)")
+    return ax
 
 
 def plot_dsc(dsc_result: DSCResult, ax=None, **kwargs):

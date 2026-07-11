@@ -45,6 +45,7 @@ def run_pipeline(
     chain: str = None,
     model: int = 0,
     ph: float = 7.0,
+    pka_overrides: dict = None,
     ss_codes: str = None,
     block_size: int = 4,
     params: WSMEParams = None,
@@ -52,14 +53,19 @@ def run_pipeline(
     dsc_T_grid=None,
     with_coupling: bool = False,
 ) -> PipelineResult:
-    """Run the full landscape (and optionally DSC / coupling) pipeline for one pH."""
+    """Run the full landscape (and optionally DSC / coupling) pipeline for one pH.
+
+    ``pka_overrides`` maps an author residue number to a custom pKa (see
+    ``structure.load_structure``), for probing a specific residue proposed
+    to have an environment-shifted pKa (e.g. a candidate pH sensor).
+    """
     if params is None:
         params = WSMEParams()
 
     caught_warnings = []
     with warnings.catch_warnings(record=True) as caught:
         warnings.simplefilter("always")
-        structure = load_structure(pdb_path, chain=chain, model=model, ph=ph)
+        structure = load_structure(pdb_path, chain=chain, model=model, ph=ph, pka_overrides=pka_overrides)
         caught_warnings = [str(w.message) for w in caught]
 
     if ss_codes is not None:
@@ -101,6 +107,7 @@ def run_pipeline_multi_ph(
     ph_values=DEFAULT_PH_VALUES,
     chain: str = None,
     model: int = 0,
+    pka_overrides: dict = None,
     ss_codes: str = None,
     block_size: int = 4,
     params: WSMEParams = None,
@@ -110,6 +117,8 @@ def run_pipeline_multi_ph(
     progress_callback=None,
 ) -> dict:
     """Run the pipeline independently at each pH. Returns {ph: PipelineResult}.
+    ``ph_values`` may be any iterable of floats -- a fine sweep (e.g.
+    ``np.arange(6.0, 7.9, 0.2)``) works as well as a handful of values.
 
     ``progress_callback(ph, index, total)`` is called before each pH run,
     if given (useful for GUI progress bars on what can be a slow batch).
@@ -124,6 +133,7 @@ def run_pipeline_multi_ph(
             chain=chain,
             model=model,
             ph=ph,
+            pka_overrides=pka_overrides,
             ss_codes=ss_codes,
             block_size=block_size,
             params=params,

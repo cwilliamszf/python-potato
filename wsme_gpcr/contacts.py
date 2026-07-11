@@ -37,11 +37,21 @@ class ContactMap:
     elec_pairs: np.ndarray  # (K, 5): [resi, resj, dist, seqsep, energy_vacuum]
 
 
-def compute_contact_map(structure: Structure, vdw_cutoff: float = 5.0, elec_cutoff: float = 1000.0) -> ContactMap:
+def compute_contact_map(structure: Structure, vdw_cutoff: float = 5.0, elec_cutoff: float = 1000.0,
+                         exclude_atoms: np.ndarray = None) -> ContactMap:
+    """``exclude_atoms``, if given, is a boolean mask (length natoms) of
+    atoms to drop from all contact/electrostatic accounting -- e.g. the
+    side-chain atoms of a computationally alanine-mutated residue (see
+    alanine_scan.py). Excluded atoms simply can't participate in any
+    contact or charged pair; they aren't removed from the Structure
+    itself."""
     coord = structure.coord
     resindex = structure.atom_resindex
     charge = structure.charge
     nres = structure.nres
+
+    if exclude_atoms is not None:
+        charge = np.where(exclude_atoms, 0.0, charge)
 
     srcont = np.zeros((nres, nres), dtype=np.int64)
 
@@ -54,6 +64,8 @@ def compute_contact_map(structure: Structure, vdw_cutoff: float = 5.0, elec_cuto
             diff_res = ri != rj
             not_both_charged = (charge[pairs[:, 0]] == 0) | (charge[pairs[:, 1]] == 0)
             keep = diff_res & not_both_charged
+            if exclude_atoms is not None:
+                keep = keep & ~exclude_atoms[pairs[:, 0]] & ~exclude_atoms[pairs[:, 1]]
             lo = np.minimum(ri[keep], rj[keep])
             hi = np.maximum(ri[keep], rj[keep])
             np.add.at(srcont, (lo, hi), 1)
