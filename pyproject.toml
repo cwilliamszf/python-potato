@@ -23,4 +23,4 @@ gui = ["streamlit>=1.30"]
 wsme-gpcr = "wsme_gpcr.cli:main"
 
 [tool.setuptools.packages.find]
-include = ["wsme_gpcr*"]
+include = ["wsme_gpcr*", "linkage_pka*"]
