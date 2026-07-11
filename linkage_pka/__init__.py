@@ -106,6 +106,11 @@ from .gate_a import (
     GateAResult,
     compute_gate_a_rmse,
 )
+from .double_funnel import (
+    DoubleFunnelResult,
+    build_double_funnel_landscape,
+    plot_double_funnel,
+)
 
 __all__ = [
     "LinkageResult",
@@ -181,4 +186,7 @@ __all__ = [
     "ExperimentalPka",
     "GateAResult",
     "compute_gate_a_rmse",
+    "DoubleFunnelResult",
+    "build_double_funnel_landscape",
+    "plot_double_funnel",
 ]
