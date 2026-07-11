@@ -205,42 +205,47 @@ values. Same pipeline conventions as the GPR68 work throughout:
 `structure_prep.run_structure_prep` (PDBFixer + rotamer optimization) →
 `pdb2pqr30 --ff AMBER --with-ph 7.0 --titration-state-method propka` →
 `GridParams(dime=(33,33,33), glen=(65,65,65), ...)` for the protein side,
-`glen=(25,25,25)` for the model compound. Three variants run, matching
-the relaxation levers built for the GPR68 work:
+`glen=(25,25,25)` for the model compound. Four variants run, matching
+the relaxation levers built for the GPR68 work plus the new MCCE-style
+ensemble (`titration.select_rotamer_ensemble` +
+`compute_environment_energies_ensemble`, `ensemble_size=4`: top-4
+classically-ranked rotamers per microstate, Boltzmann-averaged over their
+*real* PB energies via log-sum-exp rather than picking a single winner):
 
 | Variant | RMSE (pKa units) | MAE | n compared | Pass (<1.0)? |
 |---|---|---|---|---|
 | Rigid (no relaxation) | 10.99 | 8.83 | 17 | **No** |
 | Single-residue rotamer relaxation | 10.09 | 7.60 | 17 | **No** |
 | Neighbor relaxation (8 Å radius) | 7.86 | 6.12 | 17 | **No** |
+| MCCE-style ensemble (K=4, target site only) | 11.32 | 8.77 | 17 | **No** |
 
 (`n=17`: excludes the 2 biphasic entries — Asp19, Asp21, no principled
 single-value comparison — and the 2 upper-bound entries — Asp77, Asp83,
 `<2.2` — per `compute_gate_a_rmse`'s documented defaults;
 `include_upper_bounds=True` makes every variant's RMSE worse, since both
-excluded sites come back in at +18 to +22 computed against a <2.2 bound.)
+excluded sites come back in at +18 to +24 computed against a <2.2 bound.)
 
 Per-residue detail (`expt` = real experimental pKa):
 
-| Site | expt | rigid | rotamer | neighbor |
-|---|---|---|---|---|
-| His8 | 6.52 | 1.63 | 3.26 | 10.02 |
-| Glu10 | 2.82 | 20.45 | 23.02 | 18.93 |
-| Asp40 | 3.87 | 3.80 | -3.72 | -3.68 |
-| Glu43 | 4.32 | -16.14 | -15.25 | -5.55 |
-| His46 | 5.86 | -1.34 | -0.26 | 12.98 |
-| Glu52 | 3.93 | 15.28 | 9.43 | 8.94 |
-| Glu57 | 3.49 | 6.73 | 2.02 | 2.12 |
-| Glu67 | 3.76 | 19.73 | 3.42 | 0.81 |
-| Glu73 | 3.31 | 9.35 | 9.14 | 7.54 |
-| Glu75 | 3.26 | 21.11 | 24.10 | 22.27 |
-| Asp95 | 2.16 | 17.11 | 10.70 | 9.90 |
-| Glu101 | 3.81 | 10.35 | 12.03 | 10.94 |
-| His121 | 5.30 | 0.66 | 4.76 | 7.21 |
-| Glu122 | 3.89 | 7.62 | 5.41 | 9.06 |
-| His124 | 5.73 | 4.49 | -0.37 | 1.58 |
-| Glu129 | 3.75 | 17.66 | 16.03 | 2.99 |
-| Glu135 | 3.76 | 4.07 | 5.00 | 3.23 |
+| Site | expt | rigid | rotamer | neighbor | ensemble(K=4) |
+|---|---|---|---|---|---|
+| His8 | 6.52 | 1.63 | 3.26 | 10.02 | 4.59 |
+| Glu10 | 2.82 | 20.45 | 23.02 | 18.93 | 11.53 |
+| Asp40 | 3.87 | 3.80 | -3.72 | -3.68 | -6.34 |
+| Glu43 | 4.32 | -16.14 | -15.25 | -5.55 | -16.49 |
+| His46 | 5.86 | -1.34 | -0.26 | 12.98 | -9.10 |
+| Glu52 | 3.93 | 15.28 | 9.43 | 8.94 | 8.20 |
+| Glu57 | 3.49 | 6.73 | 2.02 | 2.12 | 1.90 |
+| Glu67 | 3.76 | 19.73 | 3.42 | 0.81 | 5.75 |
+| Glu73 | 3.31 | 9.35 | 9.14 | 7.54 | 15.09 |
+| Glu75 | 3.26 | 21.11 | 24.10 | 22.27 | 20.95 |
+| Asp95 | 2.16 | 17.11 | 10.70 | 9.90 | 21.73 |
+| Glu101 | 3.81 | 10.35 | 12.03 | 10.94 | 5.14 |
+| His121 | 5.30 | 0.66 | 4.76 | 7.21 | 1.58 |
+| Glu122 | 3.89 | 7.62 | 5.41 | 9.06 | 7.24 |
+| His124 | 5.73 | 4.49 | -0.37 | 1.58 | 3.69 |
+| Glu129 | 3.75 | 17.66 | 16.03 | 2.99 | 24.41 |
+| Glu135 | 3.76 | 4.07 | 5.00 | 3.23 | -0.69 |
 
 Key observations:
 
@@ -250,9 +255,10 @@ Key observations:
    single-structure PB exaggerates buried-charge electrostatics. But
    individual sites move the *wrong* direction under relaxation just as
    often as the right one: Asp40 was nearly perfect unrelaxed (diff
-   -0.07) and got *worse* under both relaxation variants (-7.59, -7.55);
-   His46 and His8 get progressively *worse* going from rigid to neighbor
-   relaxation (His46: -7.20 → -6.12 → +7.12 magnitude).
+   -0.07) and got *worse* under every relaxed variant, monotonically so
+   (-7.59 → -7.55 → -10.21 rigid→rotamer→neighbor→ensemble); His46 and
+   His8 get progressively *worse* going from rigid to neighbor relaxation
+   (His46: -7.20 → -6.12 → +7.12 magnitude).
 2. **No clean burial (%SASA) correlation.** Asp40 (71% exposed) is
    nearly exact; Glu67 (76% exposed, comparably solvent-exposed) is off
    by 16 units unrelaxed. Deeply buried and moderately exposed sites both
@@ -261,42 +267,79 @@ Key observations:
    something more specific to each local geometry (rotamer packing,
    nearby H-bond partners, possibly propka's starting protonation-state
    assignment) is driving the site-to-site variance.
-3. **Even the best variant (neighbor relaxation, RMSE 7.86) is ~8x over
+3. **The MCCE-style ensemble (K=4) is a genuine negative result — it did
+   not improve on the best existing variant, and is in fact the worst of
+   the four (RMSE 11.32, edging out even the rigid baseline's 10.99).**
+   This is the honest, unexpected outcome of actually testing the
+   approach the earlier "next step" writeup (below) predicted would help,
+   not a result to explain away. Two real, non-mutually-exclusive reasons
+   this pipeline's implementation likely under-delivers relative to the
+   literature's MCCE-style methods:
+   - **The candidate pool comes from the same crude classical (Coulomb +
+     soft-repulsion) prescreen used for single-rotamer selection**
+     (`select_rotamer_ensemble` calls the same
+     `_enumerate_rotamer_candidates` core as
+     `optimize_rotamer_for_microstate`, just keeps the top 4 instead of
+     the top 1). If that classical score ranks candidates in a way that
+     correlates poorly with their *actual* PB energy (plausible — it has
+     no desolvation/dielectric-boundary term at all, only vacuum-like
+     Coulomb + steric repulsion), the ensemble's log-sum-exp average is
+     built from 4 samples of a possibly mis-ranked distribution rather
+     than a representative one — worse, this can happen *asymmetrically*
+     between the deprotonated and protonated microstates (different
+     charge distributions favor different candidates under the same
+     classical proxy), directly corrupting the dG_ion = E_deprot - E_prot
+     difference the whole calculation hinges on. A real fix would need
+     either a better/PB-informed prescreen or a larger K approaching
+     exhaustive enumeration (all 9 chi1/chi2 combinations) to reduce this
+     sampling bias.
+   - **This ensemble only varies the target residue's own rotamer** —
+     unlike the neighbor-relaxation variant (RMSE 7.86, still the best of
+     the four), which also relaxes real geometric neighbors within 8 Å.
+     The neighbor variant's advantage most plausibly comes from resolving
+     steric/electrostatic clashes involving *other* side chains, a
+     completely different degree of freedom the target-only ensemble
+     never touches — so the two levers are not measuring the same thing,
+     and stacking them (ensemble target + relaxed neighbors) is an
+     obvious next experiment this run does not answer.
+4. **Even the best variant (neighbor relaxation, RMSE 7.86) is ~8x over
    the 1.0-unit threshold.** This is not a borderline result nudged over
    the line by one or two outliers — nearly every buried Glu is off by
    6-20 units in every variant.
-4. **This matches, and now sharply confirms, the literature's own
-   framing of SNase as a hard benchmark.** Castañeda et al. 2009 (the
+5. **This matches, and now sharply confirms, the literature's own
+   framing of SNase as a hard benchmark** — but the naive top-K ensemble
+   tried here is not, by itself, the fix. Castañeda et al. 2009 (the
    source of this data) and the broader Garcia-Moreno lab literature
    built this dataset specifically because naive single-structure
    continuum electrostatics is known to struggle on SNase's buried
-   ionizable cluster — real published methods that do well on this
+   ionizable cluster; real published methods that do well on this
    benchmark generally use multi-conformer continuum electrostatics
-   (MCCE-style, many rotamers per residue scored simultaneously) or
-   explicit water penetration modeling, not a single relaxed rotamer per
-   site. This pipeline has so far only built the single-relaxed-rotamer
-   version of that idea, not true multi-conformer/ensemble scoring
-   (multiple rotamers per site scored simultaneously and Boltzmann-
-   averaged, MCCE-style) — the design excludes molecular dynamics but
-   *not* ensemble sampling, so this Gate A failure is best read as
-   confirming that the relaxation lever built so far is insufficient,
-   with a concrete, in-scope next step (see item 7 below), not as a
-   bug to be hunted down further within the single-rotamer approach.
+   (MCCE-style) with either much larger, PB-validated rotamer ensembles
+   or self-consistent multi-site sampling, not a 4-candidate,
+   classically-prescreened, single-residue ensemble on top of an
+   otherwise-unchanged pipeline. The negative result above is evidence
+   *for* that gap, not against the general MCCE approach.
 
-**Conclusion:** Gate A fails in every variant tried. Per the pipeline
-spec's own acceptance rule ("no ancestral-node number may be reported"
-before Gate A passes), **no absolute pKa or Δn_H(pH) number this pipeline
-has produced — for SNase or for GPR68 — should be treated as
-quantitatively calibrated.** The GPR68 results earlier in this document
-(ECL2 cluster, D2.50/Asp282/Glu103 cluster, Na+ ion effect) remain useful
-as *pipeline-mechanics* validation (the code runs correctly, responds to
-physically sensible perturbations in the right direction, e.g. Na+
-raising a nearby Asp's pKa) but not as validated predictions of GPR68's
-real proton-sensing thermodynamics. Closing this gap most plausibly needs
-a multi-conformer/MCCE-style ensemble extension (score multiple rotamers
-per site simultaneously, Boltzmann-weighted, rather than picking one) —
-in scope (no MD required), but a substantial new capability, not a
-parameter tweak to what exists today.
+**Conclusion:** Gate A fails in every variant tried, including the new
+MCCE-style ensemble, which performed worse than the simpler neighbor-
+relaxation variant. Per the pipeline spec's own acceptance rule ("no
+ancestral-node number may be reported" before Gate A passes), **no
+absolute pKa or Δn_H(pH) number this pipeline has produced — for SNase or
+for GPR68 — should be treated as quantitatively calibrated.** The GPR68
+results earlier in this document (ECL2 cluster, D2.50/Asp282/Glu103
+cluster, Na+ ion effect) remain useful as *pipeline-mechanics* validation
+(the code runs correctly, responds to physically sensible perturbations
+in the right direction, e.g. Na+ raising a nearby Asp's pKa) but not as
+validated predictions of GPR68's real proton-sensing thermodynamics. A
+multi-conformer/MCCE-style ensemble extension has now been built
+(`select_rotamer_ensemble`, `compute_environment_energies_ensemble`) and
+run against Gate A -- it did not close the gap at K=4, target-site-only
+(see the negative result above). Closing this gap further most plausibly
+needs either a larger/PB-validated candidate pool (not just a bigger
+classically-prescreened K) or combining the ensemble with neighbor
+relaxation (the two levers address different degrees of freedom and have
+not yet been tried together) -- both are concrete, in-scope follow-ups,
+not parameter tweaks to what exists today.
 
 ## Code artifacts produced (all tested, all in `linkage_pka/`)
 
@@ -348,8 +391,19 @@ parameter tweak to what exists today.
   docstring), `compute_gate_a_rmse` (biphasic/upper-bound handling,
   per-residue breakdown, `skipped` list with reasons). Run against the
   real 1STN structure — see "Gate A calibration: FAIL" above.
+- `titration.select_rotamer_ensemble`, `titration._enumerate_rotamer_candidates`
+  (shared refactor with `optimize_rotamer_for_microstate`, no behavior
+  change to the existing single-best-candidate path — verified by the
+  existing rotamer test suite passing unmodified),
+  `titration.compute_environment_energies_ensemble` — MCCE-style top-K
+  Boltzmann-averaged rotamer ensemble (log-sum-exp over real PB energies,
+  not the classical proxy used only to prune the candidate pool), threaded
+  through `compute_intrinsic_pka` via `ensemble_size` (mutually exclusive
+  with `optimize_rotamer`/`neighbor_radius_ang`). Run against Gate A at
+  K=4: did not improve on the existing best variant — see "Gate A
+  calibration: FAIL" above for the full negative-result writeup.
 
-Full test suite: 194 passed as of this writing (`pytest` from the repo
+Full test suite: 203 passed as of this writing (`pytest` from the repo
 root).
 
 ## Na+ ion comparison across the full pH grid (superseded -- see below)
@@ -474,11 +528,20 @@ cluster specifically.
    beyond the ~9-12 Å searched so far — a genuinely complete treatment
    would need a wider coupling search across the whole receptor, which is
    real-production-run territory, not a smoke test.
-7. **Given the Gate A failure, the highest-value next step is almost
-   certainly closing the calibration gap, not further GPR68 exploration.**
-   The per-site variance (no clean %SASA correlation, sign flips under
-   relaxation) suggests the fix needs to go beyond a single relaxed
-   rotamer per site — most plausibly a multi-conformer/MCCE-style
-   extension (score many rotamers simultaneously per microstate rather
-   than picking one), which would be new pipeline scope, not a parameter
-   tweak to what exists today.
+7. ~~Given the Gate A failure, the highest-value next step is almost
+   certainly closing the calibration gap~~ — built and run
+   (`select_rotamer_ensemble`, `compute_environment_energies_ensemble`,
+   MCCE-style top-K Boltzmann-averaged ensemble): **did not close the gap
+   at K=4, target-site-only** (RMSE 11.32, worse than every other
+   variant — see "Gate A calibration: FAIL" above for the full negative-
+   result writeup and the two likely reasons: a classically-prescreened
+   candidate pool that may rank poorly against real PB energy, and no
+   overlap with the neighbor-relaxation lever that gave the best result
+   so far). Concrete untried follow-ups: (a) combine the ensemble with
+   neighbor relaxation in one run: Boltzmann-average the target site
+   while relaxing real geometric neighbors, rather than either lever
+   alone; (b) increase K toward the full 9-candidate chi1/chi2 space to
+   test whether the negative result at K=4 was a sampling-size artifact
+   or a prescreen-ranking-quality problem; (c) a PB-informed (rather than
+   purely classical) candidate ranking, which would need a cheap PB
+   proxy or a way to batch multiple candidates per APBS call.
