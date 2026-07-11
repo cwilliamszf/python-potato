@@ -67,6 +67,15 @@ from .multisite import (
     solve_cluster_titration,
     solve_titration,
 )
+from .pipeline import (
+    ActivationLinkageResult,
+    StructureTitrationResult,
+    compute_activation_linkage,
+    find_coupled_pairs,
+    identify_titratable_sites,
+    residue_min_distance,
+    run_structure_titration,
+)
 
 __all__ = [
     "LinkageResult",
@@ -115,4 +124,11 @@ __all__ = [
     "cluster_sites",
     "solve_cluster_titration",
     "solve_titration",
+    "ActivationLinkageResult",
+    "StructureTitrationResult",
+    "compute_activation_linkage",
+    "find_coupled_pairs",
+    "identify_titratable_sites",
+    "residue_min_distance",
+    "run_structure_titration",
 ]
