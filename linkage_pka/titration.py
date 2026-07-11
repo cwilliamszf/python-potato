@@ -266,6 +266,136 @@ def place_titratable_hydrogen(atoms: list, resnum: int, resname: str) -> np.ndar
     return parent_pos + geom["bond_length"] * (direction / norm)
 
 
+# --------------------------------------------------------- Na+ ion modeling --
+# Pipeline spec step 4: explicit Na+ ion at the D2.50 sodium pocket
+# (membrane_frame.find_d250), with/without comparison.
+#
+# PDB2PQR's bundled AMBER.DAT (used everywhere else in this module) has no
+# monatomic ion entries at all (confirmed: no "NA"/"Na+"/"SOD" residue
+# present in the file) -- ff99/ff14 ion parameters instead live in the
+# water-model XML files bundled with OpenMM's own amber14 force field
+# (already a dependency of this pipeline's structure_prep step), paired
+# with their compatible water model. ``load_na_ion_parameters`` parses
+# ``amber14/tip3p.xml`` directly at runtime -- the same real, versioned,
+# Joung-Cheatham-parameterized data OpenMM itself would use, not a
+# separate or remembered number.
+
+_ION_POCKET_GEOMETRY = {
+    "ASP": {"parent": "CG", "oxygens": ("OD1", "OD2")},
+    "GLU": {"parent": "CD", "oxygens": ("OE1", "OE2")},
+}
+
+
+def _na_ion_ff_path() -> Path:
+    import openmm.app as app
+    return Path(app.__file__).parent / "data" / "amber14" / "tip3p.xml"
+
+
+def load_na_ion_parameters() -> tuple:
+    """Na+ ion (charge, PB radius in Angstrom), parsed from OpenMM's
+    bundled ``amber14/tip3p.xml``.
+
+    The XML gives the LJ sigma (nm, the potential's zero-crossing
+    distance); every other atom's "radius" already used in this module
+    (from AMBER.DAT) is Rmin/2, not sigma directly -- confirmed by
+    cross-checking a known atom type (aliphatic carbon CT: AMBER.DAT
+    lists 1.908 Angstrom, matching the standard AMBER Rmin/2 for that
+    type, not its sigma). Converted here the same way for consistency:
+    Rmin/2 = sigma * 2^(1/6) / 2.
+    """
+    import xml.etree.ElementTree as ET
+
+    root = ET.parse(_na_ion_ff_path()).getroot()
+
+    charge, atom_type = None, None
+    for residue in root.iter("Residue"):
+        if residue.get("name") == "NA":
+            atom = residue.find("Atom")
+            charge, atom_type = float(atom.get("charge")), atom.get("type")
+            break
+    if charge is None:
+        raise ValueError(f"no Na+ ('NA') residue found in {_na_ion_ff_path()}")
+
+    sigma_nm = None
+    for atom_elem in root.iter("Atom"):
+        if atom_elem.get("type") == atom_type and atom_elem.get("sigma") is not None:
+            sigma_nm = float(atom_elem.get("sigma"))
+            break
+    if sigma_nm is None:
+        raise ValueError(f"no LJ sigma found for atom type {atom_type!r} in {_na_ion_ff_path()}")
+
+    radius_ang = (sigma_nm * 10.0) * (2.0 ** (1.0 / 6.0)) / 2.0
+    return charge, radius_ang
+
+
+def place_na_ion(atoms: list, resnum: int, resname: str = "ASP", contact_distance_ang: float = None) -> np.ndarray:
+    """3D position for an explicit Na+ ion coordinated by the carboxylate
+    of D2.50 (or, rarely, E2.50 -- see ``membrane_frame.find_d250``):
+    along the bisector of the two carboxylate oxygens, extended away from
+    the carbon they're attached to, at the standard Lennard-Jones
+    combining-rule contact distance -- Na+'s own radius
+    (``load_na_ion_parameters``) plus the oxygen's actual AMBER radius
+    (read directly from ``atoms``, not assumed) -- i.e. where the ion's
+    and the oxygen's van der Waals spheres just touch. Both radii are
+    real, sourced force-field values, so this distance is itself
+    defensible, not an arbitrarily chosen "ionic bond length" pulled from
+    memory.
+    """
+    geom = _ION_POCKET_GEOMETRY[resname]
+    res_atoms = {a.name: a for a in atoms if a.resnum == resnum}
+    required = (geom["parent"],) + geom["oxygens"]
+    missing = [n for n in required if n not in res_atoms]
+    if missing:
+        raise KeyError(f"resnum {resnum} ({resname}) is missing atoms {missing} needed to place the Na+ ion")
+
+    parent_pos = np.array([res_atoms[geom["parent"]].x, res_atoms[geom["parent"]].y, res_atoms[geom["parent"]].z])
+    o1_atom, o2_atom = res_atoms[geom["oxygens"][0]], res_atoms[geom["oxygens"][1]]
+    o1 = np.array([o1_atom.x, o1_atom.y, o1_atom.z])
+    o2 = np.array([o2_atom.x, o2_atom.y, o2_atom.z])
+    midpoint = (o1 + o2) / 2.0
+
+    direction = midpoint - parent_pos
+    norm = np.linalg.norm(direction)
+    if norm < 1e-6:
+        raise ValueError(f"resnum {resnum} ({resname}): degenerate geometry, carboxylate oxygens "
+                          f"coincide with {geom['parent']} -- cannot orient the Na+ ion")
+    direction = direction / norm
+
+    if contact_distance_ang is None:
+        _, na_radius = load_na_ion_parameters()
+        contact_distance_ang = na_radius + o1_atom.radius
+
+    return midpoint + contact_distance_ang * direction
+
+
+def build_na_ion_atom(atoms: list, resnum: int, resname: str = "ASP", serial: int = -1) -> "PqrAtom":
+    """A ready-to-insert Na+ ``PqrAtom`` at the D2.50 (or E2.50) sodium
+    pocket. Append this to a ``protein_atoms`` list before calling
+    ``compute_intrinsic_pka``/``compute_pairwise_coupling``/
+    ``compute_cluster_joint_energies`` to include the ion in that PB
+    calculation; omit it to exclude it. Running the same calculation both
+    ways and comparing -- e.g. via ``linkage.sensitivity_band`` on the
+    resulting ``LinkageResult``s, or a direct before/after diff -- is the
+    pipeline spec's required "with/without" comparison; this function
+    only builds the one new atom that comparison hinges on, it does not
+    run the comparison itself.
+
+    Given a sentinel ``resnum=-1`` (never a real 1-indexed protein
+    residue) and ``resname="NA"`` so it cannot be mistaken for part of
+    the D2.50 residue itself, or accidentally picked up by resnum-based
+    neighbor lookups (e.g. ``build_model_compound_atoms``'s
+    resnum-1/resnum+1 capping, or ``pipeline.identify_titratable_sites``,
+    which only recognizes real titratable canonical resnames and
+    correctly ignores "NA").
+    """
+    charge, radius = load_na_ion_parameters()
+    position = place_na_ion(atoms, resnum, resname)
+    chain = next((a.chain for a in atoms if a.resnum == resnum), "A")
+    return PqrAtom(serial=serial, name="NA", resname="NA", resnum=-1,
+                   x=float(position[0]), y=float(position[1]), z=float(position[2]),
+                   charge=charge, radius=radius, chain=chain)
+
+
 # Coulomb's constant, ke^2, in units of kJ*Angstrom/(mol*elementary_charge^2)
 # -- i.e. E[kJ/mol] = COULOMB_CONSTANT_KJ_ANG_PER_MOL_E2 * q1*q2 / (dielectric * r[Angstrom]).
 # Derived from 1/(4*pi*eps0) = 8.9875517923e9 N*m^2/C^2, converted via

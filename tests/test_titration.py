@@ -15,6 +15,7 @@ from linkage_pka.titration import (
     _pairwise_repulsion_energy,
     build_microstate,
     build_model_compound_atoms,
+    build_na_ion_atom,
     charge_delta,
     compute_cluster_joint_energies,
     compute_intrinsic_pka,
@@ -22,8 +23,10 @@ from linkage_pka.titration import (
     compute_solvation_energy,
     find_relaxation_neighbors,
     load_amber_charges,
+    load_na_ion_parameters,
     optimize_rotamer_for_microstate,
     optimize_rotamers_with_neighbors,
+    place_na_ion,
     place_titratable_hydrogen,
     read_pqr,
     write_pqr,
@@ -689,3 +692,122 @@ def test_compute_intrinsic_pka_with_neighbor_relaxation_runs_and_is_finite(ci2_p
         optimize_rotamer=True, neighbor_radius_ang=8.0,
     )
     assert np.isfinite(result.intrinsic_pka)
+
+
+# --------------------------------------------------------- Na+ ion modeling --
+
+def _synthetic_glu_atoms(resnum=1):
+    coords = {
+        "N": np.array([0.0, 0.0, 0.0]),
+        "CA": np.array([1.46, 0.0, 0.0]),
+        "CB": np.array([2.0, 1.4, 0.0]),
+        "CG": np.array([3.0, 1.6, 0.5]),
+        "CD": np.array([4.0, 2.5, 0.0]),
+        "OE1": np.array([4.5, 3.5, 0.0]),
+        "OE2": np.array([4.3, 1.5, 1.2]),
+    }
+    charges = {"N": -0.52, "CA": 0.04, "CB": -0.02, "CG": 0.01, "CD": 0.62, "OE1": -0.7, "OE2": -0.7}
+    return [
+        PqrAtom(serial=i + 1, name=name, resname="GLU", resnum=resnum,
+                x=float(pos[0]), y=float(pos[1]), z=float(pos[2]), charge=charges[name], radius=1.7)
+        for i, (name, pos) in enumerate(coords.items())
+    ]
+
+
+def test_load_na_ion_parameters_are_physically_reasonable():
+    charge, radius = load_na_ion_parameters()
+    assert charge == pytest.approx(1.0, abs=1e-9)  # Na+ is a monovalent cation, exactly
+    assert 0.5 < radius < 3.0  # a real ionic radius, not a placeholder/degenerate value
+
+
+def test_place_na_ion_roughly_equidistant_from_both_oxygens():
+    # A chemically symmetric carboxylate (OD1/OD2 truly equidistant from
+    # CG) -- _synthetic_asp_atoms' geometry is asymmetric (built for
+    # rotamer tests, where that didn't matter), so it isn't a valid
+    # fixture for a bisector-symmetry claim.
+    atoms = [
+        PqrAtom(serial=1, name="CG", resname="ASP", resnum=1, x=0.0, y=0.0, z=0.0, charge=0.62, radius=1.9),
+        PqrAtom(serial=2, name="OD1", resname="ASP", resnum=1, x=1.0, y=0.75, z=0.0, charge=-0.7, radius=1.6612),
+        PqrAtom(serial=3, name="OD2", resname="ASP", resnum=1, x=1.0, y=-0.75, z=0.0, charge=-0.7, radius=1.6612),
+    ]
+    pos = place_na_ion(atoms, 1, "ASP")
+    od1 = next(a for a in atoms if a.name == "OD1")
+    od2 = next(a for a in atoms if a.name == "OD2")
+    d1 = np.linalg.norm(pos - np.array([od1.x, od1.y, od1.z]))
+    d2 = np.linalg.norm(pos - np.array([od2.x, od2.y, od2.z]))
+    assert d1 == pytest.approx(d2, rel=1e-6)  # placed exactly on the bisector by construction
+
+
+def test_place_na_ion_uses_lj_combining_rule_contact_distance():
+    atoms = _synthetic_asp_atoms()
+    pos = place_na_ion(atoms, 1, "ASP")
+    od1 = next(a for a in atoms if a.name == "OD1")
+    od2 = next(a for a in atoms if a.name == "OD2")
+    midpoint = np.array([(od1.x + od2.x) / 2, (od1.y + od2.y) / 2, (od1.z + od2.z) / 2])
+
+    _, na_radius = load_na_ion_parameters()
+    expected_dist_from_midpoint = na_radius + od1.radius  # od1/od2 share the same AMBER radius
+    assert np.linalg.norm(pos - midpoint) == pytest.approx(expected_dist_from_midpoint, rel=1e-6)
+
+
+def test_place_na_ion_works_for_glu():
+    atoms = _synthetic_glu_atoms()
+    pos = place_na_ion(atoms, 1, "GLU")
+    assert np.all(np.isfinite(pos))
+
+
+def test_place_na_ion_missing_atoms_raises():
+    atoms = [a for a in _synthetic_asp_atoms() if a.name != "OD1"]
+    with pytest.raises(KeyError):
+        place_na_ion(atoms, 1, "ASP")
+
+
+def test_build_na_ion_atom_has_sentinel_identity_and_real_charge():
+    atoms = _synthetic_asp_atoms()
+    ion = build_na_ion_atom(atoms, 1, "ASP")
+    assert ion.resname == "NA"
+    assert ion.resnum == -1  # never collides with a real 1-indexed protein resnum
+    assert ion.charge == pytest.approx(1.0, abs=1e-9)
+    _, expected_radius = load_na_ion_parameters()
+    assert ion.radius == pytest.approx(expected_radius)
+
+
+def test_build_na_ion_atom_excluded_from_titratable_site_identification():
+    from linkage_pka.pipeline import identify_titratable_sites
+    atoms = _synthetic_asp_atoms()
+    ion = build_na_ion_atom(atoms, 1, "ASP")
+    sites = identify_titratable_sites(atoms + [ion])
+    assert (-1, "NA") not in sites
+    assert all(resname != "NA" for _, resname in sites)
+
+
+@pytest.mark.skipif(not APBS_AVAILABLE, reason="requires apbs and pdb2pqr30 on PATH")
+def test_na_ion_changes_pka_with_vs_without(ci2_pqr, tmp_path):
+    """The actual with/without comparison the pipeline spec asks for:
+    running the same site's intrinsic pKa calculation with and without
+    the modeled ion appended to protein_atoms must give two finite,
+    genuinely different results -- proving the ion is actually being
+    picked up by the PB solve, not silently ignored."""
+    atoms = read_pqr(ci2_pqr)
+    resnum = sorted({a.resnum for a in atoms if a.resname == "ASP"})[0]
+    h_pos = place_titratable_hydrogen(atoms, resnum, "ASP")
+    ion = build_na_ion_atom(atoms, resnum, "ASP")
+
+    protein_grid = GridParams(dime=(33, 33, 33), glen=(50.0, 50.0, 50.0), gcent="mol 1",
+                               pdie=2.0, sdie=78.54, ion_strength_m=0.150)
+    model_grid = GridParams(dime=(33, 33, 33), glen=(25.0, 25.0, 25.0), gcent="mol 1",
+                             pdie=2.0, sdie=78.54, ion_strength_m=0.150)
+
+    without_ion = compute_intrinsic_pka(
+        atoms, resnum, "ASP", frame=None,
+        protein_grid_params=protein_grid, model_grid_params=model_grid,
+        work_dir=tmp_path / "without_ion", extra_h_position=h_pos,
+    )
+    with_ion = compute_intrinsic_pka(
+        atoms + [ion], resnum, "ASP", frame=None,
+        protein_grid_params=protein_grid, model_grid_params=model_grid,
+        work_dir=tmp_path / "with_ion", extra_h_position=h_pos,
+    )
+    assert np.isfinite(without_ion.intrinsic_pka)
+    assert np.isfinite(with_ion.intrinsic_pka)
+    assert without_ion.intrinsic_pka != pytest.approx(with_ion.intrinsic_pka, abs=1e-6)
