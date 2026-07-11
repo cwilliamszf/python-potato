@@ -15,10 +15,26 @@ from .linkage import (
     protonation_fraction,
     sensitivity_band,
 )
+from .structure_prep import (
+    CHI_ATOMS,
+    IONIZABLE_RESNAMES,
+    PrepResult,
+    RotamerChoice,
+    measure_chi,
+    optimize_rotamers,
+    run_structure_prep,
+)
 
 __all__ = [
     "LinkageResult",
     "compute_linkage",
     "protonation_fraction",
     "sensitivity_band",
+    "CHI_ATOMS",
+    "IONIZABLE_RESNAMES",
+    "PrepResult",
+    "RotamerChoice",
+    "measure_chi",
+    "optimize_rotamers",
+    "run_structure_prep",
 ]

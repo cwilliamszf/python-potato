@@ -18,6 +18,7 @@ dependencies = [
 [project.optional-dependencies]
 dev = ["pytest>=7.0"]
 gui = ["streamlit>=1.30"]
+structprep = ["openmm>=8.5", "pdbfixer>=1.12"]
 
 [project.scripts]
 wsme-gpcr = "wsme_gpcr.cli:main"
