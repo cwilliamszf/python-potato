@@ -274,11 +274,14 @@ Key observations:
    benchmark generally use multi-conformer continuum electrostatics
    (MCCE-style, many rotamers per residue scored simultaneously) or
    explicit water penetration modeling, not a single relaxed rotamer per
-   site. This pipeline's design deliberately excludes exactly that
-   (single fixed structure, optional *single*-rotamer relaxation, no
-   ensemble sampling, no MD) — so this Gate A failure is best read as
-   confirming a real, expected limitation of the pipeline's chosen scope,
-   not a bug to be hunted down further within that scope.
+   site. This pipeline has so far only built the single-relaxed-rotamer
+   version of that idea, not true multi-conformer/ensemble scoring
+   (multiple rotamers per site scored simultaneously and Boltzmann-
+   averaged, MCCE-style) — the design excludes molecular dynamics but
+   *not* ensemble sampling, so this Gate A failure is best read as
+   confirming that the relaxation lever built so far is insufficient,
+   with a concrete, in-scope next step (see item 7 below), not as a
+   bug to be hunted down further within the single-rotamer approach.
 
 **Conclusion:** Gate A fails in every variant tried. Per the pipeline
 spec's own acceptance rule ("no ancestral-node number may be reported"
@@ -289,10 +292,11 @@ quantitatively calibrated.** The GPR68 results earlier in this document
 as *pipeline-mechanics* validation (the code runs correctly, responds to
 physically sensible perturbations in the right direction, e.g. Na+
 raising a nearby Asp's pKa) but not as validated predictions of GPR68's
-real proton-sensing thermodynamics. Closing this gap would require
-capability outside this pipeline's stated scope (no MD, no ensemble
-sampling) — most plausibly a multi-conformer/MCCE-style extension, which
-is a substantial new capability, not a parameter tweak.
+real proton-sensing thermodynamics. Closing this gap most plausibly needs
+a multi-conformer/MCCE-style ensemble extension (score multiple rotamers
+per site simultaneously, Boltzmann-weighted, rather than picking one) —
+in scope (no MD required), but a substantial new capability, not a
+parameter tweak to what exists today.
 
 ## Code artifacts produced (all tested, all in `linkage_pka/`)
 

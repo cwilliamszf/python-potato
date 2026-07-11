@@ -1,10 +1,15 @@
 """linkage_pka: Wyman/Tanford proton-linkage analysis of GPCR activation --
 does acidification thermodynamically favor the active state, and by how
 many protons -- from Poisson-Boltzmann pKa's on fixed active/inactive
-structures. No molecular dynamics, no conformational ensemble sampling --
-only optional, explicit per-microstate side-chain rotamer relaxation (see
-``titration.optimize_rotamer_for_microstate``), always reported alongside
-the rigid-geometry result, never silently substituted for it.
+structures. No molecular dynamics (no trajectories, no time integration).
+Conformational ensemble sampling (multi-conformer/rotamer-library scoring,
+MCCE-style) is in scope and, per Gate A (see ``gate_a.py``,
+``FINDINGS.md``), necessary: single-structure PB with at most one relaxed
+rotamer per microstate (``titration.optimize_rotamer_for_microstate``)
+fails Gate A's real-experimental-data acceptance test by 8-11x, so an
+ensemble/multi-conformer extension is the next real step, not yet built.
+Every relaxation variant is always reported alongside the rigid-geometry
+result, never silently substituted for it.
 
 This is a deliberately separate tool from ``wsme_gpcr``: WSME normalizes
 each pH ensemble's partition function to 1 internally, which divides out
