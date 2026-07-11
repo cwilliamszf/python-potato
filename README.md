@@ -56,6 +56,16 @@ function. From that you get:
   element-wise, with no realignment step. See
   `alanine_scan.estimate_scan_seconds` for a time estimate before running
   a full receptor-wide scan (tens of minutes for ~250-300 residues).
+  Mutation effects on coupling are themselves pH-dependent (pH changes
+  which atoms carry a titratable charge, which feeds into the contact map
+  each mutant is compared against), so `run_alanine_scan_pipeline_multi_ph`
+  runs an independent, complete scan at every pH in a sweep — one full
+  scan per pH value, not an approximation — and
+  `alanine_scan.ph_sensitivity_table` ranks mutation sites by how much
+  their perturbation swings across pH, flagging candidates whose apparent
+  coupling role looks pH-modulated. This multiplies the run time by the
+  number of pH values, so it's opt-in (`--ala-all-ph` / the GUI checkbox)
+  rather than the default.
 
 ## What's different from the MATLAB original
 
@@ -134,6 +144,17 @@ top-hits table ranked by total perturbation magnitude, and, per top hit,
 a ΔΔG+ vs. distance plot and a 3D structure map — with download buttons
 for the underlying data.
 
+Additionally check **Run alanine scan across all pH values** (only
+enabled with **Run for all pH values** also checked) to run a complete,
+independent alanine scan at every pH instead of once — mutation effects
+on coupling are themselves pH-dependent, so this is the real answer to
+"how does this mutation's effect change with pH," at the cost of
+multiplying the scan time by the number of pH values. Results add a
+mutational-response-vs-pH overlay plot and a pH-sensitivity table
+(mutation sites ranked by how much their perturbation swings across pH —
+candidate conformational pH sensors), plus a per-pH tab with the full
+single-pH breakdown above for each pH.
+
 ### CLI
 
 ```bash
@@ -141,6 +162,7 @@ wsme-gpcr examples/data/CI2.pdb --preset soluble --out-dir out/
 wsme-gpcr my_gpcr.pdb --preset membrane --block-size 4 --dsc --coupling --out-dir out/
 wsme-gpcr my_gpcr.pdb --preset membrane --all-ph --out-dir out/   # pH 7/5/3.5/2 in one run
 wsme-gpcr my_gpcr.pdb --preset membrane --alanine-scan --out-dir out/   # full receptor-wide Ala scan
+wsme-gpcr my_gpcr.pdb --preset membrane --all-ph --alanine-scan --ala-all-ph --out-dir out/   # Ala scan at every pH
 ```
 
 `--preset membrane` (default) uses dielectric=4 and the GPCR-tuned energy
@@ -171,7 +193,15 @@ estimate before running either way), or `--ala-positions 45,102,150` to
 target specific author residue numbers. `--ala-top-n` controls how many
 top hits get their own distance/structure-map plots (default 5). It runs
 at the single `--ph` value even when combined with `--all-ph`/`--ph-values`
-(a mutational scan is not repeated across a pH sweep).
+(a mutational scan is not repeated across a pH sweep) -- unless `--ala-all-ph`
+is also given (requires `--all-ph`/`--ph-values`), which reruns the entire
+scan independently at every pH value instead: each pH gets its own
+`alanine_scan/pH_<value>/` subdirectory with the same files as above, plus
+top-level `pH_Sensitivity.txt` (mutation sites ranked by how much their
+perturbation swings across pH -- large swings flag candidate conformational
+pH sensors) and `MutationalResponse_vs_pH.png` overlaying every pH's
+mutational-response curve. This is a long-running, receptor-wide-scan-times-N-pH
+analysis -- the CLI prints a total time estimate before running.
 
 ### Library
 
@@ -231,6 +261,21 @@ The lower-level building blocks (`alanine_scan.scannable_positions`,
 compose the same way as the rest of the library if you need finer control
 — e.g. reusing an already-loaded `Structure`/`BlockModel` across many
 scans, or wiring scan progress into your own UI via `progress_callback`.
+
+Since mutation effects on coupling are themselves pH-dependent,
+`run_alanine_scan_pipeline_multi_ph` reruns the full scan independently at
+each pH (one full scan per pH value — expensive, but the complete answer
+rather than an approximation), and `alanine_scan.ph_sensitivity_table`
+ranks mutation sites by how much their perturbation swings across pH:
+
+```python
+from wsme_gpcr import run_alanine_scan_pipeline_multi_ph
+from wsme_gpcr.alanine_scan import ph_sensitivity_table
+
+results = run_alanine_scan_pipeline_multi_ph("my_gpcr.pdb", ph_values=(7.4, 7.0, 6.5, 6.0), max_positions=40)
+scan_by_ph = {ph: pr.scan for ph, pr in results.items()}
+print(ph_sensitivity_table(scan_by_ph, n=10)[:5])   # sites whose effect shifts most across pH
+```
 
 ## Performance notes
 

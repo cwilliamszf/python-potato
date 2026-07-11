@@ -313,6 +313,28 @@ def plot_ddg_structure_map(scan_result: AlanineScanResult, resnum: int, ax=None,
     return ax
 
 
+def plot_mutational_response_comparison(scan_by_ph: dict, ax=None, **kwargs):
+    """Overlay each pH's mean mutational response (MR_mean) per block --
+    ``scan_by_ph`` maps pH (or any label) -> AlanineScanResult, from
+    independent per-pH scans. A block whose typical mutational
+    sensitivity shifts across pH is a coupling-level readout of
+    pH-dependence, complementary to the per-residue view in
+    ``ionizable_network``."""
+    import matplotlib.pyplot as plt
+
+    if ax is None:
+        _, ax = plt.subplots(figsize=(10, 5))
+    for key in sorted(scan_by_ph, key=lambda k: (isinstance(k, str), k)):
+        scan = scan_by_ph[key]
+        nb = len(scan.MR_mean)
+        ax.plot(np.arange(nb), scan.MR_mean, marker="o", markersize=3, linewidth=1.5, label=str(key), **kwargs)
+    ax.axhline(0, color="k", linewidth=0.5)
+    ax.set_xlabel("Block Index")
+    ax.set_ylabel(r"Mutational Response, $\langle\Delta\Delta G^+\rangle$ (kJ/mol)")
+    ax.legend(title="pH")
+    return ax
+
+
 def plot_dsc(dsc_result: DSCResult, ax=None, **kwargs):
     import matplotlib.pyplot as plt
 

@@ -4,6 +4,7 @@ from pathlib import Path
 from wsme_gpcr.alanine_scan import (
     alanine_exclude_mask,
     estimate_scan_seconds,
+    ph_sensitivity_table,
     run_alanine_scan,
     scannable_positions,
     subsample_positions,
@@ -132,3 +133,27 @@ def test_top_hits_and_distance_profile():
     # distance from a block to itself must be 0 (its own centroid)
     own_block = result.block_of_position[resnum]
     assert dist[own_block] == 0.0
+
+
+def test_ph_sensitivity_table_ranks_by_swing_across_ph():
+    params = WSMEParams.soluble_protein_defaults()
+    scan_by_ph = {}
+    for ph in (7.0, 5.0):
+        s = load_structure(CI2, ph=ph)
+        ss = assign_secondary_structure(s)
+        positions = scannable_positions(s)[:5]
+        scan_by_ph[ph] = run_alanine_scan(s, ss, params, positions, block_size=4)
+
+    rows = ph_sensitivity_table(scan_by_ph, n=3)
+    assert len(rows) > 0
+    for row in rows:
+        assert set(row["scores_by_ph"].keys()) == {7.0, 5.0}
+        assert row["ph_spread"] >= 0.0
+    # descending by ph_spread
+    spreads = [r["ph_spread"] for r in rows]
+    assert spreads == sorted(spreads, reverse=True)
+    # every reported resnum must have appeared in at least one pH's top hits
+    expected = set()
+    for scan in scan_by_ph.values():
+        expected.update(r for r, _ in scan.top_hits(3))
+    assert set(r["resnum"] for r in rows) == expected

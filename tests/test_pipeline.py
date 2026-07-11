@@ -2,7 +2,13 @@ from pathlib import Path
 
 import numpy as np
 
-from wsme_gpcr.pipeline import DEFAULT_PH_VALUES, run_pipeline, run_pipeline_multi_ph
+from wsme_gpcr.pipeline import (
+    DEFAULT_PH_VALUES,
+    run_alanine_scan_pipeline,
+    run_alanine_scan_pipeline_multi_ph,
+    run_pipeline,
+    run_pipeline_multi_ph,
+)
 from wsme_gpcr.wsme import WSMEParams
 
 CI2 = Path(__file__).parent.parent / "examples" / "data" / "CI2.pdb"
@@ -45,3 +51,27 @@ def test_run_pipeline_multi_ph_covers_all_default_values():
     # (charge assignment changes both the contact map and electrostatics).
     zfins = {ph: pr.result.zfin for ph, pr in results.items()}
     assert len(set(zfins.values())) > 1
+
+
+def test_run_alanine_scan_pipeline_smoke():
+    scan_pr = run_alanine_scan_pipeline(CI2, ph=7.0, params=WSMEParams.soluble_protein_defaults(), max_positions=3)
+    assert scan_pr.ph == 7.0
+    assert len(scan_pr.scan.positions) == 3
+    nb = scan_pr.block_model.nblocks
+    assert scan_pr.scan.wt_chi_plus.shape == (nb, nb)
+
+
+def test_run_alanine_scan_pipeline_multi_ph_runs_independently_per_ph():
+    ph_values = (7.0, 5.0)
+    results = run_alanine_scan_pipeline_multi_ph(
+        CI2, ph_values=ph_values, params=WSMEParams.soluble_protein_defaults(), max_positions=3,
+    )
+    assert set(results.keys()) == set(ph_values)
+    for ph, scan_pr in results.items():
+        assert scan_pr.ph == ph
+        assert len(scan_pr.scan.positions) == 3
+
+    # Different pH -> different structure/coupling, so the wild-type chi_plus
+    # baselines should generally differ (not literally re-running the same scan).
+    wt_matrices = [scan_pr.scan.wt_chi_plus for scan_pr in results.values()]
+    assert not np.allclose(wt_matrices[0], wt_matrices[1], equal_nan=True)

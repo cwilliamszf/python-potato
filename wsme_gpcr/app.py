@@ -13,8 +13,14 @@ import matplotlib.pyplot as plt
 import numpy as np
 import streamlit as st
 
-from wsme_gpcr.alanine_scan import estimate_scan_seconds, scannable_positions
-from wsme_gpcr.pipeline import DEFAULT_PH_VALUES, run_alanine_scan_pipeline, run_pipeline, run_pipeline_multi_ph
+from wsme_gpcr.alanine_scan import estimate_scan_seconds, ph_sensitivity_table, scannable_positions
+from wsme_gpcr.pipeline import (
+    DEFAULT_PH_VALUES,
+    run_alanine_scan_pipeline,
+    run_alanine_scan_pipeline_multi_ph,
+    run_pipeline,
+    run_pipeline_multi_ph,
+)
 from wsme_gpcr.plotting import (
     plot_1d_profile,
     plot_1d_profile_comparison,
@@ -27,6 +33,7 @@ from wsme_gpcr.plotting import (
     plot_ddg_vs_distance,
     plot_dsc,
     plot_mutational_response,
+    plot_mutational_response_comparison,
     plot_residue_folding_probability,
 )
 from wsme_gpcr.wsme import WSMEParams
@@ -116,6 +123,16 @@ with st.sidebar:
         "Runs at the single 'pH (charge assignment)' value above, even if 'Run for all pH values' is checked "
         "(a mutational scan isn't repeated per pH).",
     )
+    ala_all_ph_scan = st.checkbox(
+        "Run alanine scan across all pH values", value=False,
+        disabled=not (run_ala_scan and all_ph),
+        help="Mutation effects on coupling are themselves pH-dependent (pH changes which atoms are "
+        "charged, which feeds the contact map each mutant is compared against), so this runs a "
+        "*complete, independent* alanine scan at every pH in 'Run for all pH values' instead of once. "
+        "Multiplies the alanine-scan time by the number of pH values -- a critical but expensive "
+        "analysis for identifying mutations whose apparent role shifts with pH. Requires "
+        "'Run for all pH values'.",
+    )
     ala_scope = st.radio(
         "Positions to scan",
         options=["Evenly-spaced subsample (fast)", "Every eligible residue (slow, full receptor)", "Specific residues"],
@@ -136,6 +153,54 @@ with st.sidebar:
                    "a full receptor-wide scan (~250-300 residues) is a tens-of-minutes job.")
 
     run_button = st.button("Run", type="primary", use_container_width=True)
+
+
+def _render_alanine_scan_results(scan_pr, top_n: int, key_prefix: str):
+    """Render one AlanineScanPipelineResult's mutational-response plot, top-hits
+    table, and per-hit distance/structure-map plots. Shared by the single-pH
+    and per-pH-tab (multi-pH) display paths; ``key_prefix`` keeps widget keys
+    unique when this is called more than once on the same page."""
+    import pandas as pd
+
+    scan = scan_pr.scan
+    st.subheader(f"Alanine scan results (pH {scan_pr.ph}, {len(scan.positions)} position(s) scanned)")
+
+    fig = plot_mutational_response(scan, highlight={r: str(r) for r, _ in scan.top_hits(top_n)}).figure
+    st.pyplot(fig)
+    st.download_button(
+        "Download MutationalResponse.txt",
+        "\n".join(f"{b} {m:.3f} {s:.3f}" for b, (m, s) in enumerate(zip(scan.MR_mean, scan.MR_std))),
+        file_name=f"MutationalResponse_pH{scan_pr.ph}.txt",
+        key=f"{key_prefix}_mr_dl",
+    )
+
+    top_hits = scan.top_hits(top_n)
+    st.write("**Top hits** (largest total coupling perturbation, sum |ΔΔG+|):")
+    st.dataframe(
+        pd.DataFrame(top_hits, columns=["resnum", "sum |ΔΔG+| (kJ/mol)"]).set_index("resnum"),
+        use_container_width=True,
+    )
+
+    records = scan.to_records()
+    csv_lines = ["mutated_resnum,block,mean_ddG_plus"] + [
+        f"{r['mutated_resnum']},{r['block']},{r['mean_ddG+']:.4f}" for r in records
+    ]
+    st.download_button("Download DeltaDeltaG.csv", "\n".join(csv_lines),
+                        file_name=f"DeltaDeltaG_pH{scan_pr.ph}.csv", key=f"{key_prefix}_ddg_dl")
+
+    hit_tabs = st.tabs([f"resnum {r}" for r, _ in top_hits])
+    for (resnum, score), hit_tab in zip(top_hits, hit_tabs):
+        with hit_tab:
+            col1, col2 = st.columns(2)
+            with col1:
+                fig = plot_ddg_vs_distance(scan, resnum).figure
+                st.pyplot(fig)
+            with col2:
+                fig = plt.figure(figsize=(6, 6))
+                ax = fig.add_subplot(projection="3d")
+                plot_ddg_structure_map(scan, resnum, ax=ax)
+                st.pyplot(fig)
+
 
 # ------------------------------------------------------------------ Run ---
 
@@ -190,6 +255,7 @@ if run_button:
         st.warning(w)
 
     ala_scan_pr = None
+    ala_scan_multi_ph = None
     if run_ala_scan:
         base_structure = pipeline_results[ph].structure
         if ala_scope == "Specific residues":
@@ -206,22 +272,47 @@ if run_button:
             ala_max_positions if ala_max_positions else len(scannable_positions(base_structure))
         )
         est_min = estimate_scan_seconds(n_estimate) / 60
-        ala_progress = st.progress(0.0, text=f"Alanine scan: {n_estimate} position(s), estimated ~{est_min:.1f} min...")
 
-        def ala_progress_cb(resnum, i, total, elapsed):
-            ala_progress.progress((i + 1) / total, text=f"Alanine scan: resnum {resnum} ({i + 1}/{total}, {elapsed:.0f}s elapsed)")
-
-        try:
-            ala_scan_pr = run_alanine_scan_pipeline(
-                tmp_path, chain=chain or None, model=int(model_index), ph=ph,
-                ss_codes=ss_codes, block_size=int(block_size), params=params,
-                positions=ala_positions, max_positions=ala_max_positions,
-                progress_callback=ala_progress_cb,
+        if ala_all_ph_scan and all_ph:
+            n_ph = len(DEFAULT_PH_VALUES)
+            ala_progress = st.progress(
+                0.0, text=f"Alanine scan across {n_ph} pH values: {n_estimate} position(s)/pH, "
+                          f"estimated ~{est_min * n_ph:.1f} min total...",
             )
-            ala_progress.progress(1.0, text="Alanine scan done")
-        except Exception as e:
-            st.error(f"Alanine scan failed: {e}")
-            ala_scan_pr = None
+
+            def ala_progress_cb(ph_val, ph_i, ph_total, resnum, i, total, elapsed):
+                frac = (ph_i + (i + 1) / total) / ph_total
+                ala_progress.progress(frac, text=f"pH {ph_val} ({ph_i + 1}/{ph_total}): "
+                                                  f"resnum {resnum} ({i + 1}/{total}, {elapsed:.0f}s elapsed)")
+
+            try:
+                ala_scan_multi_ph = run_alanine_scan_pipeline_multi_ph(
+                    tmp_path, ph_values=DEFAULT_PH_VALUES, chain=chain or None, model=int(model_index),
+                    ss_codes=ss_codes, block_size=int(block_size), params=params,
+                    positions=ala_positions, max_positions=ala_max_positions,
+                    progress_callback=ala_progress_cb,
+                )
+                ala_progress.progress(1.0, text="Alanine scan (all pH) done")
+            except Exception as e:
+                st.error(f"Alanine scan failed: {e}")
+                ala_scan_multi_ph = None
+        else:
+            ala_progress = st.progress(0.0, text=f"Alanine scan: {n_estimate} position(s), estimated ~{est_min:.1f} min...")
+
+            def ala_progress_cb(resnum, i, total, elapsed):
+                ala_progress.progress((i + 1) / total, text=f"Alanine scan: resnum {resnum} ({i + 1}/{total}, {elapsed:.0f}s elapsed)")
+
+            try:
+                ala_scan_pr = run_alanine_scan_pipeline(
+                    tmp_path, chain=chain or None, model=int(model_index), ph=ph,
+                    ss_codes=ss_codes, block_size=int(block_size), params=params,
+                    positions=ala_positions, max_positions=ala_max_positions,
+                    progress_callback=ala_progress_cb,
+                )
+                ala_progress.progress(1.0, text="Alanine scan done")
+            except Exception as e:
+                st.error(f"Alanine scan failed: {e}")
+                ala_scan_pr = None
 
     if len(pipeline_results) > 1:
         st.subheader("Comparison across pH")
@@ -320,45 +411,42 @@ if run_button:
                     st.download_button("Download CouplingMatrix.txt", "\n".join(lines), file_name=f"CouplingMatrix_pH{ph_val}.txt", key=f"coupling_{ph_val}")
                 next_tab += 1
 
-    if ala_scan_pr is not None:
-        scan = ala_scan_pr.scan
-        st.subheader(f"Alanine scan results (pH {ala_scan_pr.ph}, {len(scan.positions)} position(s) scanned)")
+    if ala_scan_multi_ph is not None:
+        st.subheader(f"Alanine scan vs. pH ({len(ala_scan_multi_ph)} pH values, "
+                     f"{len(next(iter(ala_scan_multi_ph.values())).scan.positions)} position(s) each)")
+        scan_by_ph = {ph_val: pr.scan for ph_val, pr in ala_scan_multi_ph.items()}
 
-        fig = plot_mutational_response(scan, highlight={r: str(r) for r, _ in scan.top_hits(int(ala_top_n))}).figure
+        fig, ax = plt.subplots(figsize=(10, 5))
+        plot_mutational_response_comparison(scan_by_ph, ax=ax)
+        ax.set_title("Mutational Response vs. pH")
         st.pyplot(fig)
-        st.download_button(
-            "Download MutationalResponse.txt",
-            "\n".join(f"{b} {m:.3f} {s:.3f}" for b, (m, s) in enumerate(zip(scan.MR_mean, scan.MR_std))),
-            file_name=f"MutationalResponse_pH{ala_scan_pr.ph}.txt",
-        )
 
         import pandas as pd
 
-        top_hits = scan.top_hits(int(ala_top_n))
-        st.write("**Top hits** (largest total coupling perturbation, sum |ΔΔG+|):")
-        st.dataframe(
-            pd.DataFrame(top_hits, columns=["resnum", "sum |ΔΔG+| (kJ/mol)"]).set_index("resnum"),
-            use_container_width=True,
+        st.write(
+            "**pH sensitivity** -- mutation sites ranked by how much their perturbation magnitude "
+            "swings across pH (a large swing flags a candidate conformational pH sensor):"
         )
-
-        records = scan.to_records()
-        csv_lines = ["mutated_resnum,block,mean_ddG_plus"] + [
-            f"{r['mutated_resnum']},{r['block']},{r['mean_ddG+']:.4f}" for r in records
+        sens_rows = ph_sensitivity_table(scan_by_ph, n=int(ala_top_n))
+        ph_cols = sorted(scan_by_ph)
+        table_rows = [
+            {"resnum": r["resnum"], **{f"score pH {p}": round(r["scores_by_ph"][p], 3) for p in ph_cols},
+             "pH spread": round(r["ph_spread"], 3)}
+            for r in sens_rows
         ]
-        st.download_button("Download DeltaDeltaG.csv", "\n".join(csv_lines), file_name=f"DeltaDeltaG_pH{ala_scan_pr.ph}.csv")
+        st.dataframe(pd.DataFrame(table_rows).set_index("resnum"), use_container_width=True)
+        sens_lines = ["resnum," + ",".join(f"score_pH{p}" for p in ph_cols) + ",ph_spread"] + [
+            f"{r['resnum']}," + ",".join(f"{r['scores_by_ph'][p]:.4f}" for p in ph_cols) + f",{r['ph_spread']:.4f}"
+            for r in sens_rows
+        ]
+        st.download_button("Download pH_Sensitivity.csv", "\n".join(sens_lines), file_name="pH_Sensitivity.csv")
 
-        hit_tabs = st.tabs([f"resnum {r}" for r, _ in top_hits])
-        for (resnum, score), hit_tab in zip(top_hits, hit_tabs):
-            with hit_tab:
-                col1, col2 = st.columns(2)
-                with col1:
-                    fig = plot_ddg_vs_distance(scan, resnum).figure
-                    st.pyplot(fig)
-                with col2:
-                    fig = plt.figure(figsize=(6, 6))
-                    ax = fig.add_subplot(projection="3d")
-                    plot_ddg_structure_map(scan, resnum, ax=ax)
-                    st.pyplot(fig)
+        ala_ph_tabs = st.tabs([f"pH {ph_val}" for ph_val in ala_scan_multi_ph])
+        for ph_val, tab in zip(ala_scan_multi_ph, ala_ph_tabs):
+            with tab:
+                _render_alanine_scan_results(ala_scan_multi_ph[ph_val], int(ala_top_n), key_prefix=f"ala_{ph_val}")
+    elif ala_scan_pr is not None:
+        _render_alanine_scan_results(ala_scan_pr, int(ala_top_n), key_prefix="ala_single")
 else:
     st.write("Upload a structure and click **Run** in the sidebar to compute a landscape.")
     st.write(

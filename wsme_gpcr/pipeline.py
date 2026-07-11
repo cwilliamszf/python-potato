@@ -208,3 +208,46 @@ def run_alanine_scan_pipeline(
         ph=ph, structure=structure, ss_mask=ss_mask, block_model=block_model,
         params=params, scan=scan, warnings=caught_warnings,
     )
+
+
+def run_alanine_scan_pipeline_multi_ph(
+    pdb_path,
+    ph_values=DEFAULT_PH_VALUES,
+    chain: str = None,
+    model: int = 0,
+    pka_overrides: dict = None,
+    ss_codes: str = None,
+    block_size: int = 4,
+    params: WSMEParams = None,
+    positions=None,
+    max_positions: int = None,
+    progress_callback=None,
+) -> dict:
+    """Run the (by default, receptor-wide) alanine scan independently at
+    each pH. Returns {ph: AlanineScanPipelineResult}.
+
+    Alanine-scan results are themselves pH-dependent: pH changes which
+    atoms carry a titratable charge, which feeds back into the contact map
+    and coupling matrix each mutant is compared against, so a mutation's
+    apparent effect on coupling can shift across pH. This is the
+    expensive but complete answer to "how does this mutation's effect
+    change with pH" -- one full scan per pH value, not just one scan at a
+    fixed pH. See ``alanine_scan.ph_sensitivity_table`` to rank mutation
+    sites by how much they swing across the pH values scanned.
+
+    ``progress_callback(ph, ph_index, ph_total, resnum, i, total,
+    elapsed)`` is called after each mutant within each pH, if given.
+    """
+    results = {}
+    total_ph = len(ph_values)
+    for ph_i, ph in enumerate(ph_values):
+        def mutant_progress(resnum, i, total, elapsed, ph=ph, ph_i=ph_i):
+            if progress_callback:
+                progress_callback(ph, ph_i, total_ph, resnum, i, total, elapsed)
+
+        results[ph] = run_alanine_scan_pipeline(
+            pdb_path, chain=chain, model=model, ph=ph, pka_overrides=pka_overrides, ss_codes=ss_codes,
+            block_size=block_size, params=params, positions=positions, max_positions=max_positions,
+            progress_callback=mutant_progress,
+        )
+    return results

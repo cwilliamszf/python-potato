@@ -244,3 +244,41 @@ def run_alanine_scan(
         result.MR_std = np.nanstd(stacked, axis=0)
 
     return result
+
+
+def ph_sensitivity_table(scan_by_ph: dict, n: int = 15) -> list:
+    """Rank mutation sites by how much their perturbation magnitude
+    (sum |mean_ddg_vector|) swings across the scanned pH values.
+
+    ``scan_by_ph`` maps pH -> AlanineScanResult (independent scans at each
+    pH, from ``run_alanine_scan_pipeline_multi_ph``). Alanine-scan results
+    are themselves pH-dependent -- pH changes which atoms carry a
+    titratable charge, which feeds back into the contact map and hence the
+    coupling matrix each mutant is compared against -- so a mutation's
+    apparent structural importance can shift with pH. A large swing here
+    flags a site whose *coupling role*, not just its own charge state,
+    looks pH-modulated: a candidate conformational pH sensor, distinct
+    from (but complementary to) the buried-ionizable-network view in
+    ``ionizable_network``.
+
+    Only sites appearing in at least one pH's ``top_hits(n)`` are
+    included (comparing every scanned site at every pH is usually just
+    noise for sites with a near-zero effect everywhere).
+    """
+    ph_values = sorted(scan_by_ph.keys())
+    resnums = set()
+    for scan in scan_by_ph.values():
+        resnums.update(int(r) for r, _ in scan.top_hits(n))
+
+    rows = []
+    for resnum in sorted(resnums):
+        scores = {}
+        for ph in ph_values:
+            v = scan_by_ph[ph].mean_ddg_vector.get(resnum)
+            scores[ph] = float(np.nansum(np.abs(v))) if v is not None else float("nan")
+        finite = [s for s in scores.values() if np.isfinite(s)]
+        spread = (max(finite) - min(finite)) if finite else float("nan")
+        rows.append({"resnum": resnum, "scores_by_ph": scores, "ph_spread": spread})
+
+    rows.sort(key=lambda r: r["ph_spread"] if np.isfinite(r["ph_spread"]) else -1.0, reverse=True)
+    return rows

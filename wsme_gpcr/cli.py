@@ -85,6 +85,12 @@ def main(argv=None):
     p.add_argument("--ala-top-n", type=int, default=5,
                     help="Number of top-perturbing mutations (by total |mean DeltaDeltaG+|) to generate "
                     "distance-dependence and structure-map plots for (default: 5)")
+    p.add_argument("--ala-all-ph", action="store_true",
+                    help="Run the alanine scan independently at every pH in --all-ph/--ph-values instead of "
+                    "once at --ph. Mutation effects on coupling are themselves pH-dependent (pH changes which "
+                    "atoms are charged, which feeds the contact map each mutant is compared against), so this "
+                    "is the complete answer to 'how does this mutation's effect change with pH' -- at the cost "
+                    "of one full scan PER pH value. Requires --alanine-scan and --all-ph/--ph-values.")
     p.add_argument("--no-plots", action="store_true", help="Skip generating plot images")
     args = p.parse_args(argv)
 
@@ -145,8 +151,14 @@ def main(argv=None):
             print(f"Wrote {out_dir / 'pH_comparison_3D.png'}")
 
         if args.alanine_scan:
-            _run_alanine_scan_cli(args, out_dir, params, pka_overrides, ss_codes)
+            if args.ala_all_ph:
+                _run_alanine_scan_multi_ph_cli(args, out_dir, params, pka_overrides, ss_codes, ph_values)
+            else:
+                _run_alanine_scan_cli(args, out_dir, params, pka_overrides, ss_codes)
         return
+
+    if args.ala_all_ph:
+        p.error("--ala-all-ph requires --all-ph or --ph-values")
 
     pr = run_pipeline(
         args.pdb, chain=args.chain, model=args.model, ph=args.ph, pka_overrides=pka_overrides, ss_codes=ss_codes,
@@ -193,6 +205,75 @@ def _run_alanine_scan_cli(args, out_dir: Path, params: WSMEParams, pka_overrides
     ala_dir.mkdir(parents=True, exist_ok=True)
     _write_alanine_scan_outputs(ala_dir, scan_pr, top_n=args.ala_top_n, save_plot=not args.no_plots)
     print(f"Alanine scan: wrote outputs to {ala_dir}")
+
+
+def _run_alanine_scan_multi_ph_cli(args, out_dir: Path, params: WSMEParams, pka_overrides: dict, ss_codes: str, ph_values: list):
+    from .alanine_scan import estimate_scan_seconds, ph_sensitivity_table, scannable_positions
+    from .pipeline import run_alanine_scan_pipeline_multi_ph
+    from .structure import load_structure
+
+    positions = None
+    if args.ala_positions:
+        positions = [int(v) for v in args.ala_positions.split(",")]
+    max_positions = args.ala_max_n if args.ala_max_n and args.ala_max_n > 0 else None
+
+    n_estimate = len(positions) if positions else (
+        max_positions if max_positions else len(scannable_positions(load_structure(args.pdb, chain=args.chain, model=args.model, ph=ph_values[0])))
+    )
+    est_min_per_ph = estimate_scan_seconds(n_estimate) / 60
+    print(f"\nAlanine scan across {len(ph_values)} pH values {ph_values}: {n_estimate} position(s) + WT "
+          f"baseline PER pH, estimated ~{est_min_per_ph:.1f} min/pH, ~{est_min_per_ph * len(ph_values):.1f} min "
+          f"total. This is a long-running, receptor-wide analysis run once per pH -- mutation effects on "
+          f"coupling are themselves pH-dependent, so this is the complete (not approximate) answer.")
+
+    def progress(ph, ph_i, ph_total, resnum, i, total, elapsed):
+        rate = elapsed / (i + 1)
+        remaining = rate * (total - i - 1)
+        print(f"  [pH {ph} {ph_i + 1}/{ph_total}] [{i + 1}/{total}] resnum {resnum} done "
+              f"({elapsed:.0f}s elapsed, ~{remaining:.0f}s remaining this pH)")
+
+    results = run_alanine_scan_pipeline_multi_ph(
+        args.pdb, ph_values=ph_values, chain=args.chain, model=args.model, pka_overrides=pka_overrides,
+        ss_codes=ss_codes, block_size=args.block_size, params=params, positions=positions,
+        max_positions=max_positions, progress_callback=progress,
+    )
+
+    ala_dir = out_dir / "alanine_scan"
+    ala_dir.mkdir(parents=True, exist_ok=True)
+    for ph, scan_pr in results.items():
+        ph_dir = ala_dir / f"pH_{ph}"
+        ph_dir.mkdir(parents=True, exist_ok=True)
+        _write_alanine_scan_outputs(ph_dir, scan_pr, top_n=args.ala_top_n, save_plot=not args.no_plots)
+        print(f"  pH {ph}: wrote outputs to {ph_dir}")
+
+    scan_by_ph = {ph: pr.scan for ph, pr in results.items()}
+    sens_table = ph_sensitivity_table(scan_by_ph, n=args.ala_top_n)
+    ph_cols = sorted(results)
+    with open(ala_dir / "pH_Sensitivity.txt", "w") as f:
+        f.write("# Mutation sites ranked by how much their perturbation magnitude\n")
+        f.write("# (sum |<DeltaDeltaG+>|) swings across the pH values scanned -- a large\n")
+        f.write("# swing flags a mutation whose apparent coupling role looks pH-modulated,\n")
+        f.write("# a candidate conformational pH sensor.\n")
+        f.write("# " + "  ".join(["resnum"] + [f"score_pH{ph}" for ph in ph_cols] + ["ph_spread"]) + "\n")
+        for row in sens_table:
+            vals = [f"{row['scores_by_ph'][ph]:10.3f}" for ph in ph_cols]
+            f.write(f"{row['resnum']:6d}  " + "  ".join(vals) + f"  {row['ph_spread']:10.3f}\n")
+    print(f"  pH sensitivity (top swings): "
+          f"{[(r['resnum'], round(r['ph_spread'], 2)) for r in sens_table[:5]]}")
+
+    if not args.no_plots:
+        from .plotting import plot_mutational_response_comparison
+        import matplotlib.pyplot as plt
+
+        fig, ax = plt.subplots(figsize=(10, 5))
+        plot_mutational_response_comparison(scan_by_ph, ax=ax)
+        ax.set_title("Mutational Response vs. pH")
+        fig.tight_layout()
+        fig.savefig(ala_dir / "MutationalResponse_vs_pH.png", dpi=200)
+        plt.close(fig)
+        print(f"  Wrote {ala_dir / 'MutationalResponse_vs_pH.png'}")
+
+    print(f"Alanine scan (multi-pH): wrote outputs to {ala_dir}")
 
 
 def _write_alanine_scan_outputs(out_dir: Path, scan_pr: AlanineScanPipelineResult, top_n: int, save_plot: bool):
