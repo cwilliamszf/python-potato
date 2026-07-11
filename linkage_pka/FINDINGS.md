@@ -545,3 +545,65 @@ cluster specifically.
    or a prescreen-ranking-quality problem; (c) a PB-informed (rather than
    purely classical) candidate ranking, which would need a cheap PB
    proxy or a way to batch multiple candidates per APBS call.
+
+## Double-funnel landscape: built, run, and a new WSME limitation found
+
+Following up on Gate A: built `linkage_pka.double_funnel`
+(`build_double_funnel_landscape`, `plot_double_funnel`) to visualize a
+genuine two-basin, pH-dependent free-energy landscape for GPR68
+activation -- stitching `wsme_gpcr`'s exact per-conformer WSME
+free-energy profile G(n, pH) (no MD, no sampling) with `linkage_pka`'s
+real inter-conformer offset ΔG_activation(pH) (from
+`linkage.delta_g_act_from_ln_z` on the D2.50/Asp282/Glu103 cluster's
+already-computed `ln_z_total`, reusing the exact joint-microstate data
+from the "Coupled 3-site cluster" section above -- no new PB/APBS runs
+needed). See the module docstring for the full anchoring derivation: each
+conformer's WSME curve is pinned at its own reference structure
+(n=nblocks, not wherever WSME's own free energy happens to be lowest)
+using the real PB-derived offset, and Q (the stitched coordinate) places
+each conformer's actual reference structure adjacent to Q=0, with
+disorder spreading outward to Q=-1/+1. 11 new tests (synthetic arrays,
+no APBS dependency) verify the anchoring math directly.
+
+**Run against real data**: ΔG_activation(pH) from the D2.50 cluster
+ranges from -13.02 kJ/mol at pH 5.0 to +0.01 kJ/mol at pH 8.0 --
+consistent with this session's earlier finding that acidification favors
+the active conformer, now expressed as a real free-energy number rather
+than just Δn_H(pH).
+
+**But a new, unrelated limitation surfaced in the process**: `wsme_gpcr`
+has never been run on GPR68 before this. Running it revealed that its
+default `WSMEParams` -- validated only against CI2 (65 residues, 18
+blocks) -- produce a *physically inverted* landscape on GPR68 (365
+residues, 97-101 blocks): the fully-disordered end of each conformer's
+WSME curve sits 235-257 kJ/mol *below* (more stable than) the actual
+reference structure. Direct comparison confirms this is GPR68-specific,
+not a general WSME problem: on CI2, `run_pipeline(CI2.pdb, ph=7.0)` gives
+the physically correct pattern (folded reference near the global minimum,
+fes=5.8 vs true min 1.2 at n=17/18; disorder costs +43 kJ/mol) -- the
+opposite sign/direction from GPR68's result. Most likely cause: WSME's
+entropic/energetic parameters scale with block count in a way that was
+never tested or corrected beyond CI2's scale, and a 5-6x larger protein
+pushes that scaling into an unphysical regime. This is a new, real,
+previously-undiscovered limitation of `wsme_gpcr` itself (separate from
+Gate A, which is about `linkage_pka`'s PB pKa's) -- it means the
+double-funnel plot's *within-basin shape far from Q=0* cannot be trusted
+for GPR68 as computed today; only the region near the real PB-anchored
+reference states (Q≈0) carries validated-as-far-as-Gate-A-allows
+information. Two plots were generated and delivered to the user: the
+full-range landscape (visibly dominated by this artifact) and a version
+zoomed to the region near Q=0 (where the real anchor signal lives).
+
+**Compounding caveat**: the anchor itself is the same PB-based
+`ΔG_activation(pH)` that failed Gate A, so even the "real" near-Q=0
+region is a pipeline-mechanics demonstration, not a calibrated
+prediction -- this landscape currently carries two independent,
+unresolved uncertainty sources (Gate A's PB pKa failure, and this new
+WSME large-protein scaling issue), not one.
+
+**Open next step**: WSME's block-count-dependent parameter scaling would
+need real investigation (e.g. does `DS`/`ene` in `WSMEParams` need to
+scale with `nblocks`, or is there a genuine missing term for large
+proteins) before `wsme_gpcr` results on any protein GPR68's size or
+larger should be trusted -- not attempted here, flagged as a discovery
+for whoever picks this up next.
