@@ -66,6 +66,23 @@ function. From that you get:
   coupling role looks pH-modulated. This multiplies the run time by the
   number of pH values, so it's opt-in (`--ala-all-ph` / the GUI checkbox)
   rather than the default.
+- **PCA + clustering of the pH-scan results.** A multi-pH alanine scan
+  produces, per scanned residue, a full per-block ΔΔG+ vector at every
+  pH — too much to eyeball site by site. `alanine_scan.residue_ph_features`
+  concatenates each residue's per-block vectors across pH into one
+  feature vector (capturing *which blocks* it perturbs and *how that
+  shifts with pH*, not just an overall number), `pca_cluster_residues`
+  projects that to 2D via PCA (plain SVD, no new dependency) and k-means
+  clusters it (`scipy.cluster.vq`, already a dependency), and
+  `ph_cluster_table` ties it together with two directly interpretable
+  scalars per residue: **magnitude** (mean stability effect across pH)
+  and **pH spread** (how much that effect swings with pH). Plotted as a
+  PCA scatter (`plot_alanine_ph_pca`) and a magnitude-vs-pH-spread scatter
+  (`plot_alanine_ph_magnitude_vs_sensitivity`), sharing cluster colors —
+  together they separate "affects stability, pH-independent" from
+  "affects stability specifically at certain pH" (candidate pH sensors)
+  from "negligible everywhere," and group residues with similar
+  structural-response *patterns*, not just similar magnitudes.
 
 ## What's different from the MATLAB original
 
@@ -150,10 +167,13 @@ independent alanine scan at every pH instead of once — mutation effects
 on coupling are themselves pH-dependent, so this is the real answer to
 "how does this mutation's effect change with pH," at the cost of
 multiplying the scan time by the number of pH values. Results add a
-mutational-response-vs-pH overlay plot and a pH-sensitivity table
+mutational-response-vs-pH overlay plot, a pH-sensitivity table
 (mutation sites ranked by how much their perturbation swings across pH —
-candidate conformational pH sensors), plus a per-pH tab with the full
-single-pH breakdown above for each pH.
+candidate conformational pH sensors), a PCA scatter + magnitude-vs-pH-spread
+scatter clustering residues by the shape of their per-block × per-pH
+coupling perturbation (**PCA clusters** in the sidebar sets the number of
+clusters), plus a per-pH tab with the full single-pH breakdown above for
+each pH.
 
 ### CLI
 
@@ -199,9 +219,14 @@ scan independently at every pH value instead: each pH gets its own
 `alanine_scan/pH_<value>/` subdirectory with the same files as above, plus
 top-level `pH_Sensitivity.txt` (mutation sites ranked by how much their
 perturbation swings across pH -- large swings flag candidate conformational
-pH sensors) and `MutationalResponse_vs_pH.png` overlaying every pH's
-mutational-response curve. This is a long-running, receptor-wide-scan-times-N-pH
-analysis -- the CLI prints a total time estimate before running.
+pH sensors), `MutationalResponse_vs_pH.png` overlaying every pH's
+mutational-response curve, `PCA_Cluster.csv` (per-residue magnitude,
+pH spread, cluster ID, and PCA coordinates), and `PCA_Cluster.png` (PCA
+scatter + magnitude-vs-pH-spread scatter, clustering residues by the shape
+of their per-block × per-pH coupling perturbation -- `--ala-n-clusters`
+sets the number of k-means clusters, default 4). This is a long-running,
+receptor-wide-scan-times-N-pH analysis -- the CLI prints a total time
+estimate before running.
 
 ### Library
 
@@ -275,6 +300,24 @@ from wsme_gpcr.alanine_scan import ph_sensitivity_table
 results = run_alanine_scan_pipeline_multi_ph("my_gpcr.pdb", ph_values=(7.4, 7.0, 6.5, 6.0), max_positions=40)
 scan_by_ph = {ph: pr.scan for ph, pr in results.items()}
 print(ph_sensitivity_table(scan_by_ph, n=10)[:5])   # sites whose effect shifts most across pH
+```
+
+`alanine_scan.ph_cluster_table` (backing `plotting.plot_alanine_ph_pca` /
+`plot_alanine_ph_magnitude_vs_sensitivity`) distinguishes residues that
+matter for stability from residues whose apparent role is specifically
+pH-dependent, and groups residues by the *shape* of their per-block × per-pH
+perturbation via PCA + k-means (plain SVD + `scipy.cluster.vq`, no new
+dependency):
+
+```python
+from wsme_gpcr.alanine_scan import ph_cluster_table
+from wsme_gpcr.plotting import plot_alanine_ph_pca, plot_alanine_ph_magnitude_vs_sensitivity
+
+table = ph_cluster_table(scan_by_ph, n_clusters=4)
+print(table[:5])   # [{"resnum": .., "cluster": .., "magnitude": .., "ph_spread": .., "pc1": .., "pc2": ..}, ...]
+
+plot_alanine_ph_pca(scan_by_ph, n_clusters=4)
+plot_alanine_ph_magnitude_vs_sensitivity(scan_by_ph, n_clusters=4)
 ```
 
 ## Performance notes

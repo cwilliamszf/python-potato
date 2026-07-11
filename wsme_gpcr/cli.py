@@ -85,6 +85,9 @@ def main(argv=None):
     p.add_argument("--ala-top-n", type=int, default=5,
                     help="Number of top-perturbing mutations (by total |mean DeltaDeltaG+|) to generate "
                     "distance-dependence and structure-map plots for (default: 5)")
+    p.add_argument("--ala-n-clusters", type=int, default=4,
+                    help="Number of k-means clusters for the PCA plot of per-residue coupling "
+                    "perturbation across pH (default: 4; only used with --ala-all-ph)")
     p.add_argument("--ala-all-ph", action="store_true",
                     help="Run the alanine scan independently at every pH in --all-ph/--ph-values instead of "
                     "once at --ph. Mutation effects on coupling are themselves pH-dependent (pH changes which "
@@ -261,8 +264,23 @@ def _run_alanine_scan_multi_ph_cli(args, out_dir: Path, params: WSMEParams, pka_
     print(f"  pH sensitivity (top swings): "
           f"{[(r['resnum'], round(r['ph_spread'], 2)) for r in sens_table[:5]]}")
 
+    from .alanine_scan import ph_cluster_table
+
+    cluster_rows = ph_cluster_table(scan_by_ph, n_clusters=args.ala_n_clusters)
+    with open(ala_dir / "PCA_Cluster.csv", "w") as f:
+        f.write("resnum,cluster,magnitude,ph_spread,pc1,pc2\n")
+        for row in cluster_rows:
+            f.write(f"{row['resnum']},{row['cluster']},{row['magnitude']:.4f},"
+                     f"{row['ph_spread']:.4f},{row['pc1']:.4f},{row['pc2']:.4f}\n")
+    print(f"  Wrote {ala_dir / 'PCA_Cluster.csv'} ({len(cluster_rows)} residues, "
+          f"{args.ala_n_clusters} clusters)")
+
     if not args.no_plots:
-        from .plotting import plot_mutational_response_comparison
+        from .plotting import (
+            plot_alanine_ph_magnitude_vs_sensitivity,
+            plot_alanine_ph_pca,
+            plot_mutational_response_comparison,
+        )
         import matplotlib.pyplot as plt
 
         fig, ax = plt.subplots(figsize=(10, 5))
@@ -272,6 +290,14 @@ def _run_alanine_scan_multi_ph_cli(args, out_dir: Path, params: WSMEParams, pka_
         fig.savefig(ala_dir / "MutationalResponse_vs_pH.png", dpi=200)
         plt.close(fig)
         print(f"  Wrote {ala_dir / 'MutationalResponse_vs_pH.png'}")
+
+        fig, axes = plt.subplots(1, 2, figsize=(16, 7))
+        plot_alanine_ph_pca(scan_by_ph, ax=axes[0], n_clusters=args.ala_n_clusters, top_n_labels=args.ala_top_n)
+        plot_alanine_ph_magnitude_vs_sensitivity(scan_by_ph, ax=axes[1], n_clusters=args.ala_n_clusters, top_n_labels=args.ala_top_n)
+        fig.tight_layout()
+        fig.savefig(ala_dir / "PCA_Cluster.png", dpi=200)
+        plt.close(fig)
+        print(f"  Wrote {ala_dir / 'PCA_Cluster.png'}")
 
     print(f"Alanine scan (multi-pH): wrote outputs to {ala_dir}")
 

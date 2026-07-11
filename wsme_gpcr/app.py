@@ -13,7 +13,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import streamlit as st
 
-from wsme_gpcr.alanine_scan import estimate_scan_seconds, ph_sensitivity_table, scannable_positions
+from wsme_gpcr.alanine_scan import estimate_scan_seconds, ph_cluster_table, ph_sensitivity_table, scannable_positions
 from wsme_gpcr.pipeline import (
     DEFAULT_PH_VALUES,
     run_alanine_scan_pipeline,
@@ -27,6 +27,8 @@ from wsme_gpcr.plotting import (
     plot_2d_landscape,
     plot_2d_landscape_surface,
     plot_2d_landscape_surface_comparison,
+    plot_alanine_ph_magnitude_vs_sensitivity,
+    plot_alanine_ph_pca,
     plot_comparison_grid,
     plot_coupling_matrix,
     plot_ddg_structure_map,
@@ -148,6 +150,12 @@ with st.sidebar:
         disabled=not (run_ala_scan and ala_scope == "Specific residues"),
     )
     ala_top_n = st.number_input("Top hits to report", min_value=1, value=5, step=1, disabled=not run_ala_scan)
+    ala_n_clusters = st.number_input(
+        "PCA clusters (pH x residue)", min_value=2, max_value=10, value=4, step=1,
+        disabled=not (run_ala_scan and ala_all_ph_scan),
+        help="Number of k-means clusters for the PCA plot grouping residues by the shape of their "
+        "per-block x per-pH coupling perturbation -- only used with 'Run alanine scan across all pH values'.",
+    )
     if run_ala_scan:
         st.caption("~8s/position once the structure is loaded (varies with structure size) -- "
                    "a full receptor-wide scan (~250-300 residues) is a tens-of-minutes job.")
@@ -440,6 +448,28 @@ if run_button:
             for r in sens_rows
         ]
         st.download_button("Download pH_Sensitivity.csv", "\n".join(sens_lines), file_name="pH_Sensitivity.csv")
+
+        st.write(
+            "**PCA + clustering** -- each point is one scanned residue, positioned by the shape of its "
+            "per-block × per-pH coupling perturbation and colored by k-means cluster. The right panel "
+            "gives the same clustering directly in terms of stability-effect magnitude vs. pH dependence."
+        )
+        fig, axes = plt.subplots(1, 2, figsize=(16, 7))
+        plot_alanine_ph_pca(scan_by_ph, ax=axes[0], n_clusters=int(ala_n_clusters), top_n_labels=int(ala_top_n))
+        plot_alanine_ph_magnitude_vs_sensitivity(scan_by_ph, ax=axes[1], n_clusters=int(ala_n_clusters), top_n_labels=int(ala_top_n))
+        fig.tight_layout()
+        st.pyplot(fig)
+
+        cluster_rows = ph_cluster_table(scan_by_ph, n_clusters=int(ala_n_clusters))
+        st.dataframe(
+            pd.DataFrame(cluster_rows).set_index("resnum"),
+            use_container_width=True,
+        )
+        cluster_lines = ["resnum,cluster,magnitude,ph_spread,pc1,pc2"] + [
+            f"{r['resnum']},{r['cluster']},{r['magnitude']:.4f},{r['ph_spread']:.4f},{r['pc1']:.4f},{r['pc2']:.4f}"
+            for r in cluster_rows
+        ]
+        st.download_button("Download PCA_Cluster.csv", "\n".join(cluster_lines), file_name="PCA_Cluster.csv")
 
         ala_ph_tabs = st.tabs([f"pH {ph_val}" for ph_val in ala_scan_multi_ph])
         for ph_val, tab in zip(ala_scan_multi_ph, ala_ph_tabs):

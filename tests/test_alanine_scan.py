@@ -4,7 +4,10 @@ from pathlib import Path
 from wsme_gpcr.alanine_scan import (
     alanine_exclude_mask,
     estimate_scan_seconds,
+    pca_cluster_residues,
+    ph_cluster_table,
     ph_sensitivity_table,
+    residue_ph_features,
     run_alanine_scan,
     scannable_positions,
     subsample_positions,
@@ -157,3 +160,71 @@ def test_ph_sensitivity_table_ranks_by_swing_across_ph():
     for scan in scan_by_ph.values():
         expected.update(r for r, _ in scan.top_hits(3))
     assert set(r["resnum"] for r in rows) == expected
+
+
+def _multi_ph_scan(n_positions=6, ph_values=(7.0, 5.0, 3.5)):
+    params = WSMEParams.soluble_protein_defaults()
+    scan_by_ph = {}
+    for ph in ph_values:
+        s = load_structure(CI2, ph=ph)
+        ss = assign_secondary_structure(s)
+        positions = scannable_positions(s)[:n_positions]
+        scan_by_ph[ph] = run_alanine_scan(s, ss, params, positions, block_size=4)
+    return scan_by_ph
+
+
+def test_residue_ph_features_shape_and_nan_handling():
+    scan_by_ph = _multi_ph_scan(n_positions=6, ph_values=(7.0, 5.0, 3.5))
+    resnums, features, magnitude, ph_spread = residue_ph_features(scan_by_ph)
+
+    n_residues = 6
+    nblocks = next(iter(scan_by_ph.values())).wt_chi_plus.shape[0]
+    assert resnums.shape == (n_residues,)
+    assert features.shape == (n_residues, nblocks * 3)
+    assert magnitude.shape == (n_residues,)
+    assert ph_spread.shape == (n_residues,)
+    assert not np.any(np.isnan(features))  # NaN coupling entries must be zeroed, not propagated
+    assert np.all(magnitude >= 0.0)
+    assert np.all(ph_spread >= 0.0)
+
+
+def test_pca_cluster_residues_shapes_and_determinism():
+    scan_by_ph = _multi_ph_scan(n_positions=8, ph_values=(7.0, 5.0, 3.5))
+    _, features, _, _ = residue_ph_features(scan_by_ph)
+
+    coords, labels, evr = pca_cluster_residues(features, n_components=2, n_clusters=3, seed=0)
+    assert coords.shape == (8, 2)
+    assert labels.shape == (8,)
+    assert len(evr) == 2
+    assert set(labels) <= set(range(3))
+
+    # Same seed -> identical clustering (deterministic, reproducible for a report)
+    coords2, labels2, _ = pca_cluster_residues(features, n_components=2, n_clusters=3, seed=0)
+    assert np.allclose(coords, coords2)
+    assert np.array_equal(labels, labels2)
+
+
+def test_pca_cluster_residues_caps_k_to_n_residues():
+    scan_by_ph = _multi_ph_scan(n_positions=3, ph_values=(7.0, 5.0))
+    _, features, _, _ = residue_ph_features(scan_by_ph)
+    # more clusters requested than residues available -- must not error
+    coords, labels, _ = pca_cluster_residues(features, n_clusters=10, seed=0)
+    assert coords.shape[0] == 3
+    assert len(set(labels)) <= 3
+
+
+def test_ph_cluster_table_rows_match_features_and_are_sorted_by_magnitude():
+    scan_by_ph = _multi_ph_scan(n_positions=6, ph_values=(7.0, 5.0, 3.5))
+    rows = ph_cluster_table(scan_by_ph, n_clusters=3, seed=0)
+
+    resnums, _, magnitude, ph_spread = residue_ph_features(scan_by_ph)
+    assert set(r["resnum"] for r in rows) == set(int(r) for r in resnums)
+
+    magnitudes = [r["magnitude"] for r in rows]
+    assert magnitudes == sorted(magnitudes, reverse=True)
+
+    by_resnum = {r["resnum"]: r for r in rows}
+    for resnum, expected_mag, expected_spread in zip(resnums, magnitude, ph_spread):
+        row = by_resnum[int(resnum)]
+        assert row["magnitude"] == expected_mag
+        assert row["ph_spread"] == expected_spread

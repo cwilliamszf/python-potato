@@ -282,3 +282,91 @@ def ph_sensitivity_table(scan_by_ph: dict, n: int = 15) -> list:
 
     rows.sort(key=lambda r: r["ph_spread"] if np.isfinite(r["ph_spread"]) else -1.0, reverse=True)
     return rows
+
+
+def residue_ph_features(scan_by_ph: dict) -> tuple:
+    """Build a per-residue feature matrix from a multi-pH alanine scan,
+    for PCA/clustering: each row is one scanned residue's
+    ``mean_ddg_vector`` at every pH, concatenated -- so it captures both
+    *which blocks* a mutation perturbs and *how that pattern shifts
+    across pH*, not just an overall magnitude.
+
+    ``scan_by_ph`` maps pH -> AlanineScanResult, all sharing the same
+    scanned positions (as produced by ``run_alanine_scan_pipeline_multi_ph``).
+
+    Returns ``(resnums, features, magnitude, ph_spread)``:
+      - ``features``: (n_residues, nblocks * n_ph) array. NaN entries
+        (numerically unresolvable coupling -- see ``compute_coupling`` --
+        not missing data) are treated as zero perturbation so PCA and
+        clustering stay well-defined.
+      - ``magnitude``: (n_residues,) mean total perturbation
+        (sum |mean_ddg_vector|) across pH -- "does this mutation matter
+        at all," independent of pH.
+      - ``ph_spread``: (n_residues,) max-min of that per-pH total
+        across pH -- "does how much it matters depend on pH."
+    """
+    ph_values = sorted(scan_by_ph.keys())
+    positions = list(scan_by_ph[ph_values[0]].positions)
+
+    rows, magnitude, ph_spread = [], [], []
+    for resnum in positions:
+        per_ph_vectors, per_ph_scores = [], []
+        for ph in ph_values:
+            v = np.nan_to_num(scan_by_ph[ph].mean_ddg_vector[resnum], nan=0.0)
+            per_ph_vectors.append(v)
+            per_ph_scores.append(float(np.sum(np.abs(v))))
+        rows.append(np.concatenate(per_ph_vectors))
+        magnitude.append(float(np.mean(per_ph_scores)))
+        ph_spread.append(float(max(per_ph_scores) - min(per_ph_scores)))
+
+    return np.array(positions), np.array(rows), np.array(magnitude), np.array(ph_spread)
+
+
+def pca_cluster_residues(features: np.ndarray, n_components: int = 2, n_clusters: int = 4, seed: int = 0) -> tuple:
+    """PCA (via SVD; no extra ML dependency beyond scipy, already required)
+    plus k-means clustering (``scipy.cluster.vq``) on a per-residue feature
+    matrix from ``residue_ph_features`` -- groups mutation sites by the
+    *shape* of their per-block x per-pH coupling perturbation pattern.
+
+    Returns ``(coords, labels, explained_variance_ratio)``: ``coords`` is
+    (n_residues, n_components), ``labels`` is (n_residues,) integer cluster
+    IDs, ``explained_variance_ratio`` is (n_components,).
+    """
+    from scipy.cluster.vq import kmeans2
+
+    X = features - features.mean(axis=0, keepdims=True)
+    std = X.std(axis=0, keepdims=True)
+    std[std == 0] = 1.0  # guard columns with zero variance (e.g. an always-NaN block)
+    Xn = X / std
+
+    U, S, _ = np.linalg.svd(Xn, full_matrices=False)
+    n_components = min(n_components, U.shape[1])
+    coords = U[:, :n_components] * S[:n_components]
+    explained_variance_ratio = (S ** 2 / np.sum(S ** 2))[:n_components]
+
+    k = min(n_clusters, coords.shape[0])
+    _, labels = kmeans2(coords, k, minit="++", seed=seed)
+
+    return coords, labels, explained_variance_ratio
+
+
+def ph_cluster_table(scan_by_ph: dict, n_clusters: int = 4, seed: int = 0) -> list:
+    """One row per scanned residue: PCA coordinates, cluster assignment,
+    overall stability-effect magnitude, and pH-dependence -- the full
+    per-residue table backing ``plotting.plot_alanine_ph_pca`` /
+    ``plot_alanine_ph_magnitude_vs_sensitivity``, exportable as CSV."""
+    resnums, features, magnitude, ph_spread = residue_ph_features(scan_by_ph)
+    coords, labels, evr = pca_cluster_residues(features, n_clusters=n_clusters, seed=seed)
+    rows = [
+        {
+            "resnum": int(resnums[i]),
+            "cluster": int(labels[i]),
+            "magnitude": float(magnitude[i]),
+            "ph_spread": float(ph_spread[i]),
+            "pc1": float(coords[i, 0]),
+            "pc2": float(coords[i, 1]) if coords.shape[1] > 1 else float("nan"),
+        }
+        for i in range(len(resnums))
+    ]
+    rows.sort(key=lambda r: r["magnitude"], reverse=True)
+    return rows

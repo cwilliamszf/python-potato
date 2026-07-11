@@ -335,6 +335,77 @@ def plot_mutational_response_comparison(scan_by_ph: dict, ax=None, **kwargs):
     return ax
 
 
+def plot_alanine_ph_pca(scan_by_ph: dict, ax=None, n_clusters: int = 4, top_n_labels: int = 10, seed: int = 0, **kwargs):
+    """PCA scatter of a multi-pH alanine scan, one point per scanned
+    residue, k-means clustered on the *shape* of its per-block x per-pH
+    coupling perturbation pattern (see ``alanine_scan.residue_ph_features``)
+    -- groups residues with similar structural-response profiles, whether
+    that's "large everywhere," "negligible everywhere," or "large only at
+    low pH." Point size encodes overall perturbation magnitude (mean
+    across pH); the ``top_n_labels`` most pH-sensitive residues are
+    labeled directly."""
+    from .alanine_scan import pca_cluster_residues, residue_ph_features
+    import matplotlib.pyplot as plt
+
+    if ax is None:
+        _, ax = plt.subplots(figsize=(8, 7))
+
+    resnums, features, magnitude, ph_spread = residue_ph_features(scan_by_ph)
+    coords, labels, evr = pca_cluster_residues(features, n_clusters=n_clusters, seed=seed)
+
+    mmax = magnitude.max()
+    size = 30 + 300 * (magnitude / mmax if mmax > 0 else magnitude)
+    sc = ax.scatter(coords[:, 0], coords[:, 1], c=labels, cmap="tab10", s=size,
+                     edgecolor="k", linewidth=0.4, alpha=0.85, **kwargs)
+
+    top_idx = np.argsort(ph_spread)[::-1][:top_n_labels]
+    for i in top_idx:
+        ax.annotate(str(resnums[i]), (coords[i, 0], coords[i, 1]), fontsize=8,
+                     xytext=(3, 3), textcoords="offset points")
+
+    ax.set_xlabel(f"PC1 ({evr[0] * 100:.1f}% var)")
+    ax.set_ylabel(f"PC2 ({evr[1] * 100:.1f}% var)" if len(evr) > 1 else "PC2")
+    ax.set_title("Alanine Scan × pH: PCA of Per-Residue Coupling Perturbation\n"
+                  "(size = magnitude, color = cluster, labels = most pH-sensitive)")
+    legend1 = ax.legend(*sc.legend_elements(), title="cluster", loc="best")
+    ax.add_artist(legend1)
+    return ax
+
+
+def plot_alanine_ph_magnitude_vs_sensitivity(scan_by_ph: dict, ax=None, n_clusters: int = 4,
+                                              top_n_labels: int = 10, seed: int = 0, **kwargs):
+    """Direct 2D read-out of a multi-pH alanine scan: x = overall
+    stability-effect magnitude (mean total |ΔΔG+| across pH), y = how much
+    that effect depends on pH (max-min across pH) -- separates residues
+    that matter for stability from residues whose apparent role is
+    specifically pH-modulated (candidate pH sensors, upper-right/upper
+    region). Colored by the same PCA-derived clusters as
+    ``plot_alanine_ph_pca`` for a consistent story across both panels."""
+    from .alanine_scan import pca_cluster_residues, residue_ph_features
+    import matplotlib.pyplot as plt
+
+    if ax is None:
+        _, ax = plt.subplots(figsize=(8, 7))
+
+    resnums, features, magnitude, ph_spread = residue_ph_features(scan_by_ph)
+    _, labels, _ = pca_cluster_residues(features, n_clusters=n_clusters, seed=seed)
+
+    sc = ax.scatter(magnitude, ph_spread, c=labels, cmap="tab10", s=60,
+                     edgecolor="k", linewidth=0.4, alpha=0.85, **kwargs)
+
+    top_idx = np.argsort(ph_spread)[::-1][:top_n_labels]
+    for i in top_idx:
+        ax.annotate(str(resnums[i]), (magnitude[i], ph_spread[i]), fontsize=8,
+                     xytext=(3, 3), textcoords="offset points")
+
+    ax.set_xlabel(r"Stability Effect Magnitude, mean$_{pH}$ $\sum|\Delta\Delta G^+|$ (kJ/mol)")
+    ax.set_ylabel(r"pH Dependence, $\max_{pH} - \min_{pH}$ of that total (kJ/mol)")
+    ax.set_title("Stability Effect vs. pH Dependence, per Residue")
+    legend1 = ax.legend(*sc.legend_elements(), title="cluster", loc="best")
+    ax.add_artist(legend1)
+    return ax
+
+
 def plot_dsc(dsc_result: DSCResult, ax=None, **kwargs):
     import matplotlib.pyplot as plt
 
