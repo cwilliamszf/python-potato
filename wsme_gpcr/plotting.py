@@ -125,24 +125,27 @@ def plot_residue_folding_probability(result: WSMEResult, ax=None, cmap="jet", **
     return ax
 
 
-def plot_coupling_matrix(coupling: CouplingResult, ax=None, cmap="RdBu_r", **kwargs):
+def plot_coupling_matrix(coupling: CouplingResult, ax=None, cmap="RdBu_r", vmax=None, colorbar=True, **kwargs):
     """Residue(block)-residue(block) coupling free-energy matrix (the
     'CouplingMat' in the original tool). Diverging colormap centered at
     zero: positive (red) = j and k tend to fold together, negative
     (blue) = folding one tends to unfold the other, near zero = no
-    thermodynamic coupling."""
+    thermodynamic coupling. Pass ``vmax`` (e.g. the max over several
+    CouplingResults) to put multiple panels on the same color scale."""
     import matplotlib.pyplot as plt
 
     if ax is None:
         _, ax = plt.subplots(figsize=(7, 6))
     mat = coupling.coupling_free_energy
-    finite = mat[np.isfinite(mat)]
-    vmax = np.nanmax(np.abs(finite)) if len(finite) else 1.0
+    if vmax is None:
+        finite = mat[np.isfinite(mat)]
+        vmax = np.nanmax(np.abs(finite)) if len(finite) else 1.0
     im = ax.pcolormesh(mat, cmap=cmap, shading="auto", vmin=-vmax, vmax=vmax, **kwargs)
     ax.set_xlabel("Block Index")
     ax.set_ylabel("Block Index")
-    cb = plt.colorbar(im, ax=ax)
-    cb.set_label("Coupling Free Energy (kJ/mol)")
+    if colorbar:
+        cb = plt.colorbar(im, ax=ax)
+        cb.set_label("Coupling Free Energy (kJ/mol)")
     return ax
 
 
