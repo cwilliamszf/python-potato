@@ -23,6 +23,7 @@ def _make_structure(residues):
         coord=np.array(coord, dtype=float),
         atom_resindex=np.array(atom_resindex),
         charge=np.array(charge),
+        bfactor=np.zeros(len(atom_name)),
         chain_id="A",
         ph=7.0,
     )

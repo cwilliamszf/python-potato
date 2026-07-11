@@ -84,6 +84,7 @@ class Structure:
     coord: np.ndarray  # (natoms, 3)
     atom_resindex: np.ndarray  # (natoms,) 0-based residue index per atom
     charge: np.ndarray  # (natoms,) charge magnitude per atom (0 if none)
+    bfactor: np.ndarray  # (natoms,) B-factor/pLDDT column verbatim from the PDB/mmCIF file
     chain_id: str
     ph: float
     gaps: list = field(default_factory=list)  # author numbering gaps found
@@ -136,7 +137,7 @@ def load_structure(path, chain: str | None = None, model: int = 0, ph: float = 7
     bio_chain = _pick_chain(bio_model, chain)
 
     resname, author_resnum = [], []
-    atom_name, coord, atom_resindex, charge = [], [], [], []
+    atom_name, coord, atom_resindex, charge, bfactor = [], [], [], [], []
 
     ridx = 0
     for residue in bio_chain:
@@ -168,6 +169,7 @@ def load_structure(path, chain: str | None = None, model: int = 0, ph: float = 7
             atom_name.append(name)
             coord.append(atom.get_coord())
             atom_resindex.append(ridx)
+            bfactor.append(atom.get_bfactor())
 
             q = 0.0
             if group_charge is not None and name in group_charge:
@@ -203,6 +205,7 @@ def load_structure(path, chain: str | None = None, model: int = 0, ph: float = 7
         coord=np.asarray(coord, dtype=float),
         atom_resindex=np.asarray(atom_resindex, dtype=int),
         charge=np.asarray(charge, dtype=float),
+        bfactor=np.asarray(bfactor, dtype=float),
         chain_id=bio_chain.id,
         ph=ph,
         gaps=gaps,

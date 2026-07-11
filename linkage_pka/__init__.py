@@ -24,6 +24,12 @@ from .structure_prep import (
     optimize_rotamers,
     run_structure_prep,
 )
+from .membrane_frame import (
+    MembraneFrame,
+    compute_membrane_frame,
+    find_r350,
+    find_y753,
+)
 
 __all__ = [
     "LinkageResult",
@@ -37,4 +43,8 @@ __all__ = [
     "measure_chi",
     "optimize_rotamers",
     "run_structure_prep",
+    "MembraneFrame",
+    "compute_membrane_frame",
+    "find_r350",
+    "find_y753",
 ]
