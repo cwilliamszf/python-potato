@@ -91,6 +91,14 @@ from .pipeline import (
     residue_min_distance,
     run_structure_titration,
 )
+from .gate_a import (
+    GATE_A_RMSE_THRESHOLD_PKA_UNITS,
+    REFERENCE_PDB_ID,
+    SNASE_1STN_EXPERIMENTAL_PKA,
+    ExperimentalPka,
+    GateAResult,
+    compute_gate_a_rmse,
+)
 
 __all__ = [
     "LinkageResult",
@@ -158,4 +166,10 @@ __all__ = [
     "identify_titratable_sites",
     "residue_min_distance",
     "run_structure_titration",
+    "GATE_A_RMSE_THRESHOLD_PKA_UNITS",
+    "REFERENCE_PDB_ID",
+    "SNASE_1STN_EXPERIMENTAL_PKA",
+    "ExperimentalPka",
+    "GateAResult",
+    "compute_gate_a_rmse",
 ]

@@ -3,11 +3,16 @@
 Status: exploratory pipeline-validation work, not a validated result. **No
 number in this document should be read as a real prediction about GPR68's
 proton-sensing behavior.** Gate A (SNase buried-ionizable calibration) has
-not been run — its dataset could not be sourced in this sandbox (see
-"Gate A dataset sourcing" below) — so no PB pKa produced by this pipeline
-is calibration-checked yet. This document exists to record what was
-learned about the *pipeline's own behavior* at real-protein scale, since
-that surfaced a genuine, previously-undetected methodological gap.
+now been run against the real experimental dataset and **fails** by a
+wide margin in every variant tried — RMSE 7.9-11.0 pKa units against a
+1.0-unit threshold (see "Gate A calibration: FAIL" below). Per the
+pipeline spec's own acceptance criterion, this means **no PB pKa produced
+by this pipeline, on GPR68 or anywhere else, should be treated as
+quantitatively calibrated** — only as pipeline-mechanics validation. This
+document exists to record what was learned about the *pipeline's own
+behavior* at real-protein scale, since that surfaced a genuine,
+previously-undetected methodological gap, and now a genuine, decisive
+calibration failure.
 
 ## Context
 
@@ -169,7 +174,7 @@ independent variants, not guesswork:
   pipeline's actual accuracy. **This thread is a reasonable place to
   stop** rather than continue iterating on local rotamer search.
 
-## Gate A dataset sourcing (separately blocked)
+## Gate A dataset sourcing (resolved via user upload)
 
 Before the GPR68 smoke test, real effort went into sourcing the SNase
 buried-ionizable experimental dataset for Gate A calibration. WebFetch and
@@ -181,9 +186,113 @@ al. J Mol Biol 2009, Castañeda et al. Proteins 2009, and the PKAD-R
 curated database (Clemson/JHU) — but their actual numeric tables could not
 be fetched. `pip download`-ing PyPKa and PROPKA (candidates for bundled
 benchmark data) confirmed neither ships one; both only include force-field
-parameter tables. **This remains blocked on the user supplying the
-dataset directly** (paste or upload) — it is not resolvable from within
-this sandbox.
+parameter tables. This was resolved by the user directly downloading the
+PKAD-2 wild-type dataset (compbio.clemson.edu/PKAD-2/) and the real 1STN
+mmCIF structure and uploading both into this session — see
+`linkage_pka/gate_a.py` for the transcribed dataset (24 experimental
+pKa's, provenance and citations in its module docstring) and "Gate A
+calibration: FAIL" below for the result.
+
+## Gate A calibration: FAIL
+
+Ran the real Gate A test: `titration.compute_intrinsic_pka` (soluble
+protein, `frame=None`, no membrane) on the real 1STN structure for every
+experimental site the structure actually resolves (21 of 24 — ASP143,
+ASP146, GLU142 fall outside the crystal's resolved range of resnum 6-141,
+most likely disordered C-terminal tail, excluded rather than guessed at),
+then `gate_a.compute_gate_a_rmse` against the real PKAD-2/Castañeda 2009
+values. Same pipeline conventions as the GPR68 work throughout:
+`structure_prep.run_structure_prep` (PDBFixer + rotamer optimization) →
+`pdb2pqr30 --ff AMBER --with-ph 7.0 --titration-state-method propka` →
+`GridParams(dime=(33,33,33), glen=(65,65,65), ...)` for the protein side,
+`glen=(25,25,25)` for the model compound. Three variants run, matching
+the relaxation levers built for the GPR68 work:
+
+| Variant | RMSE (pKa units) | MAE | n compared | Pass (<1.0)? |
+|---|---|---|---|---|
+| Rigid (no relaxation) | 10.99 | 8.83 | 17 | **No** |
+| Single-residue rotamer relaxation | 10.09 | 7.60 | 17 | **No** |
+| Neighbor relaxation (8 Å radius) | 7.86 | 6.12 | 17 | **No** |
+
+(`n=17`: excludes the 2 biphasic entries — Asp19, Asp21, no principled
+single-value comparison — and the 2 upper-bound entries — Asp77, Asp83,
+`<2.2` — per `compute_gate_a_rmse`'s documented defaults;
+`include_upper_bounds=True` makes every variant's RMSE worse, since both
+excluded sites come back in at +18 to +22 computed against a <2.2 bound.)
+
+Per-residue detail (`expt` = real experimental pKa):
+
+| Site | expt | rigid | rotamer | neighbor |
+|---|---|---|---|---|
+| His8 | 6.52 | 1.63 | 3.26 | 10.02 |
+| Glu10 | 2.82 | 20.45 | 23.02 | 18.93 |
+| Asp40 | 3.87 | 3.80 | -3.72 | -3.68 |
+| Glu43 | 4.32 | -16.14 | -15.25 | -5.55 |
+| His46 | 5.86 | -1.34 | -0.26 | 12.98 |
+| Glu52 | 3.93 | 15.28 | 9.43 | 8.94 |
+| Glu57 | 3.49 | 6.73 | 2.02 | 2.12 |
+| Glu67 | 3.76 | 19.73 | 3.42 | 0.81 |
+| Glu73 | 3.31 | 9.35 | 9.14 | 7.54 |
+| Glu75 | 3.26 | 21.11 | 24.10 | 22.27 |
+| Asp95 | 2.16 | 17.11 | 10.70 | 9.90 |
+| Glu101 | 3.81 | 10.35 | 12.03 | 10.94 |
+| His121 | 5.30 | 0.66 | 4.76 | 7.21 |
+| Glu122 | 3.89 | 7.62 | 5.41 | 9.06 |
+| His124 | 5.73 | 4.49 | -0.37 | 1.58 |
+| Glu129 | 3.75 | 17.66 | 16.03 | 2.99 |
+| Glu135 | 3.76 | 4.07 | 5.00 | 3.23 |
+
+Key observations:
+
+1. **Relaxation helps on average but the effect is not monotonic or
+   reliable per-site.** Going rigid → rotamer → neighbor lowers RMSE
+   (11.0 → 10.1 → 7.9), consistent with the GPR68 diagnosis that rigid
+   single-structure PB exaggerates buried-charge electrostatics. But
+   individual sites move the *wrong* direction under relaxation just as
+   often as the right one: Asp40 was nearly perfect unrelaxed (diff
+   -0.07) and got *worse* under both relaxation variants (-7.59, -7.55);
+   His46 and His8 get progressively *worse* going from rigid to neighbor
+   relaxation (His46: -7.20 → -6.12 → +7.12 magnitude).
+2. **No clean burial (%SASA) correlation.** Asp40 (71% exposed) is
+   nearly exact; Glu67 (76% exposed, comparably solvent-exposed) is off
+   by 16 units unrelaxed. Deeply buried and moderately exposed sites both
+   appear among the best- and worst-performing residues. This rules out
+   "just a burial/dielectric-boundary problem" as the sole explanation —
+   something more specific to each local geometry (rotamer packing,
+   nearby H-bond partners, possibly propka's starting protonation-state
+   assignment) is driving the site-to-site variance.
+3. **Even the best variant (neighbor relaxation, RMSE 7.86) is ~8x over
+   the 1.0-unit threshold.** This is not a borderline result nudged over
+   the line by one or two outliers — nearly every buried Glu is off by
+   6-20 units in every variant.
+4. **This matches, and now sharply confirms, the literature's own
+   framing of SNase as a hard benchmark.** Castañeda et al. 2009 (the
+   source of this data) and the broader Garcia-Moreno lab literature
+   built this dataset specifically because naive single-structure
+   continuum electrostatics is known to struggle on SNase's buried
+   ionizable cluster — real published methods that do well on this
+   benchmark generally use multi-conformer continuum electrostatics
+   (MCCE-style, many rotamers per residue scored simultaneously) or
+   explicit water penetration modeling, not a single relaxed rotamer per
+   site. This pipeline's design deliberately excludes exactly that
+   (single fixed structure, optional *single*-rotamer relaxation, no
+   ensemble sampling, no MD) — so this Gate A failure is best read as
+   confirming a real, expected limitation of the pipeline's chosen scope,
+   not a bug to be hunted down further within that scope.
+
+**Conclusion:** Gate A fails in every variant tried. Per the pipeline
+spec's own acceptance rule ("no ancestral-node number may be reported"
+before Gate A passes), **no absolute pKa or Δn_H(pH) number this pipeline
+has produced — for SNase or for GPR68 — should be treated as
+quantitatively calibrated.** The GPR68 results earlier in this document
+(ECL2 cluster, D2.50/Asp282/Glu103 cluster, Na+ ion effect) remain useful
+as *pipeline-mechanics* validation (the code runs correctly, responds to
+physically sensible perturbations in the right direction, e.g. Na+
+raising a nearby Asp's pKa) but not as validated predictions of GPR68's
+real proton-sensing thermodynamics. Closing this gap would require
+capability outside this pipeline's stated scope (no MD, no ensemble
+sampling) — most plausibly a multi-conformer/MCCE-style extension, which
+is a substantial new capability, not a parameter tweak.
 
 ## Code artifacts produced (all tested, all in `linkage_pka/`)
 
@@ -230,8 +339,13 @@ this sandbox.
   cluster's implausible >20-unit shifts. The clearest sign yet that this
   pipeline's core PB machinery behaves correctly when the local
   environment isn't a tightly-packed multi-charge cluster.
+- `gate_a.py` — Gate A calibration scaffolding: `SNASE_1STN_EXPERIMENTAL_PKA`
+  (24 real PKAD-2/Castañeda 2009 entries, provenance in the module
+  docstring), `compute_gate_a_rmse` (biphasic/upper-bound handling,
+  per-residue breakdown, `skipped` list with reasons). Run against the
+  real 1STN structure — see "Gate A calibration: FAIL" above.
 
-Full test suite: 181 passed as of this writing (`pytest` from the repo
+Full test suite: 194 passed as of this writing (`pytest` from the repo
 root).
 
 ## Na+ ion comparison across the full pH grid (superseded -- see below)
@@ -335,7 +449,12 @@ cluster specifically.
    reporting it as ground truth (the active conformer's His169 is a
    concrete example: three variants gave three different apparent pKa's,
    all "fixed" relative to the unrelaxed case).
-3. Gate A calibration remains blocked on dataset access (see above).
+3. ~~Gate A calibration remains blocked on dataset access~~ — resolved
+   (user supplied PKAD-2 CSV + real 1STN structure) and **run: FAILS**
+   in every variant tried (RMSE 7.9-11.0 vs 1.0-unit threshold). See
+   "Gate A calibration: FAIL" above. This is now the dominant open issue:
+   every GPR68 number in this document is pipeline-mechanics validation
+   only, not a calibrated prediction, until this gap is closed.
 4. ~~Explicit Na⁺ ion modeling at D2.50~~ — done. ~~pH-grid with/without
    comparison~~ — done, then corrected: the initial isolated-site version
    was superseded after checking (and confirming significant) coupling to
@@ -351,3 +470,11 @@ cluster specifically.
    beyond the ~9-12 Å searched so far — a genuinely complete treatment
    would need a wider coupling search across the whole receptor, which is
    real-production-run territory, not a smoke test.
+7. **Given the Gate A failure, the highest-value next step is almost
+   certainly closing the calibration gap, not further GPR68 exploration.**
+   The per-site variance (no clean %SASA correlation, sign flips under
+   relaxation) suggests the fix needs to go beyond a single relaxed
+   rotamer per site — most plausibly a multi-conformer/MCCE-style
+   extension (score many rotamers simultaneously per microstate rather
+   than picking one), which would be new pipeline scope, not a parameter
+   tweak to what exists today.
