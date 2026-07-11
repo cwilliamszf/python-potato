@@ -7,3 +7,4 @@ dist/
 wsme_output/
 *.png
 .venv/
+io.mc

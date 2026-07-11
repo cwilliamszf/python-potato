@@ -30,6 +30,15 @@ from .membrane_frame import (
     find_r350,
     find_y753,
 )
+from .dielectric_map import (
+    DxMap,
+    compute_dummy_maps,
+    compute_energy_with_maps,
+    read_dx,
+    splice_membrane_slab,
+    write_dx,
+    write_maps,
+)
 
 __all__ = [
     "LinkageResult",
@@ -47,4 +56,11 @@ __all__ = [
     "compute_membrane_frame",
     "find_r350",
     "find_y753",
+    "DxMap",
+    "compute_dummy_maps",
+    "compute_energy_with_maps",
+    "read_dx",
+    "splice_membrane_slab",
+    "write_dx",
+    "write_maps",
 ]
