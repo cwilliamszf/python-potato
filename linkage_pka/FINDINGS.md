@@ -972,3 +972,69 @@ independent evidence for) the test-1 finding that active's problem is
 structural/topological in the core bundle, not an energy-scale
 parameter. Whatever is wrong with active (test 3, still open) has to be
 resolved before a meaningful ξ calibration for it is even possible.
+
+## Test 3: block-partition ruled out; active has a genuinely sparser
+## tertiary contact network, broadly distributed, not one hotspot
+
+**Sub-test A -- is it just how residues get chopped into blocks?** No.
+Rebuilt a block model using active's real, untouched 3D contact
+geometry (`ra.contact_map`, from its actual atom positions) but
+partitioned with *inactive's* secondary-structure assignment instead of
+active's own (`build_blocks(ri.ss_mask, ra.contact_map)`). If block
+fragmentation from the 28/289 residues where the two structures'
+geometric SS-assignment disagrees (see below) were driving the
+collapse, forcing inactive's cleaner partition onto active's geometry
+should have helped. It didn't -- global minimum actually got worse
+(3.8% folded vs. 8.2% with active's own partition). The collapse lives
+in the atomic contact geometry itself, not the blocking choice.
+
+**Where the SS assignment disagrees (28/289 residues, ~10 short runs):**
+most are 1-4 residue blips, but one stands out: residues 254-257,
+inactive=helix / active=coil, a four-residue stretch right at the
+cytoplasmic end of TM6 -- precisely where real class-A GPCRs are known
+to locally unwind/kink upon activation (the conserved Pro-containing
+"toggle switch" region). This is plausibly a real activation-associated
+signal being correctly picked up by the geometric SS assignment, not
+noise. But sub-test A already shows this isn't what's driving the
+overall collapse by itself.
+
+**Sub-test B -- direct residue-residue contact topology diff** (bypasses
+blocking entirely; sequences and author numbering are identical between
+the two structures, confirmed, so residue-pair contacts can be diffed
+1:1). Restricted to long-range pairs (sequence separation >=10, i.e.
+tertiary packing, not local helix turns): inactive has 401 such
+contacts, active has only 302 -- a **25% net reduction**, with 167 pairs
+present only in inactive vs. just 68 gained in active. This loss is not
+localized to one region -- it's spread across essentially the whole
+receptor (N-term/TM1-TM2, TM2-TM3, ECL2/TM4-TM5, TM5-TM6, TM6-TM7 all
+show net losses of 6-25 contacts per 10-residue window). This is a
+genuinely global loosening of tertiary packing in the active homology
+model, not a single hotspot.
+
+**Sub-test C -- is this a modeling-confidence artifact or a real signal?**
+Checked whether active's core bundle (res 14-302, i.e. excluding the
+already-flagged disordered termini) shows elevated B-factor relative to
+inactive's, as it would if the active homology model were simply
+lower-confidence in this region. It doesn't: mean CA B-factor 10.02
+(active) vs. 12.47 (inactive), identical median (5.44), identical
+fraction >20 (0.135). No confidence-artifact signal in the one proxy
+available in this sandbox -- inconclusive rather than a clean
+distinguisher, since this B-factor column's actual meaning for these
+GPCRdb files (true per-residue confidence vs. carried-through template
+values) is not independently known here.
+
+**Where this leaves it**: the active-state collapse is real, broad
+(not one fixable hotspot), survives block-partition control, and isn't
+explained by an energy-scale (ξ) problem. It is consistent with real
+GPCR biophysics (active-state conformations are well documented to be
+intrinsically less stable/more dynamic without a bound intracellular
+partner locking them in place -- exactly why nanobodies/mini-G proteins
+are needed to trap them for structural work), but the magnitude (75%+
+loss of a stable fold) is large enough that homology-model quality for
+the active state can't be ruled out either, and the one confidence
+proxy available (B-factor) doesn't clearly settle it either way.
+Distinguishing "real, if exaggerated, biology" from "active-state
+homology-model quality" would need something not available in this
+sandbox -- either an experimentally solved GPR68 active structure, or
+the GPCRdb model's own template/confidence metadata. This is where the
+investigation currently stops without new external data.
