@@ -54,6 +54,9 @@ def main(argv=None):
     p.add_argument("--dsc-tmin", type=float, default=273.0)
     p.add_argument("--dsc-tmax", type=float, default=373.0)
     p.add_argument("--dsc-tstep", type=float, default=1.0)
+    p.add_argument("--coupling", action="store_true",
+                    help="Also compute the residue-residue coupling free-energy matrix "
+                    "(thermodynamic coupling between block pairs; comparable cost to the landscape itself)")
     p.add_argument("--no-plots", action="store_true", help="Skip generating plot images")
     args = p.parse_args(argv)
 
@@ -78,7 +81,7 @@ def main(argv=None):
         results = run_pipeline_multi_ph(
             args.pdb, chain=args.chain, model=args.model, ss_codes=ss_codes,
             block_size=args.block_size, params=params, with_dsc=args.dsc,
-            dsc_T_grid=dsc_T_grid, progress_callback=progress,
+            dsc_T_grid=dsc_T_grid, with_coupling=args.coupling, progress_callback=progress,
         )
         for ph, pr in results.items():
             _report(pr)
@@ -109,6 +112,7 @@ def main(argv=None):
     pr = run_pipeline(
         args.pdb, chain=args.chain, model=args.model, ph=args.ph, ss_codes=ss_codes,
         block_size=args.block_size, params=params, with_dsc=args.dsc, dsc_T_grid=dsc_T_grid,
+        with_coupling=args.coupling,
     )
     _report(pr)
     _write_outputs(out_dir, pr, save_plot=not args.no_plots)
@@ -135,11 +139,13 @@ def _write_outputs(out_dir: Path, pr: PipelineResult, save_plot: bool):
     _write_fpath(out_dir / "ResFoldProb_vs_RC.txt", result)
     if pr.dsc_result is not None:
         _write_dsc(out_dir / "DSC_Thermogram.txt", pr.dsc_result)
+    if pr.coupling_result is not None:
+        _write_coupling(out_dir / "CouplingMatrix.txt", pr.coupling_result)
     if save_plot:
-        from .plotting import plot_2d_landscape_surface, plot_summary
+        from .plotting import plot_2d_landscape_surface, plot_coupling_matrix, plot_summary
         import matplotlib.pyplot as plt
 
-        fig = plot_summary(result, dsc_result=pr.dsc_result, save_path=str(out_dir / "summary.png"))
+        fig = plot_summary(result, dsc_result=pr.dsc_result, coupling_result=pr.coupling_result, save_path=str(out_dir / "summary.png"))
         plt.close(fig)
 
         fig = plt.figure(figsize=(8, 7))
@@ -148,6 +154,13 @@ def _write_outputs(out_dir: Path, pr: PipelineResult, save_plot: bool):
         fig.tight_layout()
         fig.savefig(out_dir / "2D_FreeEnergyLandscape_3D.png", dpi=200)
         plt.close(fig)
+
+        if pr.coupling_result is not None:
+            fig, ax = plt.subplots(figsize=(7, 6))
+            plot_coupling_matrix(pr.coupling_result, ax=ax)
+            fig.tight_layout()
+            fig.savefig(out_dir / "CouplingMatrix.png", dpi=200)
+            plt.close(fig)
 
 
 def _write_1d_profile(path, result):
@@ -185,6 +198,19 @@ def _write_dsc(path, dsc_result):
         f.write("# column 3: Cp excess (from partition function) (kJ/mol/K)\n")
         for T, cp, cpx in zip(dsc_result.T, dsc_result.Cp, dsc_result.Cp_excess):
             f.write(f"{T:6.1f} {cp:10.5f} {cpx:10.5f}\n")
+
+
+def _write_coupling(path, coupling_result):
+    mat = coupling_result.coupling_free_energy
+    nb = mat.shape[0]
+    with open(path, "w") as f:
+        f.write("# column 1: Block j\n")
+        f.write("# column 2: Block k\n")
+        f.write("# column 3: Coupling Free Energy (kJ/mol); positive = j,k tend to fold together\n")
+        f.write("# column 4: P(j folded, k folded)\n")
+        for j in range(nb):
+            for k in range(nb):
+                f.write(f"{j:3d} {k:3d} {mat[j, k]:8.3f} {coupling_result.p_folded_folded[j, k]:1.4f}\n")
 
 
 if __name__ == "__main__":

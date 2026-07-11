@@ -127,7 +127,7 @@ def test_vectorized_matches_bruteforce(seed):
     )
 
     topo = _build_topology(bm)
-    fes_num, fes2D_num, diff, hv, stats = _evaluate(topo, bm, zvec, zvalc, params, need_landscape=True)
+    fes_num, fes2D_num, diff, hv, stats, _ = _evaluate(topo, bm, zvec, zvalc, params, need_landscape=True)
     fpath_num = np.cumsum(diff, axis=1)[:, :nb]
 
     assert np.allclose(fes_num, fes_bf, rtol=1e-9, atol=1e-12)

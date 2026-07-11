@@ -176,9 +176,16 @@ def _build_topology(block_model: BlockModel) -> _Topology:
     return _Topology(nb, seg_a, seg_b, seg_len, ncont_seg, iA, iB, cross_cmap, gap, cmap_prefix)
 
 
-def _evaluate(topo: _Topology, block_model: BlockModel, zvec: np.ndarray, zvalc: float, params: WSMEParams, need_landscape: bool):
+def _evaluate(topo: _Topology, block_model: BlockModel, zvec: np.ndarray, zvalc: float, params: WSMEParams,
+              need_landscape: bool, need_raw: bool = False):
     """T-dependent energy evaluation given a fixed topology. Returns
-    (fes_num, fes2D_num_or_None, diff_or_None, stats)."""
+    (fes_num, fes2D_num_or_None, diff_or_None, hv, stats, raw_or_None).
+
+    ``raw``, when requested, exposes the per-segment SSA weights and
+    per-pair DSA+DSAw/L weights (not yet binned by reaction coordinate)
+    so a caller can do its own accumulation -- e.g. the coupling-matrix
+    calculation in coupling.py needs the raw weights indexed by block
+    range, not just the RC-binned totals."""
     nb = topo.nb
     T, R, Tref = params.T, params.R, params.Tref
     dcp_term = params.ene + params.DCp * (T - Tref) - T * params.DCp * np.log(T / Tref)
@@ -257,7 +264,23 @@ def _evaluate(topo: _Topology, block_model: BlockModel, zvec: np.ndarray, zvalc:
         "pct_dsa": 100.0 * z_dsa / zfin if zfin else float("nan"),
         "pct_dsawl": 100.0 * z_dsawl / zfin if zfin else float("nan"),
     }
-    return fes_num, fes2D_num, diff, hv, stats
+
+    raw = None
+    if need_raw:
+        if len(iA):
+            w_pair = w_dsa + w_dsawl
+        else:
+            w_pair = np.zeros(0)
+        raw = {
+            "seg_a": seg_a, "seg_b": seg_b, "w1": w1,
+            "pair_a1": seg_a[iA] if len(iA) else np.zeros(0, dtype=int),
+            "pair_b1": seg_b[iA] if len(iA) else np.zeros(0, dtype=int),
+            "pair_a2": seg_a[iB] if len(iA) else np.zeros(0, dtype=int),
+            "pair_b2": seg_b[iB] if len(iA) else np.zeros(0, dtype=int),
+            "w_pair": w_pair,
+        }
+
+    return fes_num, fes2D_num, diff, hv, stats, raw
 
 
 def run_wsme(structure: Structure, block_model: BlockModel, ss_mask: np.ndarray, params: WSMEParams = None) -> WSMEResult:
@@ -276,7 +299,7 @@ def run_wsme(structure: Structure, block_model: BlockModel, ss_mask: np.ndarray,
     zvalc = np.exp((params.DS - params.DDS) / params.R)
 
     topo = _build_topology(block_model)
-    fes_num, fes2D_num, diff, hv, stats = _evaluate(topo, block_model, zvec, zvalc, params, need_landscape=True)
+    fes_num, fes2D_num, diff, hv, stats, _ = _evaluate(topo, block_model, zvec, zvalc, params, need_landscape=True)
 
     zfin = float(fes_num.sum())
     if zfin <= 0 or not np.isfinite(zfin):
@@ -311,5 +334,5 @@ def partition_function(structure: Structure, block_model: BlockModel, ss_mask: n
     zvalc = np.exp((params.DS - params.DDS) / params.R)
     if topo is None:
         topo = _build_topology(block_model)
-    fes_num, _, _, _, _ = _evaluate(topo, block_model, zvec, zvalc, params, need_landscape=False)
+    fes_num, _, _, _, _, _ = _evaluate(topo, block_model, zvec, zvalc, params, need_landscape=False)
     return float(fes_num.sum())

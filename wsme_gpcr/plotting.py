@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import numpy as np
 
+from .coupling import CouplingResult
 from .dsc import DSCResult
 from .wsme import WSMEResult
 
@@ -124,6 +125,27 @@ def plot_residue_folding_probability(result: WSMEResult, ax=None, cmap="jet", **
     return ax
 
 
+def plot_coupling_matrix(coupling: CouplingResult, ax=None, cmap="RdBu_r", **kwargs):
+    """Residue(block)-residue(block) coupling free-energy matrix (the
+    'CouplingMat' in the original tool). Diverging colormap centered at
+    zero: positive (red) = j and k tend to fold together, negative
+    (blue) = folding one tends to unfold the other, near zero = no
+    thermodynamic coupling."""
+    import matplotlib.pyplot as plt
+
+    if ax is None:
+        _, ax = plt.subplots(figsize=(7, 6))
+    mat = coupling.coupling_free_energy
+    finite = mat[np.isfinite(mat)]
+    vmax = np.nanmax(np.abs(finite)) if len(finite) else 1.0
+    im = ax.pcolormesh(mat, cmap=cmap, shading="auto", vmin=-vmax, vmax=vmax, **kwargs)
+    ax.set_xlabel("Block Index")
+    ax.set_ylabel("Block Index")
+    cb = plt.colorbar(im, ax=ax)
+    cb.set_label("Coupling Free Energy (kJ/mol)")
+    return ax
+
+
 def plot_dsc(dsc_result: DSCResult, ax=None, **kwargs):
     import matplotlib.pyplot as plt
 
@@ -136,13 +158,13 @@ def plot_dsc(dsc_result: DSCResult, ax=None, **kwargs):
     return ax
 
 
-def plot_summary(result: WSMEResult, dsc_result: DSCResult = None, save_path: str = None):
+def plot_summary(result: WSMEResult, dsc_result: DSCResult = None, coupling_result: CouplingResult = None, save_path: str = None):
     """A single figure with the 1D profile, 2D landscape, residue folding
-    probability, and (if provided) the DSC thermogram -- similar in spirit
-    to Plot_Imp_Variables.m."""
+    probability, and (if provided) the DSC thermogram and coupling matrix
+    -- similar in spirit to Plot_Imp_Variables.m."""
     import matplotlib.pyplot as plt
 
-    n_panels = 4 if dsc_result is not None else 3
+    n_panels = 3 + int(dsc_result is not None) + int(coupling_result is not None)
     fig, axes = plt.subplots(1, n_panels, figsize=(6 * n_panels, 5))
 
     plot_1d_profile(result, ax=axes[0])
@@ -154,9 +176,16 @@ def plot_summary(result: WSMEResult, dsc_result: DSCResult = None, save_path: st
     plot_residue_folding_probability(result, ax=axes[2])
     axes[2].set_title("Residue Folding Probability")
 
+    next_ax = 3
     if dsc_result is not None:
-        plot_dsc(dsc_result, ax=axes[3])
-        axes[3].set_title("DSC Thermogram")
+        plot_dsc(dsc_result, ax=axes[next_ax])
+        axes[next_ax].set_title("DSC Thermogram")
+        next_ax += 1
+
+    if coupling_result is not None:
+        plot_coupling_matrix(coupling_result, ax=axes[next_ax])
+        axes[next_ax].set_title("Coupling Free Energy")
+        next_ax += 1
 
     fig.tight_layout()
     if save_path:

@@ -19,6 +19,7 @@ from wsme_gpcr.plotting import (
     plot_2d_landscape,
     plot_2d_landscape_surface,
     plot_2d_landscape_surface_comparison,
+    plot_coupling_matrix,
     plot_dsc,
     plot_residue_folding_probability,
 )
@@ -86,6 +87,13 @@ with st.sidebar:
     dsc_tmax = st.number_input("DSC T max (K)", value=373.0, disabled=not run_dsc)
     dsc_tstep = st.number_input("DSC T step (K)", value=1.0, min_value=0.1, disabled=not run_dsc)
 
+    st.header("Coupling analysis")
+    run_coupling = st.checkbox(
+        "Compute residue-residue coupling free energy", value=False,
+        help="Thermodynamic coupling between every pair of blocks (do j and k tend to fold together?). "
+        "Comparable cost to the landscape itself -- previously impractical at GPCR scale in the MATLAB tool.",
+    )
+
     run_button = st.button("Run", type="primary", use_container_width=True)
 
 # ------------------------------------------------------------------ Run ---
@@ -123,7 +131,7 @@ if run_button:
             pipeline_results = run_pipeline_multi_ph(
                 tmp_path, ph_values=DEFAULT_PH_VALUES, chain=chain or None, model=int(model_index),
                 ss_codes=ss_codes, block_size=int(block_size), params=params,
-                with_dsc=run_dsc, dsc_T_grid=dsc_T_grid, progress_callback=progress,
+                with_dsc=run_dsc, dsc_T_grid=dsc_T_grid, with_coupling=run_coupling, progress_callback=progress,
             )
             progress_bar.progress(1.0, text="Done")
         else:
@@ -131,7 +139,7 @@ if run_button:
                 pipeline_results = {ph: run_pipeline(
                     tmp_path, chain=chain or None, model=int(model_index), ph=ph,
                     ss_codes=ss_codes, block_size=int(block_size), params=params,
-                    with_dsc=run_dsc, dsc_T_grid=dsc_T_grid,
+                    with_dsc=run_dsc, dsc_T_grid=dsc_T_grid, with_coupling=run_coupling,
                 )}
     except Exception as e:
         st.error(f"Run failed: {e}")
@@ -178,7 +186,12 @@ if run_button:
             col2.metric("SSA / DSA / DSAw-L states", f"{result.stats['n_states_ssa']} / {result.stats['n_states_dsa']} / {result.stats['n_states_dsawl']}")
             col3.metric("Partition fn % (SSA/DSA/DSAw-L)", f"{result.stats['pct_ssa']:.1f} / {result.stats['pct_dsa']:.1f} / {result.stats['pct_dsawl']:.1f}")
 
-            inner_tabs = st.tabs(["1D Profile", "2D Landscape", "3D Landscape", "Residue Folding Probability"] + (["DSC Thermogram"] if pr.dsc_result else []))
+            tab_names = ["1D Profile", "2D Landscape", "3D Landscape", "Residue Folding Probability"]
+            if pr.dsc_result:
+                tab_names.append("DSC Thermogram")
+            if pr.coupling_result:
+                tab_names.append("Coupling Free Energy")
+            inner_tabs = st.tabs(tab_names)
 
             with inner_tabs[0]:
                 fig = plot_1d_profile(result).figure
@@ -204,12 +217,24 @@ if run_button:
                 fig = plot_residue_folding_probability(result).figure
                 st.pyplot(fig)
 
+            next_tab = 4
             if pr.dsc_result:
-                with inner_tabs[4]:
+                with inner_tabs[next_tab]:
                     fig = plot_dsc(pr.dsc_result).figure
                     st.pyplot(fig)
                     lines = [f"{T:.1f} {cp:.5f} {cpx:.5f}" for T, cp, cpx in zip(pr.dsc_result.T, pr.dsc_result.Cp, pr.dsc_result.Cp_excess)]
                     st.download_button("Download DSC_Thermogram.txt", "\n".join(lines), file_name=f"DSC_Thermogram_pH{ph_val}.txt", key=f"dsc_{ph_val}")
+                next_tab += 1
+
+            if pr.coupling_result:
+                with inner_tabs[next_tab]:
+                    fig = plot_coupling_matrix(pr.coupling_result).figure
+                    st.pyplot(fig)
+                    mat = pr.coupling_result.coupling_free_energy
+                    lines = [f"{j} {k} {mat[j, k]:.3f} {pr.coupling_result.p_folded_folded[j, k]:.4f}"
+                             for j in range(mat.shape[0]) for k in range(mat.shape[1])]
+                    st.download_button("Download CouplingMatrix.txt", "\n".join(lines), file_name=f"CouplingMatrix_pH{ph_val}.txt", key=f"coupling_{ph_val}")
+                next_tab += 1
 else:
     st.write("Upload a structure and click **Run** in the sidebar to compute a landscape.")
     st.write(

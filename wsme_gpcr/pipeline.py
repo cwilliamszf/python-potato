@@ -19,6 +19,7 @@ import numpy as np
 
 from .blocking import BlockModel, build_blocks
 from .contacts import ContactMap, compute_contact_map
+from .coupling import CouplingResult, compute_coupling
 from .dsc import DSCResult, compute_dsc
 from .secondary_structure import assign_secondary_structure, secondary_structure_from_codes
 from .structure import Structure, load_structure
@@ -35,6 +36,7 @@ class PipelineResult:
     params: WSMEParams
     result: WSMEResult
     dsc_result: DSCResult = None
+    coupling_result: CouplingResult = None
     warnings: list = field(default_factory=list)
 
 
@@ -48,8 +50,9 @@ def run_pipeline(
     params: WSMEParams = None,
     with_dsc: bool = False,
     dsc_T_grid=None,
+    with_coupling: bool = False,
 ) -> PipelineResult:
-    """Run the full landscape (and optionally DSC) pipeline for one pH."""
+    """Run the full landscape (and optionally DSC / coupling) pipeline for one pH."""
     if params is None:
         params = WSMEParams()
 
@@ -72,6 +75,10 @@ def run_pipeline(
     if with_dsc:
         dsc_result = compute_dsc(structure, block_model, ss_mask, params, T_grid=dsc_T_grid)
 
+    coupling_result = None
+    if with_coupling:
+        coupling_result = compute_coupling(structure, block_model, ss_mask, params)
+
     return PipelineResult(
         ph=ph,
         structure=structure,
@@ -81,6 +88,7 @@ def run_pipeline(
         params=params,
         result=result,
         dsc_result=dsc_result,
+        coupling_result=coupling_result,
         warnings=caught_warnings,
     )
 
@@ -98,6 +106,7 @@ def run_pipeline_multi_ph(
     params: WSMEParams = None,
     with_dsc: bool = False,
     dsc_T_grid=None,
+    with_coupling: bool = False,
     progress_callback=None,
 ) -> dict:
     """Run the pipeline independently at each pH. Returns {ph: PipelineResult}.
@@ -120,5 +129,6 @@ def run_pipeline_multi_ph(
             params=params,
             with_dsc=with_dsc,
             dsc_T_grid=dsc_T_grid,
+            with_coupling=with_coupling,
         )
     return results

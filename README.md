@@ -27,6 +27,17 @@ function. From that you get:
   active-like conformational states)
 - **Residue folding probability** as a function of the reaction coordinate
 - **DSC thermogram** (heat capacity vs. temperature)
+- **Residue-residue coupling free energy** (block j vs. block k: do they
+  tend to fold together, independently, or against each other?) — the
+  `CouplingMat` from `FesCalc_Block_full.m` / `Plot_Imp_Variables.m`,
+  computed from co-occurrence statistics in the equilibrium ensemble.
+  Entries where a block is folded in essentially every (or almost no)
+  populated microstate are reported as undefined (NaN) rather than a
+  numerically noisy value — there's genuinely no resolvable partial-folding
+  signal there, not just a precision limit. Expect a sparse, mostly-NaN
+  matrix for small, highly cooperative single-domain proteins (there's
+  little partially-folded population to measure coupling from), and a
+  richer matrix for large, multi-basin receptors like GPCRs.
 
 ## What's different from the MATLAB original
 
@@ -50,11 +61,18 @@ function. From that you get:
   million microstates) run in seconds. The vectorized engine is checked
   against a literal brute-force translation of the original nested loops
   on random small systems in `tests/test_wsme_engine.py`.
-- **Scope**: this port covers the free-energy landscape (1D/2D) + residue
-  folding probability + DSC thermogram. It does not implement the
-  residue-residue coupling free-energy / phi-value machinery from
-  `FesCalc_Block_full.m` (used for allosteric-pathway analysis in some of
-  the GPCR papers) — that's a separate, larger addition if you need it.
+- **Coupling analysis, made tractable.** The MATLAB coupling code frames
+  itself as a per-residue-perturbation calculation, but as shipped the
+  perturbation is a no-op (`pert = nres+1`), so the only quantity it ever
+  actually produces is the single unperturbed (wild-type) coupling matrix
+  — computed from co-occurrence statistics in the equilibrium ensemble.
+  Even that alone was impractical to run at GPCR scale in MATLAB. Here
+  it's computed with the same 2D-difference-array trick as the landscape
+  itself (all four joint-probability quadrants accumulated directly, not
+  derived by subtracting large aggregates — the naive approach catastrophically
+  cancels whenever a block is folded in nearly every microstate, which is
+  common), making it a few extra seconds on top of the landscape
+  calculation rather than a separate, much slower run.
 - PDB **and mmCIF** input (via Biopython), not just fixed-column PDB text.
 
 ## Install
@@ -78,8 +96,8 @@ streamlit run wsme_gpcr/app.py
 
 Then open the printed local URL, upload a PDB/mmCIF file (try
 `examples/data/CI2.pdb` first), and click **Run**. Results (1D profile, 2D
-landscape, residue folding probability, and DSC if enabled) render inline
-with download buttons for the underlying data files.
+and 3D landscape, residue folding probability, and DSC/coupling if enabled)
+render inline with download buttons for the underlying data files.
 
 Check **Run for all pH values** to get the full analysis at pH 7, 5, 3.5,
 and 2 from a single upload -- each pH is a fully independent run (pH
@@ -92,7 +110,7 @@ the full breakdown.
 
 ```bash
 wsme-gpcr examples/data/CI2.pdb --preset soluble --out-dir out/
-wsme-gpcr my_gpcr.pdb --preset membrane --block-size 4 --dsc --out-dir out/
+wsme-gpcr my_gpcr.pdb --preset membrane --block-size 4 --dsc --coupling --out-dir out/
 wsme-gpcr my_gpcr.pdb --preset membrane --all-ph --out-dir out/   # pH 7/5/3.5/2 in one run
 ```
 
@@ -101,20 +119,25 @@ parameters from GPCR-Landscapes; `--preset soluble` uses dielectric=29 and
 the water-soluble-protein parameters from the base WSMEmodel repo (matches
 the CI2 example in that repo). Any individual parameter (`--ene`, `--ds`,
 `--dcp`, `--ionic-strength`, `--dielectric`, `--temp`) can be overridden.
-Run `wsme-gpcr --help` for the full option list.
+`--coupling` adds the residue-residue coupling free-energy matrix (roughly
+doubles run time). Run `wsme-gpcr --help` for the full option list.
 
 This writes `1D_FreeEnergyProfile.txt`, `2D_FreeEnergySurface.txt`,
-`ResFoldProb_vs_RC.txt`, `summary.png` (and `DSC_Thermogram.txt` with
-`--dsc`) to the output directory. With `--all-ph`, each pH gets its own
-`pH_<value>/` subdirectory plus a top-level `pH_comparison.png` overlaying
-the four 1D profiles.
+`2D_FreeEnergyLandscape_3D.png`, `ResFoldProb_vs_RC.txt`, `summary.png`
+(plus `DSC_Thermogram.txt` with `--dsc`, and `CouplingMatrix.txt` /
+`CouplingMatrix.png` with `--coupling`) to the output directory. With
+`--all-ph`, each pH gets its own `pH_<value>/` subdirectory plus
+top-level `pH_comparison.png` / `pH_comparison_3D.png` overlaying the
+four pH values.
 
 ### Library
+
+The lowest-level pieces compose explicitly:
 
 ```python
 from wsme_gpcr import (
     load_structure, assign_secondary_structure, compute_contact_map,
-    build_blocks, WSMEParams, run_wsme,
+    build_blocks, WSMEParams, run_wsme, compute_coupling,
 )
 from wsme_gpcr.plotting import plot_summary
 
@@ -125,9 +148,21 @@ blocks = build_blocks(ss_mask, contacts, block_size=4)
 
 params = WSMEParams()  # membrane/GPCR preset; see WSMEParams.soluble_protein_defaults()
 result = run_wsme(structure, blocks, ss_mask, params)
+coupling = compute_coupling(structure, blocks, ss_mask, params)  # optional
 
 print(result.zfin, result.stats)
-plot_summary(result, save_path="landscape.png")
+plot_summary(result, coupling_result=coupling, save_path="landscape.png")
+```
+
+Or use `run_pipeline`/`run_pipeline_multi_ph` (what the CLI and GUI call
+under the hood) to get all of the above, plus optional DSC/coupling, in
+one call:
+
+```python
+from wsme_gpcr import run_pipeline
+
+pr = run_pipeline("my_gpcr.pdb", with_dsc=True, with_coupling=True)
+print(pr.result.zfin, pr.coupling_result.coupling_free_energy)
 ```
 
 For a GPCR active-vs-inactive comparison (the actual point of the
@@ -154,8 +189,11 @@ pytest
 
 `tests/test_wsme_engine.py` validates the vectorized SSA/DSA/DSAw-L engine
 against a literal brute-force translation of the original MATLAB nested
-loops on random small synthetic systems. `tests/test_blocking.py` checks
-the residue-to-block partitioning, including a MATLAB quirk preserved on
-purpose: a leftover single-residue chunk merges into the previously
-formed block rather than becoming its own singleton block, for every run
-in the protein after the first full block has formed anywhere.
+loops on random small synthetic systems. `tests/test_coupling.py` does the
+same for the coupling matrix, checking all four joint-probability
+quadrants (not just the folded/folded one) sum to 1 and match brute force
+exactly. `tests/test_blocking.py` checks the residue-to-block
+partitioning, including a MATLAB quirk preserved on purpose: a leftover
+single-residue chunk merges into the previously formed block rather than
+becoming its own singleton block, for every run in the protein after the
+first full block has formed anywhere.
