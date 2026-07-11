@@ -18,11 +18,23 @@ Mutating a residue never changes secondary structure, hence never
 changes the block partition (block boundaries come only from
 secondary-structure runs + block_size) -- so a mutant's chi_plus is
 always directly, element-wise comparable to the wild type's, no
-re-alignment needed.
+re-alignment needed. That also means every mutant shares the wild type's
+segment-pair combinatorics (see wsme._build_pair_indices), which this
+module builds once per scan and reuses, instead of re-deriving it for
+every mutant.
+
+This module is written to be applied to *any* structure and *any* set of
+positions -- not tied to a specific receptor. ``run_alanine_scan`` scans
+every eligible residue by default (matching the paper's "large-scale"
+approach); pass ``positions`` or ``max_positions`` for a faster, smaller
+run. Each mutant costs roughly the same as one coupling-matrix
+computation (seconds, scaling with structure size), so a full ~250-300
+site GPCR scan is a tens-of-minutes job -- see ``estimate_scan_seconds``.
 """
 
 from __future__ import annotations
 
+import time
 import warnings
 from dataclasses import dataclass, field
 
@@ -32,7 +44,7 @@ from .blocking import BlockModel, build_blocks
 from .contacts import compute_contact_map
 from .coupling import compute_coupling
 from .structure import Structure
-from .wsme import WSMEParams
+from .wsme import WSMEParams, _build_pair_indices
 
 # Atoms kept after a computational Ala mutation (matches PyMOL's
 # mutagenesis wizard truncation: backbone + CB, everything else removed).
@@ -61,64 +73,171 @@ def scannable_positions(structure: Structure) -> list:
     ]
 
 
-def mutant_chi_plus(structure: Structure, ss_mask: np.ndarray, block_size: int, params: WSMEParams, resnums) -> np.ndarray:
+def subsample_positions(positions: list, max_positions: int) -> list:
+    """Evenly-spaced subsample across the sequence (rather than just the
+    first N), so a capped scan still covers the whole receptor instead of
+    only its N-terminal half."""
+    positions = list(positions)
+    if max_positions is None or max_positions >= len(positions):
+        return positions
+    idx = np.linspace(0, len(positions) - 1, max_positions).round().astype(int)
+    idx = sorted(set(idx.tolist()))
+    return [positions[i] for i in idx]
+
+
+def estimate_scan_seconds(n_positions: int, seconds_per_position: float = 8.0) -> float:
+    """Rough wall-clock estimate for a scan of this many positions (plus
+    one wild-type baseline). ``seconds_per_position`` should be calibrated
+    to your structure's size -- larger receptors (more blocks) cost more
+    per mutant; time a single mutant first for a size you haven't
+    scanned before."""
+    return (n_positions + 1) * seconds_per_position
+
+
+def _ca_position(structure: Structure, resnum: int) -> np.ndarray:
+    ridx = int(np.where(structure.author_resnum == resnum)[0][0])
+    mask = (structure.atom_resindex == ridx) & (np.array(structure.atom_name) == "CA")
+    if not np.any(mask):
+        return None
+    return structure.coord[mask][0]
+
+
+def block_ca_centroids(structure: Structure, block_model: BlockModel) -> np.ndarray:
+    """(nblocks, 3) mean CA position of each block's constituent residues."""
+    ca_mask = np.array(structure.atom_name) == "CA"
+    ca_coord = structure.coord[ca_mask]
+    ca_resindex = structure.atom_resindex[ca_mask]
+    block_of_res = block_model.block_of_residue
+    nb = block_model.nblocks
+    centroids = np.full((nb, 3), np.nan)
+    for b in range(nb):
+        residues = np.where(block_of_res == b)[0]
+        atoms = np.isin(ca_resindex, residues)
+        if np.any(atoms):
+            centroids[b] = ca_coord[atoms].mean(axis=0)
+    return centroids
+
+
+def mutant_chi_plus(structure: Structure, ss_mask: np.ndarray, block_size: int, params: WSMEParams, resnums,
+                     pair_indices=None) -> tuple:
     """chi_plus (positive coupling free energy matrix) for the structure
     with the given residue(s) computationally mutated to alanine."""
     exclude = alanine_exclude_mask(structure, resnums)
     cm = compute_contact_map(structure, exclude_atoms=exclude)
     bm = build_blocks(ss_mask, cm, block_size=block_size)
-    return compute_coupling(structure, bm, ss_mask, params).chi_plus, bm
+    coupling = compute_coupling(structure, bm, ss_mask, params, pair_indices=pair_indices)
+    return coupling.chi_plus, bm
 
 
 @dataclass
 class AlanineScanResult:
     positions: list  # author resnums scanned
     block_of_position: dict  # resnum -> block index
+    block_ca_centroid: np.ndarray  # (nblocks, 3)
     wt_chi_plus: np.ndarray  # (nblocks, nblocks)
     ddg_plus: dict = field(default_factory=dict)  # resnum -> (nblocks, nblocks) chi_plus_mut - chi_plus_wt
     mean_ddg_vector: dict = field(default_factory=dict)  # resnum -> (nblocks,) row-averaged DeltaDeltaG+
     MR_mean: np.ndarray = None  # (nblocks,) mean mutational response across all scanned positions
     MR_std: np.ndarray = None  # (nblocks,) std of mutational response
 
+    def top_hits(self, n: int = 10) -> list:
+        """Mutation sites ranked by total perturbation magnitude
+        (sum of |mean_ddg_vector|), largest first -- the paper's approach
+        to picking out sites like K296/N302/M317 for closer inspection."""
+        scores = [
+            (resnum, float(np.nansum(np.abs(v))))
+            for resnum, v in self.mean_ddg_vector.items()
+        ]
+        scores.sort(key=lambda x: x[1], reverse=True)
+        return scores[:n]
+
+    def ddg_vs_distance(self, resnum: int):
+        """(distances, ddg_values) for one scanned mutation: per-block
+        DeltaDeltaG+ vs. CA-CA distance (Angstrom) from the mutated
+        residue's own block centroid -- the paper's Fig. 7d/f/h."""
+        v = self.mean_ddg_vector[resnum]
+        b = self.block_of_position[resnum]
+        origin = self.block_ca_centroid[b]
+        dist = np.linalg.norm(self.block_ca_centroid - origin, axis=1)
+        return dist, v
+
+    def to_records(self) -> list:
+        """One row per (mutation site, block) pair -- flat table for CSV export."""
+        rows = []
+        for resnum in self.positions:
+            v = self.mean_ddg_vector[resnum]
+            for b, val in enumerate(v):
+                rows.append({"mutated_resnum": resnum, "block": b, "mean_ddG+": float(val)})
+        return rows
+
 
 def run_alanine_scan(
     structure: Structure,
     ss_mask: np.ndarray,
     params: WSMEParams,
-    positions,
+    positions=None,
+    max_positions: int = None,
     block_size: int = 4,
     wt_block_model: BlockModel = None,
     wt_chi_plus: np.ndarray = None,
+    progress_callback=None,
 ) -> AlanineScanResult:
     """Scan ``positions`` (author resnums), each mutated independently to
     alanine, and compare each mutant's chi_plus to the wild type's.
+
+    ``positions=None`` scans every eligible residue (``scannable_positions``)
+    -- a full receptor-wide scan. Pass an explicit list to target specific
+    sites, or ``max_positions`` to evenly subsample the full site list for
+    a faster, still whole-structure-covering run.
+
     Pass a precomputed ``wt_block_model``/``wt_chi_plus`` to skip
-    recomputing the (unmutated) baseline."""
+    recomputing the (unmutated) baseline. ``progress_callback(resnum, i,
+    total, elapsed_seconds)`` is called after each mutant, if given.
+    """
+    if positions is None:
+        positions = scannable_positions(structure)
+    if max_positions is not None:
+        positions = subsample_positions(positions, max_positions)
+
     if wt_chi_plus is None:
         cm_wt = compute_contact_map(structure)
         wt_block_model = build_blocks(ss_mask, cm_wt, block_size=block_size)
-        wt_chi_plus = compute_coupling(structure, wt_block_model, ss_mask, params).chi_plus
+        pair_indices = _build_pair_indices(wt_block_model.nblocks)
+        wt_chi_plus = compute_coupling(structure, wt_block_model, ss_mask, params, pair_indices=pair_indices).chi_plus
+    else:
+        pair_indices = _build_pair_indices(wt_block_model.nblocks)
 
     block_of_position = {
         int(resnum): int(wt_block_model.block_of_residue[i])
         for i, resnum in enumerate(structure.author_resnum)
     }
+    block_ca_centroid = block_ca_centroids(structure, wt_block_model)
 
-    result = AlanineScanResult(positions=list(positions), block_of_position=block_of_position, wt_chi_plus=wt_chi_plus)
+    result = AlanineScanResult(
+        positions=list(positions),
+        block_of_position=block_of_position,
+        block_ca_centroid=block_ca_centroid,
+        wt_chi_plus=wt_chi_plus,
+    )
 
     # Some blocks' chi_plus rows are entirely NaN (near-zero-probability
     # joint states, masked in compute_coupling as numerically unresolvable
     # rather than reported as noise) -- nanmean/nanstd over an all-NaN row
     # is expected here (result is legitimately NaN), just noisy to warn
     # about every time.
+    t0 = time.time()
     with warnings.catch_warnings(), np.errstate(invalid="ignore"):
         warnings.simplefilter("ignore", category=RuntimeWarning)
-        for resnum in positions:
-            chi_plus_mut, bm_mut = mutant_chi_plus(structure, ss_mask, block_size, params, [resnum])
+        for i, resnum in enumerate(positions):
+            chi_plus_mut, bm_mut = mutant_chi_plus(
+                structure, ss_mask, block_size, params, [resnum], pair_indices=pair_indices,
+            )
             assert bm_mut.nblocks == wt_block_model.nblocks, "mutation unexpectedly changed the block partition"
             ddg = chi_plus_mut - wt_chi_plus
             result.ddg_plus[resnum] = ddg
             result.mean_ddg_vector[resnum] = np.nanmean(ddg, axis=1)
+            if progress_callback:
+                progress_callback(resnum, i, len(positions), time.time() - t0)
 
         stacked = np.array([result.mean_ddg_vector[r] for r in positions])
         result.MR_mean = np.nanmean(stacked, axis=0)

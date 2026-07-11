@@ -20,7 +20,14 @@ from .dsc import compute_dsc, DSCResult
 from .coupling import CouplingResult, compute_coupling
 from .ionizable_network import IonizableNetworkResult, compute_ionizable_network, map_networks_to_blocks
 from .alanine_scan import AlanineScanResult, run_alanine_scan, scannable_positions
-from .pipeline import PipelineResult, run_pipeline, run_pipeline_multi_ph, DEFAULT_PH_VALUES
+from .pipeline import (
+    PipelineResult,
+    run_pipeline,
+    run_pipeline_multi_ph,
+    DEFAULT_PH_VALUES,
+    AlanineScanPipelineResult,
+    run_alanine_scan_pipeline,
+)
 
 __all__ = [
     "Structure",
@@ -47,4 +54,6 @@ __all__ = [
     "run_pipeline",
     "run_pipeline_multi_ph",
     "DEFAULT_PH_VALUES",
+    "AlanineScanPipelineResult",
+    "run_alanine_scan_pipeline",
 ]

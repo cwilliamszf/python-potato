@@ -153,27 +153,65 @@ class _Topology:
     cmap_prefix: np.ndarray
 
 
-def _build_topology(block_model: BlockModel) -> _Topology:
-    nb = block_model.nblocks
-    cmap = block_model.block_cmap.astype(float)
-    cmap_prefix = _prefix_sum(cmap)
+@dataclass
+class _PairIndices:
+    """The purely combinatorial part of a topology: which segment pairs
+    exist and their gap length. Depends only on nblocks, not on the
+    contact map -- so it's identical for a wild-type structure and every
+    one of its alanine mutants (mutations never change the block count).
+    Deriving this (an O(nblocks^2) `np.where` over all segment pairs) is
+    the dominant cost of building a topology; caching and reusing it
+    across a mutational scan turns an O(n_mutants) re-derivation into a
+    one-time cost."""
 
+    nb: int
+    seg_a: np.ndarray
+    seg_b: np.ndarray
+    seg_len: np.ndarray
+    iA: np.ndarray
+    iB: np.ndarray
+    gap: np.ndarray
+
+
+def _build_pair_indices(nb: int) -> _PairIndices:
     seg_a, seg_b = np.triu_indices(nb)
     seg_len = seg_b - seg_a + 1
-    ncont_seg = _range_sum(cmap_prefix, seg_a, seg_b, seg_a, seg_b)
 
     mask = seg_a[None, :] >= seg_b[:, None] + 2  # rows=A, cols=B (B after A)
     iA, iB = np.where(mask)
     if len(iA):
         a1, b1 = seg_a[iA], seg_b[iA]
         a2, b2 = seg_a[iB], seg_b[iB]
-        cross_cmap = _range_sum(cmap_prefix, a1, b1, a2, b2)
         gap = a2 - b1 - 1
     else:
-        cross_cmap = np.zeros(0)
         gap = np.zeros(0, dtype=int)
 
-    return _Topology(nb, seg_a, seg_b, seg_len, ncont_seg, iA, iB, cross_cmap, gap, cmap_prefix)
+    return _PairIndices(nb, seg_a, seg_b, seg_len, iA, iB, gap)
+
+
+def _topology_from_pair_indices(block_model: BlockModel, pair_indices: _PairIndices) -> _Topology:
+    """The contact-map-dependent part of a topology (cheap: O(1) prefix-sum
+    lookups per pair), given a precomputed, reusable _PairIndices."""
+    assert pair_indices.nb == block_model.nblocks
+    cmap = block_model.block_cmap.astype(float)
+    cmap_prefix = _prefix_sum(cmap)
+
+    seg_a, seg_b, iA, iB = pair_indices.seg_a, pair_indices.seg_b, pair_indices.iA, pair_indices.iB
+    ncont_seg = _range_sum(cmap_prefix, seg_a, seg_b, seg_a, seg_b)
+
+    if len(iA):
+        a1, b1 = seg_a[iA], seg_b[iA]
+        a2, b2 = seg_a[iB], seg_b[iB]
+        cross_cmap = _range_sum(cmap_prefix, a1, b1, a2, b2)
+    else:
+        cross_cmap = np.zeros(0)
+
+    return _Topology(pair_indices.nb, seg_a, seg_b, pair_indices.seg_len, ncont_seg, iA, iB,
+                      cross_cmap, pair_indices.gap, cmap_prefix)
+
+
+def _build_topology(block_model: BlockModel) -> _Topology:
+    return _topology_from_pair_indices(block_model, _build_pair_indices(block_model.nblocks))
 
 
 def _evaluate(topo: _Topology, block_model: BlockModel, zvec: np.ndarray, zvalc: float, params: WSMEParams,

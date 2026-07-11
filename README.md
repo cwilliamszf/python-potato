@@ -38,6 +38,24 @@ function. From that you get:
   matrix for small, highly cooperative single-domain proteins (there's
   little partially-folded population to measure coupling from), and a
   richer matrix for large, multi-basin receptors like GPCRs.
+- **In silico alanine-scanning mutagenesis** — computationally truncate
+  each residue's side chain to Ala (backbone + CB only) one at a time,
+  recompute the coupling free-energy matrix (`chi_plus`, "ΔG+" in the
+  reference below), and diff it against the wild type. Averaging the
+  per-mutant difference over one axis gives a per-block "mutational
+  response" vector; stacking many mutants' vectors gives their mean/std
+  across the structure — replicating Fig. 7 of Anantakrishnan &
+  Naganathan, *"Thermodynamic architecture and conformational plasticity
+  of GPCRs,"* Nat Commun 14, 128 (2023). This is a general-purpose
+  workflow: it runs on any structure and, by default, every eligible
+  residue in it (Ala/Gly/Pro are skipped, matching the paper) — not
+  hardcoded to a particular receptor or mutation list. Mutating a residue
+  never changes secondary structure, so the block partition — and hence
+  the WT/mutant `chi_plus` matrices' shape and block indexing — is always
+  identical, letting every mutant be compared to the wild type directly,
+  element-wise, with no realignment step. See
+  `alanine_scan.estimate_scan_seconds` for a time estimate before running
+  a full receptor-wide scan (tens of minutes for ~250-300 residues).
 
 ## What's different from the MATLAB original
 
@@ -106,12 +124,23 @@ contact map itself, not just electrostatic screening), shown as a
 pH-overlaid 1D profile comparison, a summary table, and a per-pH tab with
 the full breakdown.
 
+Check **Run in silico alanine scan** to also run the mutational-response
+workflow above, at the single pH selected in the sidebar (a mutational
+scan is not repeated across the pH sweep). Choose an evenly-spaced
+subsample (fast, still covers the whole structure), every eligible
+residue (slow, full receptor-wide scan), or a specific comma-separated
+list of residue numbers. Results show the mutational-response plot, a
+top-hits table ranked by total perturbation magnitude, and, per top hit,
+a ΔΔG+ vs. distance plot and a 3D structure map — with download buttons
+for the underlying data.
+
 ### CLI
 
 ```bash
 wsme-gpcr examples/data/CI2.pdb --preset soluble --out-dir out/
 wsme-gpcr my_gpcr.pdb --preset membrane --block-size 4 --dsc --coupling --out-dir out/
 wsme-gpcr my_gpcr.pdb --preset membrane --all-ph --out-dir out/   # pH 7/5/3.5/2 in one run
+wsme-gpcr my_gpcr.pdb --preset membrane --alanine-scan --out-dir out/   # full receptor-wide Ala scan
 ```
 
 `--preset membrane` (default) uses dielectric=4 and the GPCR-tuned energy
@@ -129,6 +158,20 @@ This writes `1D_FreeEnergyProfile.txt`, `2D_FreeEnergySurface.txt`,
 `--all-ph`, each pH gets its own `pH_<value>/` subdirectory plus
 top-level `pH_comparison.png` / `pH_comparison_3D.png` overlaying the
 four pH values.
+
+`--alanine-scan` runs the mutational-response workflow described above
+and writes an `alanine_scan/` subdirectory: `MutationalResponse.txt`/`.png`
+(per-block mean ± std across all scanned mutants), `DeltaDeltaG.csv` (one
+row per mutation × block), `TopHits.txt` (mutation sites ranked by total
+perturbation magnitude), and per-top-hit `DistanceDependence_<resnum>.png`
+/ `StructureMap_<resnum>.png`. It applies to *any* structure/receptor, not
+just GPCRs, and by default scans every eligible residue — pass
+`--ala-max-n N` to evenly subsample N sites instead (prints a time
+estimate before running either way), or `--ala-positions 45,102,150` to
+target specific author residue numbers. `--ala-top-n` controls how many
+top hits get their own distance/structure-map plots (default 5). It runs
+at the single `--ph` value even when combined with `--all-ph`/`--ph-values`
+(a mutational scan is not repeated across a pH sweep).
 
 ### Library
 
@@ -170,6 +213,24 @@ GPCR-Landscapes repo), run this on both conformational structures and
 compare the resulting `fes2D` landscapes and `fes` profiles — a
 multi-basin 2D landscape or a shift in the dominant basin is the signal
 of interest, not a single scalar.
+
+`run_alanine_scan_pipeline` runs the mutational-response workflow on any
+structure. It defaults to every eligible residue; pass `positions` for
+specific sites or `max_positions` to evenly subsample:
+
+```python
+from wsme_gpcr import run_alanine_scan_pipeline
+
+scan_pr = run_alanine_scan_pipeline("my_gpcr.pdb", max_positions=40)
+print(scan_pr.scan.top_hits(10))          # [(resnum, perturbation_magnitude), ...]
+dist, ddg = scan_pr.scan.ddg_vs_distance(102)   # one mutant's spatial decay profile
+```
+
+The lower-level building blocks (`alanine_scan.scannable_positions`,
+`alanine_scan.run_alanine_scan`, `alanine_scan.estimate_scan_seconds`)
+compose the same way as the rest of the library if you need finer control
+— e.g. reusing an already-loaded `Structure`/`BlockModel` across many
+scans, or wiring scan progress into your own UI via `progress_callback`.
 
 ## Performance notes
 

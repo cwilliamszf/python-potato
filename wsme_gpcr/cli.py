@@ -9,7 +9,14 @@ from pathlib import Path
 
 import numpy as np
 
-from .pipeline import DEFAULT_PH_VALUES, PipelineResult, run_pipeline, run_pipeline_multi_ph
+from .pipeline import (
+    AlanineScanPipelineResult,
+    DEFAULT_PH_VALUES,
+    PipelineResult,
+    run_alanine_scan_pipeline,
+    run_pipeline,
+    run_pipeline_multi_ph,
+)
 from .wsme import WSMEParams
 
 
@@ -63,6 +70,21 @@ def main(argv=None):
     p.add_argument("--coupling", action="store_true",
                     help="Also compute the residue-residue coupling free-energy matrix "
                     "(thermodynamic coupling between block pairs; comparable cost to the landscape itself)")
+    p.add_argument("--alanine-scan", action="store_true",
+                    help="Also run in silico alanine-scanning mutagenesis (Fig. 7 of Anantakrishnan & Naganathan, "
+                    "Nat Commun 2023): mutate each scanned residue to Ala, recompute the positive coupling free "
+                    "energy matrix, and compare to wild type. Applies to ANY structure, not receptor-specific. "
+                    "Uses --ph (not --all-ph/--ph-values, which this ignores). Costs roughly one coupling-matrix "
+                    "computation per scanned residue -- see the printed time estimate before it runs.")
+    p.add_argument("--ala-positions", default=None,
+                    help="Comma-separated author resnums to scan (default: every eligible residue, i.e. all "
+                    "except existing Ala/Gly/Pro -- see --ala-max-n to cap this for a faster run)")
+    p.add_argument("--ala-max-n", type=int, default=40,
+                    help="Cap the scan to this many evenly-spaced positions across the sequence (default: 40; "
+                    "pass 0 or use --ala-positions with an explicit list to scan everything / a specific set)")
+    p.add_argument("--ala-top-n", type=int, default=5,
+                    help="Number of top-perturbing mutations (by total |mean DeltaDeltaG+|) to generate "
+                    "distance-dependence and structure-map plots for (default: 5)")
     p.add_argument("--no-plots", action="store_true", help="Skip generating plot images")
     args = p.parse_args(argv)
 
@@ -121,6 +143,9 @@ def main(argv=None):
             fig.savefig(out_dir / "pH_comparison_3D.png", dpi=200, bbox_inches="tight")
             plt.close(fig)
             print(f"Wrote {out_dir / 'pH_comparison_3D.png'}")
+
+        if args.alanine_scan:
+            _run_alanine_scan_cli(args, out_dir, params, pka_overrides, ss_codes)
         return
 
     pr = run_pipeline(
@@ -131,6 +156,90 @@ def main(argv=None):
     _report(pr)
     _write_outputs(out_dir, pr, save_plot=not args.no_plots)
     print(f"Wrote outputs to {out_dir}")
+
+    if args.alanine_scan:
+        _run_alanine_scan_cli(args, out_dir, params, pka_overrides, ss_codes)
+
+
+def _run_alanine_scan_cli(args, out_dir: Path, params: WSMEParams, pka_overrides: dict, ss_codes: str):
+    from .alanine_scan import estimate_scan_seconds, scannable_positions
+    from .structure import load_structure
+
+    positions = None
+    if args.ala_positions:
+        positions = [int(v) for v in args.ala_positions.split(",")]
+    max_positions = args.ala_max_n if args.ala_max_n and args.ala_max_n > 0 else None
+
+    n_estimate = len(positions) if positions else (
+        max_positions if max_positions else len(scannable_positions(load_structure(args.pdb, chain=args.chain, model=args.model, ph=args.ph)))
+    )
+    est_seconds = estimate_scan_seconds(n_estimate)
+    print(f"\nAlanine scan (at pH {args.ph}, the single --ph value -- mutational scanning is not "
+          f"repeated across --all-ph/--ph-values): {n_estimate} position(s) + WT baseline, "
+          f"estimated ~{est_seconds / 60:.1f} min "
+          f"(timing scales with structure size; first mutant's time is a better estimate for very large structures)")
+
+    def progress(resnum, i, total, elapsed):
+        rate = elapsed / (i + 1)
+        remaining = rate * (total - i - 1)
+        print(f"  [{i + 1}/{total}] resnum {resnum} done ({elapsed:.0f}s elapsed, ~{remaining:.0f}s remaining)")
+
+    scan_pr = run_alanine_scan_pipeline(
+        args.pdb, chain=args.chain, model=args.model, ph=args.ph, pka_overrides=pka_overrides, ss_codes=ss_codes,
+        block_size=args.block_size, params=params, positions=positions, max_positions=max_positions,
+        progress_callback=progress,
+    )
+    ala_dir = out_dir / "alanine_scan"
+    ala_dir.mkdir(parents=True, exist_ok=True)
+    _write_alanine_scan_outputs(ala_dir, scan_pr, top_n=args.ala_top_n, save_plot=not args.no_plots)
+    print(f"Alanine scan: wrote outputs to {ala_dir}")
+
+
+def _write_alanine_scan_outputs(out_dir: Path, scan_pr: AlanineScanPipelineResult, top_n: int, save_plot: bool):
+    scan = scan_pr.scan
+    with open(out_dir / "MutationalResponse.txt", "w") as f:
+        f.write("# column 1: Block Index\n")
+        f.write("# column 2: Mean mutational response <DeltaDeltaG+> across all scanned positions (kJ/mol)\n")
+        f.write("# column 3: Std of mutational response (kJ/mol)\n")
+        for b, (m, s) in enumerate(zip(scan.MR_mean, scan.MR_std)):
+            f.write(f"{b:3d} {m:8.3f} {s:8.3f}\n")
+
+    with open(out_dir / "DeltaDeltaG.csv", "w") as f:
+        f.write("mutated_resnum,block,mean_ddG_plus\n")
+        for row in scan.to_records():
+            f.write(f"{row['mutated_resnum']},{row['block']},{row['mean_ddG+']:.4f}\n")
+
+    top_hits = scan.top_hits(top_n)
+    with open(out_dir / "TopHits.txt", "w") as f:
+        f.write("# column 1: Mutated author resnum\n")
+        f.write("# column 2: Total perturbation magnitude, sum(|<DeltaDeltaG+>|) (kJ/mol)\n")
+        for resnum, score in top_hits:
+            f.write(f"{resnum:6d} {score:10.3f}\n")
+    print(f"  top {len(top_hits)} hits: {top_hits}")
+
+    if save_plot:
+        from .plotting import plot_ddg_structure_map, plot_ddg_vs_distance, plot_mutational_response
+        import matplotlib.pyplot as plt
+
+        fig, ax = plt.subplots(figsize=(10, 5))
+        plot_mutational_response(scan, ax=ax, highlight={r: str(r) for r, _ in top_hits})
+        fig.tight_layout()
+        fig.savefig(out_dir / "MutationalResponse.png", dpi=200)
+        plt.close(fig)
+
+        for resnum, _ in top_hits:
+            fig, ax = plt.subplots(figsize=(7, 5))
+            plot_ddg_vs_distance(scan, resnum, ax=ax)
+            fig.tight_layout()
+            fig.savefig(out_dir / f"DistanceDependence_{resnum}.png", dpi=200)
+            plt.close(fig)
+
+            fig = plt.figure(figsize=(8, 8))
+            ax = fig.add_subplot(projection="3d")
+            plot_ddg_structure_map(scan, resnum, ax=ax)
+            fig.tight_layout()
+            fig.savefig(out_dir / f"StructureMap_{resnum}.png", dpi=200)
+            plt.close(fig)
 
 
 def _report(pr: PipelineResult):

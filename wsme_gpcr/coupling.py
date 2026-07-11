@@ -46,7 +46,7 @@ import numpy as np
 
 from .blocking import BlockModel
 from .structure import Structure
-from .wsme import WSMEParams, _build_topology, _evaluate, compute_block_zvec
+from .wsme import WSMEParams, _build_topology, _evaluate, _topology_from_pair_indices, compute_block_zvec
 
 
 @dataclass
@@ -84,14 +84,22 @@ def _accumulate(diff, from_regions, to_regions, w):
                 _add_rect(diff, fs[valid], fe[valid], ts[valid], te[valid], w[valid])
 
 
-def compute_coupling(structure: Structure, block_model: BlockModel, ss_mask: np.ndarray, params: WSMEParams = None) -> CouplingResult:
+def compute_coupling(structure: Structure, block_model: BlockModel, ss_mask: np.ndarray, params: WSMEParams = None,
+                      pair_indices=None) -> CouplingResult:
+    """Pass a precomputed ``pair_indices`` (from ``wsme._build_pair_indices``)
+    to skip re-deriving the O(nblocks^2) segment-pair combinatorics --
+    useful when scanning many structures that share the same block count,
+    e.g. a wild type and its alanine mutants (see alanine_scan.py)."""
     if params is None:
         params = WSMEParams()
 
     nb = block_model.nblocks
     zvec = compute_block_zvec(structure, block_model, ss_mask, params)
     zvalc = np.exp((params.DS - params.DDS) / params.R)
-    topo = _build_topology(block_model)
+    if pair_indices is not None:
+        topo = _topology_from_pair_indices(block_model, pair_indices)
+    else:
+        topo = _build_topology(block_model)
 
     fes_num, _, _, _, _, raw = _evaluate(topo, block_model, zvec, zvalc, params, need_landscape=False, need_raw=True)
     zfin = float(fes_num.sum())

@@ -1,7 +1,13 @@
 import numpy as np
 from pathlib import Path
 
-from wsme_gpcr.alanine_scan import alanine_exclude_mask, run_alanine_scan, scannable_positions
+from wsme_gpcr.alanine_scan import (
+    alanine_exclude_mask,
+    estimate_scan_seconds,
+    run_alanine_scan,
+    scannable_positions,
+    subsample_positions,
+)
 from wsme_gpcr.blocking import build_blocks
 from wsme_gpcr.contacts import compute_contact_map
 from wsme_gpcr.secondary_structure import assign_secondary_structure
@@ -72,3 +78,57 @@ def test_run_alanine_scan_smoke():
     # must apply to chi_plus itself, not just the symmetrized coupling matrix)
     for v in result.mean_ddg_vector.values():
         assert not np.any(np.isinf(v))
+
+
+def test_run_alanine_scan_defaults_to_every_scannable_position():
+    s = load_structure(CI2, ph=7.0)
+    ss = assign_secondary_structure(s)
+    params = WSMEParams.soluble_protein_defaults()
+
+    # Cap heavily via max_positions so the "scan everything" default path
+    # is exercised without paying for a full CI2 scan in the test suite.
+    result = run_alanine_scan(s, ss, params, positions=None, max_positions=3, block_size=4)
+    assert len(result.positions) == 3
+    assert set(result.positions) <= set(scannable_positions(s))
+
+
+def test_subsample_positions_is_evenly_spaced_and_covers_endpoints():
+    positions = list(range(100, 200))  # 100 positions
+    sub = subsample_positions(positions, 5)
+    assert len(sub) == 5
+    assert sub[0] == positions[0]
+    assert sub[-1] == positions[-1]
+    assert sub == sorted(sub)  # stays in sequence order
+
+
+def test_subsample_positions_noop_when_cap_exceeds_length():
+    positions = [1, 2, 3]
+    assert subsample_positions(positions, 10) == positions
+
+
+def test_estimate_scan_seconds_scales_linearly():
+    assert estimate_scan_seconds(0, seconds_per_position=8.0) == 8.0  # just the WT baseline
+    assert estimate_scan_seconds(10, seconds_per_position=8.0) == 88.0
+
+
+def test_top_hits_and_distance_profile():
+    s = load_structure(CI2, ph=7.0)
+    ss = assign_secondary_structure(s)
+    params = WSMEParams.soluble_protein_defaults()
+    positions = scannable_positions(s)[:5]
+
+    result = run_alanine_scan(s, ss, params, positions, block_size=4)
+
+    hits = result.top_hits(n=3)
+    assert len(hits) == 3
+    scores = [score for _, score in hits]
+    assert scores == sorted(scores, reverse=True)  # ranked descending
+
+    resnum = positions[0]
+    dist, ddg = result.ddg_vs_distance(resnum)
+    nb = result.wt_chi_plus.shape[0]
+    assert dist.shape == (nb,)
+    assert ddg.shape == (nb,)
+    # distance from a block to itself must be 0 (its own centroid)
+    own_block = result.block_of_position[resnum]
+    assert dist[own_block] == 0.0

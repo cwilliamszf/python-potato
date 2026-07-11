@@ -17,6 +17,7 @@ from dataclasses import dataclass, field
 
 import numpy as np
 
+from .alanine_scan import AlanineScanResult, run_alanine_scan
 from .blocking import BlockModel, build_blocks
 from .contacts import ContactMap, compute_contact_map
 from .coupling import CouplingResult, compute_coupling
@@ -142,3 +143,68 @@ def run_pipeline_multi_ph(
             with_coupling=with_coupling,
         )
     return results
+
+
+@dataclass
+class AlanineScanPipelineResult:
+    ph: float
+    structure: Structure
+    ss_mask: np.ndarray
+    block_model: BlockModel
+    params: WSMEParams
+    scan: AlanineScanResult
+    warnings: list = field(default_factory=list)
+
+
+def run_alanine_scan_pipeline(
+    pdb_path,
+    chain: str = None,
+    model: int = 0,
+    ph: float = 7.0,
+    pka_overrides: dict = None,
+    ss_codes: str = None,
+    block_size: int = 4,
+    params: WSMEParams = None,
+    positions=None,
+    max_positions: int = None,
+    progress_callback=None,
+) -> AlanineScanPipelineResult:
+    """Load a structure and run a (by default, receptor-wide) alanine
+    scan on it -- the general-purpose version of the workflow in
+    alanine_scan.py, applicable to any PDB/mmCIF structure, not tied to
+    a specific receptor.
+
+    ``positions=None`` scans every eligible residue; pass an explicit
+    list of author resnums to target specific sites, or ``max_positions``
+    to evenly subsample the full site list for a faster run. See
+    ``alanine_scan.estimate_scan_seconds`` for a time estimate before
+    committing to a large scan.
+    """
+    if params is None:
+        params = WSMEParams()
+
+    caught_warnings = []
+    with warnings.catch_warnings(record=True) as caught:
+        warnings.simplefilter("always")
+        structure = load_structure(pdb_path, chain=chain, model=model, ph=ph, pka_overrides=pka_overrides)
+        caught_warnings = [str(w.message) for w in caught]
+
+    if ss_codes is not None:
+        ss_mask = secondary_structure_from_codes(ss_codes)
+    else:
+        ss_mask = assign_secondary_structure(structure)
+
+    contact_map = compute_contact_map(structure)
+    block_model = build_blocks(ss_mask, contact_map, block_size=block_size)
+
+    scan = run_alanine_scan(
+        structure, ss_mask, params, positions=positions, max_positions=max_positions,
+        block_size=block_size, wt_block_model=block_model,
+        wt_chi_plus=compute_coupling(structure, block_model, ss_mask, params).chi_plus,
+        progress_callback=progress_callback,
+    )
+
+    return AlanineScanPipelineResult(
+        ph=ph, structure=structure, ss_mask=ss_mask, block_model=block_model,
+        params=params, scan=scan, warnings=caught_warnings,
+    )

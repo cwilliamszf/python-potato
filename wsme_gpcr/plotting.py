@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import numpy as np
 
+from .alanine_scan import AlanineScanResult
 from .coupling import CouplingResult
 from .dsc import DSCResult
 from .ionizable_network import IonizableNetworkResult
@@ -235,6 +236,77 @@ def plot_ionizable_network(result: IonizableNetworkResult, ax=None, label_his: b
     handles = [plt.Line2D([0], [0], marker="o", color="w", markerfacecolor=c, markersize=8, label=k)
                for k, c in _BURIAL_COLOR.items()]
     ax.legend(handles=handles, title="Burial (approx.)")
+    ax.set_xlabel("x (A)")
+    ax.set_ylabel("y (A)")
+    ax.set_zlabel("z (A)")
+    return ax
+
+
+def plot_mutational_response(scan_result: AlanineScanResult, ax=None, highlight: dict = None, **kwargs):
+    """Mean +- std of the alanine-scanning mutational response (MR) per
+    block -- Fig. 7b+c combined: how much a typical mutation anywhere in
+    the structure perturbs each block's coupling, on average across every
+    scanned site. ``highlight`` optionally maps {resnum: label} to mark
+    specific mutated positions' own blocks with a vertical line."""
+    import matplotlib.pyplot as plt
+
+    if ax is None:
+        _, ax = plt.subplots(figsize=(10, 5))
+    nb = len(scan_result.MR_mean)
+    x = np.arange(nb)
+    ax.fill_between(x, scan_result.MR_mean - scan_result.MR_std, scan_result.MR_mean + scan_result.MR_std,
+                     color="lightgray", alpha=0.6, label="mean ± std")
+    ax.plot(x, scan_result.MR_mean, color="k", linewidth=1.5, label="mean", **kwargs)
+    ax.axhline(0, color="k", linewidth=0.5)
+    if highlight:
+        for resnum, label in highlight.items():
+            b = scan_result.block_of_position.get(int(resnum))
+            if b is not None:
+                ax.axvline(b, color="crimson", linestyle=":", linewidth=1)
+                ax.annotate(label, (b, ax.get_ylim()[1]), fontsize=8, ha="center", va="bottom")
+    ax.set_xlabel("Block Index")
+    ax.set_ylabel(r"Mutational Response, $\langle\Delta\Delta G^+\rangle$ (kJ/mol)")
+    ax.legend()
+    return ax
+
+
+def plot_ddg_vs_distance(scan_result: AlanineScanResult, resnum: int, ax=None, **kwargs):
+    """DeltaDeltaG+ vs. CA-CA distance from one mutated site -- Fig. 7d/f/h:
+    shows whether a mutation's effect on coupling decays with distance or
+    reaches far across the structure."""
+    import matplotlib.pyplot as plt
+
+    if ax is None:
+        _, ax = plt.subplots(figsize=(7, 5))
+    dist, ddg = scan_result.ddg_vs_distance(resnum)
+    finite = np.isfinite(dist) & np.isfinite(ddg)
+    ax.scatter(dist[finite], ddg[finite], s=18, **kwargs)
+    ax.axhline(0, color="k", linewidth=0.5)
+    ax.set_xlabel(r"C$\alpha$ Distance from Mutated Site (Å)")
+    ax.set_ylabel(r"$\Delta\Delta G^+$ (kJ/mol)")
+    ax.set_title(f"Perturbation response of residue {resnum}A")
+    return ax
+
+
+def plot_ddg_structure_map(scan_result: AlanineScanResult, resnum: int, ax=None, cmap="RdBu_r", **kwargs):
+    """3D scatter of block CA centroids colored by DeltaDeltaG+ from one
+    mutation -- a lightweight, dependency-free stand-in for the paper's
+    PyMOL surface-colored structure renders (Fig. 7e/g/i)."""
+    import matplotlib.pyplot as plt
+
+    if ax is None:
+        fig = plt.figure(figsize=(8, 8))
+        ax = fig.add_subplot(projection="3d")
+    pos = scan_result.block_ca_centroid
+    v = scan_result.mean_ddg_vector[resnum]
+    finite = np.isfinite(v)
+    vmax = np.nanmax(np.abs(v)) if np.any(finite) else 1.0
+    sc = ax.scatter(pos[finite, 0], pos[finite, 1], pos[finite, 2], c=v[finite], cmap=cmap,
+                     vmin=-vmax, vmax=vmax, s=40, **kwargs)
+    b = scan_result.block_of_position[resnum]
+    ax.scatter(*pos[b], color="black", s=120, marker="*", label=f"mutated site (block {b})")
+    plt.colorbar(sc, ax=ax, shrink=0.6, label=r"$\Delta\Delta G^+$ (kJ/mol)")
+    ax.legend()
     ax.set_xlabel("x (A)")
     ax.set_ylabel("y (A)")
     ax.set_zlabel("z (A)")
