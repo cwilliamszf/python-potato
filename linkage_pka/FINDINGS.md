@@ -1038,3 +1038,68 @@ homology-model quality" would need something not available in this
 sandbox -- either an experimentally solved GPR68 active structure, or
 the GPCRdb model's own template/confidence metadata. This is where the
 investigation currently stops without new external data.
+
+## The user supplied exactly that missing data: a real solved GPR68
+## active structure (9BHM). It settles the artifact-vs-biology question
+## -- and overturns the "sparser packing" explanation
+
+9BHM (PDB, deposited; user-supplied `.cif`) is a real 2.9 A cryo-EM
+structure: "Human proton sensing receptor GPR68 in complex with
+miniGs" -- GPR68 (chain R) bound to a mini-Gs heterotrimer mimic
+(miniGs + Gβ1 + Nanobody-35), the standard construct used to trap an
+active-state GPCR for structural work. This is real, independent,
+experimentally-determined ground truth for the active conformation --
+exactly the kind of data the previous entry flagged as missing.
+
+**It resolves residues 13-294, no gaps.** No fusion-replaced ICL3, no
+missing loops. And critically: it does **not** resolve anything past
+residue 294 -- the H8+C-terminal tail (res ~295-365) simply isn't in
+the model at all, even with a bound G protein that typically helps
+order the intracellular face. This independently confirms, with real
+data, the disorder-scope diagnosis from earlier in this investigation:
+real GPR68's H8+tail is genuinely not part of the ordered fold, in
+either state, and the truncation boundary chosen for test 1 (res 14)
+practically coincides with where the real structure's density actually
+begins (res 13).
+
+**Ran it through the identical, untouched pipeline.** Result: still
+totally collapsed -- global minimum at n=3/73 (**4.1%** folded), every
+single block unfolded at that minimum. This is *worse* than the
+GPCRdb active homology model's 8.2% (truncated) / 6.2% (full-length),
+not better.
+
+**This falsifies the "active homology model is just lower quality/
+looser packed" explanation.** 9BHM's own contact density (block_cmap
+row-sum mean 260.7) and long-range/tertiary contact fraction (0.179)
+are *not* depressed relative to inactive -- they're comparable to or
+higher than the GPCRdb inactive model's own numbers (244 / 0.179). A
+real, properly-refined, high-resolution active structure is at least as
+densely packed as inactive by these metrics, yet the model still can't
+find a fold for it. So the earlier test-3 finding (GPCRdb active has
+25% fewer long-range contacts than GPCRdb inactive) was real for that
+specific homology model, but is now shown to be a symptom of that
+model's quality, not the general reason WSME fails on GPR68's active
+state -- the real structure fails for a different, deeper reason that
+plain contact density/fraction doesn't capture (most likely the
+specific topology of which blocks bridge to which, not how many
+bridges exist -- not yet isolated).
+
+**ξ recalibration fails identically on the real structure.** Ran
+`calibrate_xi_tm_mode` on 9BHM directly: `CalibrationError`, same
+failure mode as the homology model -- even at xi=-80 J/mol (the most
+stabilizing edge of the physically valid bracket), no Cp(T) peak
+exists at all. No cooperative two-state melting transition to
+Tm-match against, full stop, using real experimental coordinates.
+
+**Conclusion**: the active-state collapse is real GPR68 biology (or at
+minimum, a real and robust property of how this specific WSME
+formulation treats GPR68's true active conformation), not a homology-
+model-quality artifact -- confirmed with real experimental data, not
+inferred. It is consistent with the well-documented practical fact that
+active-state GPCR-G-protein complexes are often less thermally
+stable/harder to purify than the apo inactive receptor (this exact
+structure required cholesterol hemisuccinate and a stabilizing
+nanobody just to solve). What specifically in the real contact
+topology breaks cooperativity, given that raw density/fraction numbers
+look fine, remains open and would be the next question if pursued
+further.
