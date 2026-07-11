@@ -17,6 +17,7 @@ from .contacts import ContactMap, compute_contact_map
 from .blocking import BlockModel, build_blocks
 from .wsme import WSMEParams, WSMEResult, run_wsme
 from .dsc import compute_dsc, DSCResult
+from .pipeline import PipelineResult, run_pipeline, run_pipeline_multi_ph, DEFAULT_PH_VALUES
 
 __all__ = [
     "Structure",
@@ -31,4 +32,8 @@ __all__ = [
     "run_wsme",
     "compute_dsc",
     "DSCResult",
+    "PipelineResult",
+    "run_pipeline",
+    "run_pipeline_multi_ph",
+    "DEFAULT_PH_VALUES",
 ]

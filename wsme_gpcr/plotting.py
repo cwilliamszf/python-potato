@@ -21,6 +21,26 @@ def plot_1d_profile(result: WSMEResult, ax=None, **kwargs):
     return ax
 
 
+def plot_1d_profile_comparison(results_by_key: dict, ax=None, **kwargs):
+    """Overlay several 1D free-energy profiles (e.g. one per pH) on one
+    axes. ``results_by_key`` maps a label (e.g. a pH value) to a
+    WSMEResult; note that different pH runs can have different
+    block counts (contacts differ), so each curve is plotted against its
+    own x-axis (fraction of structured blocks) to stay comparable."""
+    import matplotlib.pyplot as plt
+
+    if ax is None:
+        _, ax = plt.subplots(figsize=(8, 5))
+    for key, result in results_by_key.items():
+        frac = result.n_values / result.n_values[-1]
+        ax.plot(frac, result.fes, linewidth=2, label=str(key), **kwargs)
+    ax.set_xlabel("Fraction of Structured Blocks")
+    ax.set_ylabel("Free Energy (kJ/mol)")
+    ax.set_xlim(0, 1)
+    ax.legend(title="pH")
+    return ax
+
+
 def plot_2d_landscape(result: WSMEResult, ax=None, cmap="jet", **kwargs):
     import matplotlib.pyplot as plt
 

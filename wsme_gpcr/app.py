@@ -12,13 +12,15 @@ from pathlib import Path
 import numpy as np
 import streamlit as st
 
-from wsme_gpcr.blocking import build_blocks
-from wsme_gpcr.contacts import compute_contact_map
-from wsme_gpcr.dsc import compute_dsc
-from wsme_gpcr.plotting import plot_1d_profile, plot_2d_landscape, plot_dsc, plot_residue_folding_probability
-from wsme_gpcr.secondary_structure import assign_secondary_structure, secondary_structure_from_codes
-from wsme_gpcr.structure import load_structure
-from wsme_gpcr.wsme import WSMEParams, run_wsme
+from wsme_gpcr.pipeline import DEFAULT_PH_VALUES, run_pipeline, run_pipeline_multi_ph
+from wsme_gpcr.plotting import (
+    plot_1d_profile,
+    plot_1d_profile_comparison,
+    plot_2d_landscape,
+    plot_dsc,
+    plot_residue_folding_probability,
+)
+from wsme_gpcr.wsme import WSMEParams
 
 st.set_page_config(page_title="wsme-gpcr", layout="wide")
 st.title("wsme-gpcr")
@@ -34,7 +36,13 @@ with st.sidebar:
     pdb_file = st.file_uploader("PDB or mmCIF file", type=["pdb", "ent", "cif", "mmcif"])
     chain = st.text_input("Chain ID", value="", help="Leave blank to auto-select the first chain with standard residues")
     model_index = st.number_input("Model index", min_value=0, value=0, step=1, help="For multi-model files (e.g. NMR ensembles)")
-    ph = st.selectbox("pH (charge assignment)", options=[7.0, 5.0, 3.5, 2.0], index=0)
+
+    all_ph = st.checkbox(
+        "Run for all pH values (7, 5, 3.5, 2)", value=False,
+        help="Runs the full pipeline independently at each pH (pH changes which atoms are charged, "
+        "so the contact map and electrostatics -- not just screening -- differ per pH). Roughly 4x slower.",
+    )
+    ph = st.selectbox("pH (charge assignment)", options=[7.0, 5.0, 3.5, 2.0], index=0, disabled=all_ph)
 
     st.header("Secondary structure")
     ss_source = st.radio(
@@ -71,7 +79,7 @@ with st.sidebar:
         dielectric = st.number_input("Medium dielectric constant", value=float(base_params.dielectric))
 
     st.header("DSC thermogram")
-    run_dsc = st.checkbox("Compute DSC thermogram", value=False, help="Sweeps temperature; slower than the landscape alone")
+    run_dsc = st.checkbox("Compute DSC thermogram", value=False, help="Sweeps temperature; slower than the landscape alone (and ~4x slower again with all-pH)")
     dsc_tmin = st.number_input("DSC T min (K)", value=273.0, disabled=not run_dsc)
     dsc_tmax = st.number_input("DSC T max (K)", value=373.0, disabled=not run_dsc)
     dsc_tstep = st.number_input("DSC T step (K)", value=1.0, min_value=0.1, disabled=not run_dsc)
@@ -90,90 +98,113 @@ if run_button:
         tmp.write(pdb_file.getvalue())
         tmp_path = tmp.name
 
-    with st.spinner("Loading structure..."):
-        import warnings
-
-        with warnings.catch_warnings(record=True) as caught:
-            warnings.simplefilter("always")
-            structure = load_structure(tmp_path, chain=chain or None, model=int(model_index), ph=ph)
-            for w in caught:
-                st.warning(str(w.message))
-    st.success(f"Loaded {structure.nres} residues, chain {structure.chain_id}")
-
-    with st.spinner("Assigning secondary structure..."):
-        if ss_source == "Paste SS codes" and ss_codes_text:
-            codes = ss_codes_text.strip()
-        elif ss_source == "Upload SS codes file" and ss_codes_file is not None:
-            codes = ss_codes_file.getvalue().decode().strip()
-        else:
-            codes = None
-
-        if codes is not None:
-            if len(codes) != structure.nres:
-                st.error(f"SS code string length ({len(codes)}) != number of residues ({structure.nres})")
-                st.stop()
-            ss_mask = secondary_structure_from_codes(codes)
-        else:
-            ss_mask = assign_secondary_structure(structure)
-    st.info(f"{int(ss_mask.sum())}/{structure.nres} residues structured (helix/strand/3-10)")
-
-    with st.spinner("Computing contact map..."):
-        contact_map = compute_contact_map(structure)
-    st.info(f"{int(contact_map.srcont.sum())} VdW contacts, {len(contact_map.elec_pairs)} electrostatic pairs")
-
-    with st.spinner("Building blocks..."):
-        block_model = build_blocks(ss_mask, contact_map, block_size=int(block_size))
-    st.info(f"{block_model.nblocks} blocks")
+    if ss_source == "Paste SS codes" and ss_codes_text:
+        ss_codes = ss_codes_text.strip()
+    elif ss_source == "Upload SS codes file" and ss_codes_file is not None:
+        ss_codes = ss_codes_file.getvalue().decode().strip()
+    else:
+        ss_codes = None
 
     params = WSMEParams(
         T=temp, ene=ene, DS=ds, DCp=dcp, IS=ionic_strength, dielectric=dielectric,
         DDS=base_params.DDS, Tref=base_params.Tref,
     )
+    dsc_T_grid = np.arange(dsc_tmin, dsc_tmax + dsc_tstep / 2, dsc_tstep) if run_dsc else None
 
-    with st.spinner("Running WSME (SSA/DSA/DSAw-L enumeration)..."):
-        result = run_wsme(structure, block_model, ss_mask, params)
+    try:
+        if all_ph:
+            progress_bar = st.progress(0.0, text="Starting...")
 
-    col1, col2, col3 = st.columns(3)
-    col1.metric("Zfin", f"{result.zfin:.3e}")
-    col2.metric("SSA / DSA / DSAw-L states", f"{result.stats['n_states_ssa']} / {result.stats['n_states_dsa']} / {result.stats['n_states_dsawl']}")
-    col3.metric("Partition fn % (SSA/DSA/DSAw-L)", f"{result.stats['pct_ssa']:.1f} / {result.stats['pct_dsa']:.1f} / {result.stats['pct_dsawl']:.1f}")
+            def progress(ph_val, i, total):
+                progress_bar.progress((i) / total, text=f"Running pH {ph_val} ({i + 1}/{total})...")
 
-    dsc_result = None
-    if run_dsc:
-        with st.spinner(f"Running DSC sweep ({dsc_tmin}-{dsc_tmax} K, step {dsc_tstep})..."):
-            T_grid = np.arange(dsc_tmin, dsc_tmax + dsc_tstep / 2, dsc_tstep)
-            dsc_result = compute_dsc(structure, block_model, ss_mask, params, T_grid=T_grid)
+            pipeline_results = run_pipeline_multi_ph(
+                tmp_path, ph_values=DEFAULT_PH_VALUES, chain=chain or None, model=int(model_index),
+                ss_codes=ss_codes, block_size=int(block_size), params=params,
+                with_dsc=run_dsc, dsc_T_grid=dsc_T_grid, progress_callback=progress,
+            )
+            progress_bar.progress(1.0, text="Done")
+        else:
+            with st.spinner("Running full pipeline..."):
+                pipeline_results = {ph: run_pipeline(
+                    tmp_path, chain=chain or None, model=int(model_index), ph=ph,
+                    ss_codes=ss_codes, block_size=int(block_size), params=params,
+                    with_dsc=run_dsc, dsc_T_grid=dsc_T_grid,
+                )}
+    except Exception as e:
+        st.error(f"Run failed: {e}")
+        st.stop()
 
-    tabs = st.tabs(["1D Profile", "2D Landscape", "Residue Folding Probability"] + (["DSC Thermogram"] if dsc_result else []))
+    for w in next(iter(pipeline_results.values())).warnings:
+        st.warning(w)
 
-    with tabs[0]:
-        fig = plot_1d_profile(result).figure
-        st.pyplot(fig)
-        st.download_button(
-            "Download 1D_FreeEnergyProfile.txt",
-            "\n".join(f"{n} {fe:.3f}" for n, fe in zip(result.n_values, result.fes)),
-            file_name="1D_FreeEnergyProfile.txt",
-        )
-
-    with tabs[1]:
-        fig = plot_2d_landscape(result).figure
-        st.pyplot(fig)
-        lines = [f"{i} {j} {result.fes2D[i, j]:.3f}" for i in range(result.fes2D.shape[0]) for j in range(result.fes2D.shape[1])]
-        st.download_button("Download 2D_FreeEnergySurface.txt", "\n".join(lines), file_name="2D_FreeEnergySurface.txt")
-
-    with tabs[2]:
-        fig = plot_residue_folding_probability(result).figure
+    if len(pipeline_results) > 1:
+        st.subheader("Comparison across pH")
+        fig = plot_1d_profile_comparison({ph_val: pr.result for ph_val, pr in pipeline_results.items()}).figure
         st.pyplot(fig)
 
-    if dsc_result:
-        with tabs[3]:
-            fig = plot_dsc(dsc_result).figure
-            st.pyplot(fig)
-            lines = [f"{T:.1f} {cp:.5f} {cpx:.5f}" for T, cp, cpx in zip(dsc_result.T, dsc_result.Cp, dsc_result.Cp_excess)]
-            st.download_button("Download DSC_Thermogram.txt", "\n".join(lines), file_name="DSC_Thermogram.txt")
+        import pandas as pd
+
+        summary_rows = []
+        for ph_val, pr in pipeline_results.items():
+            r = pr.result
+            summary_rows.append({
+                "pH": ph_val,
+                "residues": pr.structure.nres,
+                "structured residues": int(pr.ss_mask.sum()),
+                "VdW contacts": int(pr.contact_map.srcont.sum()),
+                "electrostatic pairs": len(pr.contact_map.elec_pairs),
+                "blocks": pr.block_model.nblocks,
+                "Zfin": r.zfin,
+                "argmin n (most stable RC)": int(r.n_values[r.fes.argmin()]),
+                "% SSA": round(r.stats["pct_ssa"], 1),
+                "% DSA": round(r.stats["pct_dsa"], 1),
+                "% DSAw/L": round(r.stats["pct_dsawl"], 1),
+            })
+        st.dataframe(pd.DataFrame(summary_rows).set_index("pH"), use_container_width=True)
+
+    ph_tabs = st.tabs([f"pH {ph_val}" for ph_val in pipeline_results])
+    for ph_val, tab in zip(pipeline_results, ph_tabs):
+        pr = pipeline_results[ph_val]
+        result = pr.result
+        with tab:
+            col1, col2, col3 = st.columns(3)
+            col1.metric("Zfin", f"{result.zfin:.3e}")
+            col2.metric("SSA / DSA / DSAw-L states", f"{result.stats['n_states_ssa']} / {result.stats['n_states_dsa']} / {result.stats['n_states_dsawl']}")
+            col3.metric("Partition fn % (SSA/DSA/DSAw-L)", f"{result.stats['pct_ssa']:.1f} / {result.stats['pct_dsa']:.1f} / {result.stats['pct_dsawl']:.1f}")
+
+            inner_tabs = st.tabs(["1D Profile", "2D Landscape", "Residue Folding Probability"] + (["DSC Thermogram"] if pr.dsc_result else []))
+
+            with inner_tabs[0]:
+                fig = plot_1d_profile(result).figure
+                st.pyplot(fig)
+                st.download_button(
+                    "Download 1D_FreeEnergyProfile.txt",
+                    "\n".join(f"{n} {fe:.3f}" for n, fe in zip(result.n_values, result.fes)),
+                    file_name=f"1D_FreeEnergyProfile_pH{ph_val}.txt",
+                    key=f"1d_{ph_val}",
+                )
+
+            with inner_tabs[1]:
+                fig = plot_2d_landscape(result).figure
+                st.pyplot(fig)
+                lines = [f"{i} {j} {result.fes2D[i, j]:.3f}" for i in range(result.fes2D.shape[0]) for j in range(result.fes2D.shape[1])]
+                st.download_button("Download 2D_FreeEnergySurface.txt", "\n".join(lines), file_name=f"2D_FreeEnergySurface_pH{ph_val}.txt", key=f"2d_{ph_val}")
+
+            with inner_tabs[2]:
+                fig = plot_residue_folding_probability(result).figure
+                st.pyplot(fig)
+
+            if pr.dsc_result:
+                with inner_tabs[3]:
+                    fig = plot_dsc(pr.dsc_result).figure
+                    st.pyplot(fig)
+                    lines = [f"{T:.1f} {cp:.5f} {cpx:.5f}" for T, cp, cpx in zip(pr.dsc_result.T, pr.dsc_result.Cp, pr.dsc_result.Cp_excess)]
+                    st.download_button("Download DSC_Thermogram.txt", "\n".join(lines), file_name=f"DSC_Thermogram_pH{ph_val}.txt", key=f"dsc_{ph_val}")
 else:
     st.write("Upload a structure and click **Run** in the sidebar to compute a landscape.")
     st.write(
         "Ship the bundled example first: `examples/data/CI2.pdb` "
-        "(pH 7, block size 4, preset = soluble protein)."
+        "(pH 7, block size 4, preset = soluble protein). "
+        "Check **Run for all pH values** to get the analysis at pH 7, 5, 3.5, and 2 in one click."
     )

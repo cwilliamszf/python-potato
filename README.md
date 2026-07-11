@@ -81,11 +81,19 @@ Then open the printed local URL, upload a PDB/mmCIF file (try
 landscape, residue folding probability, and DSC if enabled) render inline
 with download buttons for the underlying data files.
 
+Check **Run for all pH values** to get the full analysis at pH 7, 5, 3.5,
+and 2 from a single upload -- each pH is a fully independent run (pH
+changes which atoms carry a titratable charge, which feeds back into the
+contact map itself, not just electrostatic screening), shown as a
+pH-overlaid 1D profile comparison, a summary table, and a per-pH tab with
+the full breakdown.
+
 ### CLI
 
 ```bash
 wsme-gpcr examples/data/CI2.pdb --preset soluble --out-dir out/
 wsme-gpcr my_gpcr.pdb --preset membrane --block-size 4 --dsc --out-dir out/
+wsme-gpcr my_gpcr.pdb --preset membrane --all-ph --out-dir out/   # pH 7/5/3.5/2 in one run
 ```
 
 `--preset membrane` (default) uses dielectric=4 and the GPCR-tuned energy
@@ -97,7 +105,9 @@ Run `wsme-gpcr --help` for the full option list.
 
 This writes `1D_FreeEnergyProfile.txt`, `2D_FreeEnergySurface.txt`,
 `ResFoldProb_vs_RC.txt`, `summary.png` (and `DSC_Thermogram.txt` with
-`--dsc`) to the output directory.
+`--dsc`) to the output directory. With `--all-ph`, each pH gets its own
+`pH_<value>/` subdirectory plus a top-level `pH_comparison.png` overlaying
+the four 1D profiles.
 
 ### Library
 

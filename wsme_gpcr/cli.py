@@ -5,18 +5,12 @@ mirroring the outputs of FesCalc_Block.m / DSCcalc_Block.m."""
 from __future__ import annotations
 
 import argparse
-import sys
-import warnings
 from pathlib import Path
 
 import numpy as np
 
-from .blocking import build_blocks
-from .contacts import compute_contact_map
-from .dsc import compute_dsc
-from .secondary_structure import assign_secondary_structure, secondary_structure_from_codes
-from .structure import load_structure
-from .wsme import WSMEParams, run_wsme
+from .pipeline import DEFAULT_PH_VALUES, PipelineResult, run_pipeline, run_pipeline_multi_ph
+from .wsme import WSMEParams
 
 
 def _build_params(args) -> WSMEParams:
@@ -42,7 +36,8 @@ def main(argv=None):
     p.add_argument("pdb", help="Path to a PDB or mmCIF structure file")
     p.add_argument("--chain", default=None, help="Chain ID to use (default: first chain with standard residues)")
     p.add_argument("--model", type=int, default=0, help="Model index for multi-model files (default: 0)")
-    p.add_argument("--ph", type=float, default=7.0, choices=[7.0, 5.0, 3.5, 2.0], help="pH for charge assignment (default: 7.0)")
+    p.add_argument("--ph", type=float, default=7.0, choices=[7.0, 5.0, 3.5, 2.0], help="pH for charge assignment (default: 7.0; ignored with --all-ph)")
+    p.add_argument("--all-ph", action="store_true", help="Run at every pH (7, 5, 3.5, 2) and write results to per-pH subdirectories, plus a comparison plot")
     p.add_argument("--block-size", type=int, default=4, help="Residues per block (default: 4)")
     p.add_argument("--preset", choices=["membrane", "soluble"], default="membrane",
                     help="Parameter preset: membrane/GPCR (dielectric=4, default) or soluble protein (dielectric=29)")
@@ -65,59 +60,84 @@ def main(argv=None):
     out_dir = Path(args.out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
 
-    print(f"Loading structure: {args.pdb}")
-    with warnings.catch_warnings(record=True) as caught:
-        warnings.simplefilter("always")
-        structure = load_structure(args.pdb, chain=args.chain, model=args.model, ph=args.ph)
-        for w in caught:
-            print(f"  warning: {w.message}")
-    print(f"  {structure.nres} residues, chain {structure.chain_id}")
-
+    ss_codes = None
     if args.ss_codes or args.ss_file:
-        codes = args.ss_codes if args.ss_codes else Path(args.ss_file).read_text().strip()
-        if len(codes) != structure.nres:
-            sys.exit(f"SS code string length ({len(codes)}) != number of residues ({structure.nres})")
-        ss_mask = secondary_structure_from_codes(codes)
-        print("Using supplied secondary-structure codes")
-    else:
-        ss_mask = assign_secondary_structure(structure)
-        print(f"Geometric secondary structure assignment: {ss_mask.sum()}/{structure.nres} residues structured")
-
-    contact_map = compute_contact_map(structure)
-    print(f"  {int(contact_map.srcont.sum())} VdW contacts, {len(contact_map.elec_pairs)} electrostatic pairs")
-
-    block_model = build_blocks(ss_mask, contact_map, block_size=args.block_size)
-    print(f"  {block_model.nblocks} blocks (block_size={args.block_size})")
+        ss_codes = args.ss_codes if args.ss_codes else Path(args.ss_file).read_text().strip()
 
     params = _build_params(args)
-    print(f"Running WSME (T={params.T} K, preset={args.preset})...")
-    result = run_wsme(structure, block_model, ss_mask, params)
-    print(f"  Zfin={result.zfin:.4e}")
-    print(f"  states: SSA={result.stats['n_states_ssa']} DSA={result.stats['n_states_dsa']} DSAw/L={result.stats['n_states_dsawl']}")
-    print(f"  partition fn %%: SSA={result.stats['pct_ssa']:.1f} DSA={result.stats['pct_dsa']:.1f} DSAw/L={result.stats['pct_dsawl']:.1f}")
-
-    _write_1d_profile(out_dir / "1D_FreeEnergyProfile.txt", result, params)
-    _write_2d_surface(out_dir / "2D_FreeEnergySurface.txt", result, params)
-    _write_fpath(out_dir / "ResFoldProb_vs_RC.txt", result, params)
-    print(f"Wrote profile/landscape/probability files to {out_dir}")
-
-    dsc_result = None
+    dsc_T_grid = None
     if args.dsc:
-        print(f"Running DSC sweep ({args.dsc_tmin}-{args.dsc_tmax} K, step {args.dsc_tstep})...")
-        T_grid = np.arange(args.dsc_tmin, args.dsc_tmax + args.dsc_tstep / 2, args.dsc_tstep)
-        dsc_result = compute_dsc(structure, block_model, ss_mask, params, T_grid=T_grid)
-        _write_dsc(out_dir / "DSC_Thermogram.txt", dsc_result)
-        print(f"Wrote {out_dir / 'DSC_Thermogram.txt'}")
+        dsc_T_grid = np.arange(args.dsc_tmin, args.dsc_tmax + args.dsc_tstep / 2, args.dsc_tstep)
 
-    if not args.no_plots:
+    if args.all_ph:
+        print(f"Running at all pH values: {DEFAULT_PH_VALUES}")
+
+        def progress(ph, i, total):
+            print(f"[{i + 1}/{total}] pH {ph} ...")
+
+        results = run_pipeline_multi_ph(
+            args.pdb, chain=args.chain, model=args.model, ss_codes=ss_codes,
+            block_size=args.block_size, params=params, with_dsc=args.dsc,
+            dsc_T_grid=dsc_T_grid, progress_callback=progress,
+        )
+        for ph, pr in results.items():
+            _report(pr)
+            ph_dir = out_dir / f"pH_{ph}"
+            ph_dir.mkdir(parents=True, exist_ok=True)
+            _write_outputs(ph_dir, pr, save_plot=not args.no_plots)
+            print(f"  wrote outputs to {ph_dir}")
+
+        if not args.no_plots:
+            from .plotting import plot_1d_profile_comparison
+            import matplotlib.pyplot as plt
+
+            fig, ax = plt.subplots(figsize=(8, 5))
+            plot_1d_profile_comparison({ph: pr.result for ph, pr in results.items()}, ax=ax)
+            ax.set_title("1D Free Energy Profile vs. pH")
+            fig.tight_layout()
+            fig.savefig(out_dir / "pH_comparison.png", dpi=200)
+            plt.close(fig)
+            print(f"Wrote {out_dir / 'pH_comparison.png'}")
+        return
+
+    pr = run_pipeline(
+        args.pdb, chain=args.chain, model=args.model, ph=args.ph, ss_codes=ss_codes,
+        block_size=args.block_size, params=params, with_dsc=args.dsc, dsc_T_grid=dsc_T_grid,
+    )
+    _report(pr)
+    _write_outputs(out_dir, pr, save_plot=not args.no_plots)
+    print(f"Wrote outputs to {out_dir}")
+
+
+def _report(pr: PipelineResult):
+    s = pr.structure
+    print(f"pH {pr.ph}: {s.nres} residues (chain {s.chain_id})")
+    for w in pr.warnings:
+        print(f"  warning: {w}")
+    print(f"  {int(pr.ss_mask.sum())}/{s.nres} residues structured; "
+          f"{int(pr.contact_map.srcont.sum())} VdW contacts, {len(pr.contact_map.elec_pairs)} electrostatic pairs; "
+          f"{pr.block_model.nblocks} blocks")
+    r = pr.result
+    print(f"  Zfin={r.zfin:.4e}  states: SSA={r.stats['n_states_ssa']} DSA={r.stats['n_states_dsa']} DSAw/L={r.stats['n_states_dsawl']}")
+    print(f"  partition fn %%: SSA={r.stats['pct_ssa']:.1f} DSA={r.stats['pct_dsa']:.1f} DSAw/L={r.stats['pct_dsawl']:.1f}")
+
+
+def _write_outputs(out_dir: Path, pr: PipelineResult, save_plot: bool):
+    result = pr.result
+    _write_1d_profile(out_dir / "1D_FreeEnergyProfile.txt", result)
+    _write_2d_surface(out_dir / "2D_FreeEnergySurface.txt", result)
+    _write_fpath(out_dir / "ResFoldProb_vs_RC.txt", result)
+    if pr.dsc_result is not None:
+        _write_dsc(out_dir / "DSC_Thermogram.txt", pr.dsc_result)
+    if save_plot:
         from .plotting import plot_summary
-        fig = plot_summary(result, dsc_result=dsc_result, save_path=str(out_dir / "summary.png"))
-        print(f"Wrote {out_dir / 'summary.png'}")
         import matplotlib.pyplot as plt
+
+        fig = plot_summary(result, dsc_result=pr.dsc_result, save_path=str(out_dir / "summary.png"))
         plt.close(fig)
 
 
-def _write_1d_profile(path, result, params):
+def _write_1d_profile(path, result):
     with open(path, "w") as f:
         f.write("# column 1: No. of Structured Blocks\n")
         f.write("# column 2: Free Energy (kJ/mol)\n")
@@ -125,7 +145,7 @@ def _write_1d_profile(path, result, params):
             f.write(f"{n:3d} {fe:8.3f}\n")
 
 
-def _write_2d_surface(path, result, params):
+def _write_2d_surface(path, result):
     with open(path, "w") as f:
         f.write("# column 1: No. of Structured Blocks in N-terminal half\n")
         f.write("# column 2: No. of Structured Blocks in C-terminal half\n")
@@ -135,7 +155,7 @@ def _write_2d_surface(path, result, params):
                 f.write(f"{i:3d} {j:3d} {result.fes2D[i, j]:8.3f}\n")
 
 
-def _write_fpath(path, result, params):
+def _write_fpath(path, result):
     with open(path, "w") as f:
         f.write("# column 1: No. of Structured Blocks\n")
         f.write("# column 2: Block Index\n")
