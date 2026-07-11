@@ -88,7 +88,7 @@ def main(argv=None):
             print(f"  wrote outputs to {ph_dir}")
 
         if not args.no_plots:
-            from .plotting import plot_1d_profile_comparison
+            from .plotting import plot_1d_profile_comparison, plot_2d_landscape_surface_comparison
             import matplotlib.pyplot as plt
 
             fig, ax = plt.subplots(figsize=(8, 5))
@@ -98,6 +98,12 @@ def main(argv=None):
             fig.savefig(out_dir / "pH_comparison.png", dpi=200)
             plt.close(fig)
             print(f"Wrote {out_dir / 'pH_comparison.png'}")
+
+            fig = plot_2d_landscape_surface_comparison({f"pH {ph}": pr.result for ph, pr in results.items()})
+            fig.suptitle("3D Free Energy Landscape vs. pH", fontsize=14)
+            fig.savefig(out_dir / "pH_comparison_3D.png", dpi=200, bbox_inches="tight")
+            plt.close(fig)
+            print(f"Wrote {out_dir / 'pH_comparison_3D.png'}")
         return
 
     pr = run_pipeline(
@@ -130,10 +136,17 @@ def _write_outputs(out_dir: Path, pr: PipelineResult, save_plot: bool):
     if pr.dsc_result is not None:
         _write_dsc(out_dir / "DSC_Thermogram.txt", pr.dsc_result)
     if save_plot:
-        from .plotting import plot_summary
+        from .plotting import plot_2d_landscape_surface, plot_summary
         import matplotlib.pyplot as plt
 
         fig = plot_summary(result, dsc_result=pr.dsc_result, save_path=str(out_dir / "summary.png"))
+        plt.close(fig)
+
+        fig = plt.figure(figsize=(8, 7))
+        ax = fig.add_subplot(projection="3d")
+        plot_2d_landscape_surface(result, ax=ax)
+        fig.tight_layout()
+        fig.savefig(out_dir / "2D_FreeEnergyLandscape_3D.png", dpi=200)
         plt.close(fig)
 
 

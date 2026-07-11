@@ -17,6 +17,8 @@ from wsme_gpcr.plotting import (
     plot_1d_profile,
     plot_1d_profile_comparison,
     plot_2d_landscape,
+    plot_2d_landscape_surface,
+    plot_2d_landscape_surface_comparison,
     plot_dsc,
     plot_residue_folding_probability,
 )
@@ -143,6 +145,9 @@ if run_button:
         fig = plot_1d_profile_comparison({ph_val: pr.result for ph_val, pr in pipeline_results.items()}).figure
         st.pyplot(fig)
 
+        fig = plot_2d_landscape_surface_comparison({f"pH {ph_val}": pr.result for ph_val, pr in pipeline_results.items()})
+        st.pyplot(fig)
+
         import pandas as pd
 
         summary_rows = []
@@ -173,7 +178,7 @@ if run_button:
             col2.metric("SSA / DSA / DSAw-L states", f"{result.stats['n_states_ssa']} / {result.stats['n_states_dsa']} / {result.stats['n_states_dsawl']}")
             col3.metric("Partition fn % (SSA/DSA/DSAw-L)", f"{result.stats['pct_ssa']:.1f} / {result.stats['pct_dsa']:.1f} / {result.stats['pct_dsawl']:.1f}")
 
-            inner_tabs = st.tabs(["1D Profile", "2D Landscape", "Residue Folding Probability"] + (["DSC Thermogram"] if pr.dsc_result else []))
+            inner_tabs = st.tabs(["1D Profile", "2D Landscape", "3D Landscape", "Residue Folding Probability"] + (["DSC Thermogram"] if pr.dsc_result else []))
 
             with inner_tabs[0]:
                 fig = plot_1d_profile(result).figure
@@ -192,11 +197,15 @@ if run_button:
                 st.download_button("Download 2D_FreeEnergySurface.txt", "\n".join(lines), file_name=f"2D_FreeEnergySurface_pH{ph_val}.txt", key=f"2d_{ph_val}")
 
             with inner_tabs[2]:
+                fig = plot_2d_landscape_surface(result).figure
+                st.pyplot(fig)
+
+            with inner_tabs[3]:
                 fig = plot_residue_folding_probability(result).figure
                 st.pyplot(fig)
 
             if pr.dsc_result:
-                with inner_tabs[3]:
+                with inner_tabs[4]:
                     fig = plot_dsc(pr.dsc_result).figure
                     st.pyplot(fig)
                     lines = [f"{T:.1f} {cp:.5f} {cpx:.5f}" for T, cp, cpx in zip(pr.dsc_result.T, pr.dsc_result.Cp, pr.dsc_result.Cp_excess)]

@@ -55,7 +55,13 @@ def plot_2d_landscape(result: WSMEResult, ax=None, cmap="jet", **kwargs):
     return ax
 
 
-def plot_2d_landscape_surface(result: WSMEResult, ax=None, cmap="jet", **kwargs):
+def plot_2d_landscape_surface(result: WSMEResult, ax=None, cmap="jet", vmin=None, vmax=None,
+                               elev=28, azim=-55, colorbar=True, **kwargs):
+    """3D free-energy surface (n_C vs n_N vs FE), in the style of the
+    published GPCR-Landscapes figures: an angled jet-colormap surface with
+    the fully-unfolded corner (0 structured blocks on both termini, which
+    has zero population and so an undefined/infinite free energy) masked
+    out rather than distorting the color scale."""
     import matplotlib.pyplot as plt
 
     if ax is None:
@@ -63,11 +69,44 @@ def plot_2d_landscape_surface(result: WSMEResult, ax=None, cmap="jet", **kwargs)
         ax = fig.add_subplot(projection="3d")
     fes2D = np.where(np.isfinite(result.fes2D), result.fes2D, np.nan)
     nN, nC = np.meshgrid(np.arange(fes2D.shape[0]), np.arange(fes2D.shape[1]), indexing="ij")
-    ax.plot_surface(nC, nN, fes2D, cmap=cmap, **kwargs)
-    ax.set_xlabel("n_C-term")
-    ax.set_ylabel("n_N-term")
-    ax.set_zlabel("Free Energy (kJ/mol)")
+    surf = ax.plot_surface(
+        nC, nN, fes2D, cmap=cmap, vmin=vmin, vmax=vmax,
+        linewidth=0, antialiased=True, rcount=fes2D.shape[0], ccount=fes2D.shape[1], **kwargs,
+    )
+    ax.set_xlabel("n_C")
+    ax.set_ylabel("n_N")
+    ax.set_zlabel("FE (kJ/mol)")
+    ax.view_init(elev=elev, azim=azim)
+    ax.set_box_aspect((1, 1, 0.55))
+    if colorbar:
+        plt.colorbar(surf, ax=ax, shrink=0.6, label="Free Energy (kJ/mol)")
     return ax
+
+
+def plot_2d_landscape_surface_comparison(results_by_key: dict, cmap="jet", elev=28, azim=-55, figsize_per_panel=6):
+    """One 3D surface subplot per entry in ``results_by_key`` (e.g. one per
+    pH), all sharing a single color scale so panels are directly
+    comparable -- matches send-to-user comparisons of the same receptor
+    across conditions."""
+    import matplotlib.pyplot as plt
+
+    finite_vals = np.concatenate([
+        r.fes2D[np.isfinite(r.fes2D)] for r in results_by_key.values()
+    ])
+    vmin, vmax = float(finite_vals.min()), float(finite_vals.max())
+
+    n = len(results_by_key)
+    fig = plt.figure(figsize=(figsize_per_panel * n, figsize_per_panel))
+    surf = None
+    for i, (key, result) in enumerate(results_by_key.items()):
+        ax = fig.add_subplot(1, n, i + 1, projection="3d")
+        plot_2d_landscape_surface(result, ax=ax, cmap=cmap, vmin=vmin, vmax=vmax, elev=elev, azim=azim, colorbar=False)
+        ax.set_title(str(key))
+    fig.colorbar(
+        plt.cm.ScalarMappable(norm=plt.Normalize(vmin, vmax), cmap=cmap),
+        ax=fig.axes, shrink=0.6, label="Free Energy (kJ/mol)",
+    )
+    return fig
 
 
 def plot_residue_folding_probability(result: WSMEResult, ax=None, cmap="jet", **kwargs):
