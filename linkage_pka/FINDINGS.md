@@ -1103,3 +1103,54 @@ nanobody just to solve). What specifically in the real contact
 topology breaks cooperativity, given that raw density/fraction numbers
 look fine, remains open and would be the next question if pursued
 further.
+
+## Double-funnel landscape v2: the inactive-basin fix wired back in
+
+The double-funnel plot (see "Double-funnel landscape" above) predates
+everything discovered in this document from "Root-caused: the ~25
+non-folding blocks..." onward. Re-ran it (`double_funnel_v2`, script in
+scratchpad, not committed -- same convention as the original driver)
+with two inputs updated and everything else, including the Gate A
+caveat, held fixed:
+
+- **Inactive**: now the truncated ordered core (res 14-302) instead of
+  the full 365-residue GPCRdb model -- the disorder-scope fix from test
+  1, wired into the actual plot for the first time.
+- **Active**: now the real 9BHM cryo-EM structure (chain R, res 13-294)
+  instead of the GPCRdb active homology model -- a strict upgrade in
+  input quality, not a fix for the active-basin pathology (which is
+  still open, see above).
+- **Unchanged**: the D2.50/Asp282/Glu103 cluster's PB-derived
+  ΔG_activation(pH) anchor (same already-computed `ln_z` data reused
+  as-is) -- still fails Gate A, still pipeline-mechanics only, not
+  recalibrated by anything in this update.
+
+**Result, and why it's a real improvement, not just a re-run**: the
+inactive basin now has the physically correct shape for the first time
+-- free energy rises monotonically from the reference structure (Q=0,
+anchored at 0 kJ/mol) out to full disorder (Q=-1, ~+25 kJ/mol at pH
+5), i.e. a real folded well, matching the fixed 97.5%-folded landscape
+underneath it. The old v1 plot's inactive side did not have this
+shape (dominated by the pre-truncation artifact). The active basin, by
+contrast, now visibly displays the exact pathology documented above as
+a feature of the plot itself rather than only a caveat in prose: free
+energy falls monotonically and steeply from the seam (Q=0+, near
+9BHM's own reference structure) out to full disorder (Q=+1, -60 to -78
+kJ/mol) -- the model treating near-total unfolding as dramatically more
+favorable than the real, solved active structure, for every pH in the
+grid. Both basins' pH-dependence still comes through (color gradient
+top-to-bottom within each basin), driven by the unchanged, uncalibrated
+ΔG_activation(pH) anchor plus each conformer's own pH-dependent
+electrostatics.
+
+**Net assessment against the ultimate goal**: this is a real, wired-in
+improvement (the inactive basin is now trustworthy in shape, not just
+in principle), and it makes the active-basin problem legible directly
+in the plot rather than only in a text caveat -- useful in its own
+right for explaining the current state to a reader. It does not change
+the two remaining blockers: Gate A still fails (the pH axis itself is
+uncalibrated), and the active-basin fold-order pathology is still
+unresolved (its shape in this plot is a real, reproducible model output,
+not yet a trustworthy free-energy landscape for the active conformer).
+Both must still be closed before this plot is a validated scientific
+result rather than a pipeline-mechanics demonstration.
