@@ -1154,3 +1154,95 @@ unresolved (its shape in this plot is a real, reproducible model output,
 not yet a trustworthy free-energy landscape for the active conformer).
 Both must still be closed before this plot is a validated scientific
 result rather than a pipeline-mechanics demonstration.
+
+## Gate A revisited: pdie was the dominant, undocumented lever --
+## real, large improvement, but a circularity caveat means this is
+## not yet an honest "pass"
+
+Applied today's diagnostic playbook (falsify with real, cheap tests
+before touching parameters; real ground truth over inference) to Gate
+A, which had been stuck at RMSE 7.86-11.3 across four relaxation
+variants (see "Gate A calibration: FAIL" above).
+
+**First, ruled out grid resolution.** The protein-side grid
+(`dime=(33,33,33)`, `glen=(65,65,65)`) has ~2.03 A spacing, coarser
+than the model-compound grid's ~0.78 A -- a real, unexplained mismatch,
+and a plausible source of systematic error. Tested directly: reran
+Asp40 (near-exact, diff -0.07) and Glu67 (catastrophic, diff +15.97) at
+a 3x finer, spacing-matched protein grid (`dime=(97,97,97)`, same
+`glen`, ~0.68 A). Result: Asp40 unchanged (diff -0.14), Glu67
+*unchanged* (diff +17.32, slightly worse). Grid resolution is not the
+cause -- a clean, decisive negative result before moving on.
+
+**Then found the real lever: `pdie` (protein interior dielectric) was
+set to 2.0 in the driver script with no documented justification
+anywhere in the codebase** (`grep pdie` across `linkage_pka/` turns up
+only the parameter's plumbing, never a rationale or citation for the
+value 2.0 -- inconsistent with this codebase's usual discipline of
+citing every physical constant). pdie=2.0 is on the extreme low end of
+what's used in the PB-pKa literature; classic work (Antosiewicz,
+McCammon & Gilson, J Mol Biol 1994) established that *rigid*,
+single-structure PB pKa calculations need a substantially elevated
+*effective* pdie (they found ~20 worked well across several proteins)
+to phenomenologically compensate for the conformational
+reorganization/polarization a static structure can't otherwise
+capture -- exactly the gap this pipeline's own relaxation levers were
+built to (partially) address a different way.
+
+Tested directly on the same two sites plus two more catastrophic ones
+(Glu75, Asp95), sweeping pdie = 2/4/8/20 at the fast (33^3) grid,
+everything else held fixed: Asp40 (already good) stays fine across the
+whole range (diff -0.07 to +0.64). Every catastrophic site improves
+*monotonically and substantially*:
+
+| Site | expt | pdie=2 | pdie=4 | pdie=8 | pdie=20 |
+|---|---|---|---|---|---|
+| Glu67 | 3.76 | +15.97 | +8.69 | +4.72 | +2.00 |
+| Glu75 | 3.26 | +17.85 | +9.97 | +5.64 | +2.67 |
+| Asp95 | 2.16 | +14.95 | +8.85 | +5.51 | +3.22 |
+
+**Full 17-site Gate A RMSE, rigid geometry (no relaxation), by pdie:**
+pdie=2 -> 10.99 (original baseline), pdie=8 -> 3.28, pdie=20 -> 1.62.
+pdie alone, with zero conformational relaxation, already beats the
+previous *best* variant (neighbor relaxation at pdie=2: RMSE 7.86) by
+a wide margin -- pdie was the dominant lever all along, not relaxation.
+
+**Combined with the existing best relaxation lever** (neighbor
+relaxation, 8 A radius, `optimize_rotamer=True`):
+- pdie=20 + neighbor relaxation: RMSE=1.40, MAE=1.08 -- still fails
+  the <1.0 threshold, but every remaining diff is <=+2.93 (nothing
+  catastrophic left).
+- pdie=40 + neighbor relaxation: **RMSE=0.95, MAE=0.75 -- passes the
+  <1.0 threshold** for the first time this project has run Gate A.
+
+**Why this is not being reported as an honest, unconditional pass:**
+pdie=40 was found by direct grid search (2/4/8/20/40) against this
+exact 17-site RMSE -- the same numbers Gate A's pass/fail criterion is
+computed from. That is circular: freely tuning one parameter until a
+benchmark's own error metric crosses a threshold is not the same as
+independently validating the pipeline against that benchmark, even
+though the *direction and mechanism* of the fix (pdie=2 was
+indefensibly low; literature-precedented elevated pdie for rigid PB
+pKa calculations is a real, well-established compensation, not an
+invented fudge factor) is genuine and well-grounded. pdie=20 -- the
+literature's own commonly-cited value, chosen independently of this
+specific dataset's outcome -- still fails (RMSE 1.40). Only pushing
+further, specifically because 20 wasn't enough *on this benchmark*,
+crosses the line.
+
+**Honest current status**: Gate A's RMSE has been reduced from a
+catastrophic 10.99 to 0.95-1.62 depending on exact pdie choice, via a
+real, mechanistically well-understood, literature-precedented fix
+(not a parameter hack) -- a large, genuine improvement, not resolved
+alignment error. But it should not yet be treated as a validated pass
+per the pipeline's own acceptance rule ("no ancestral-node number may
+be reported" before Gate A passes) without addressing the circularity:
+either (a) commit to a pdie value chosen independently of this exact
+benchmark (e.g. the literature's pdie=20) and accept that it still
+fails here, prompting further real investigation of what's specific to
+SNase/this pipeline beyond dielectric choice, or (b) do a proper
+train/held-out split of the 17 sites -- pick pdie on a subset, report
+RMSE on the rest -- so a threshold-crossing claim isn't self-referential.
+Neither has been done yet. This is real, substantial progress and a
+genuine, well-evidenced mechanistic finding, but "Gate A passes" is not
+yet a claim this document is prepared to stand behind.
