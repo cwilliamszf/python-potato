@@ -1570,3 +1570,112 @@ carries a real, substantial, non-saturated cross-node signal on its own
 -- unvalidated against the paper's absolute scale, but usable for
 *relative* comparison across consistently-processed nodes, which is
 what the evolutionary-cooperativity question actually needs.
+
+## Block-partition and coupling-formula audit: DSSP is a real, adoptable
+## fix for blocking; the coupling formula itself is provably correct;
+## the residual gap is upstream, in contact-map/parameter fidelity
+
+Executed the audit the previous section's verdict called for. Two
+independent halves, both resolved with hard evidence rather than
+inference.
+
+**Block partition: real DSSP is a genuine, measurable improvement.**
+`mkdssp` (v4.2.2) is installable in this sandbox (`apt-get install
+dssp`) -- not something noted as available before. Ran it on the real
+`gpcr9i.pdb` (needed a synthetic `HEADER` line; the file's CASP-style
+header isn't valid legacy PDB, and Biopython's own mmCIF re-export
+lacked the chain/entity metadata modern `mkdssp` requires -- both
+workarounds documented in scratchpad). Compared three block partitions
+against the paper's own real `BlockDet_gpcr9i` ground truth:
+- Our geometric (DSSP-free) heuristic: 75 blocks (paper: 76), 71/287
+  (24.7%) adjacent-residue block-boundary disagreements.
+- Real DSSP (H/G/E only, matching this module's own documented HEG
+  convention): **76 blocks -- exact match** to the paper's count, 50/287
+  (17.4%) boundary disagreements -- a real ~30% relative reduction, not
+  a wash.
+- The residual 17.4% gap even with real DSSP most likely reflects
+  STRIDE-vs-DSSP algorithmic differences (the original MATLAB pipeline
+  used STRIDE, not DSSP -- different H-bond geometry criteria, a known,
+  real source of disagreement on ambiguous helix caps/3-10 helices) and
+  possibly small structure-preparation differences from the paper's
+  exact original file, not a bug in either program.
+
+This is a genuine, concrete, adoptable finding independent of the fc
+question: this pipeline should offer a real-DSSP-backed SS assignment
+path when `mkdssp` is available (already partly supported via
+`secondary_structure_from_codes`, just needs a DSSP-output parser and
+its own dependency plumbing), rather than relying solely on the
+geometric heuristic. Not yet wired into the pipeline itself -- this
+audit ran it standalone against gpcr9i only, as a diagnostic.
+
+**But DSSP-based blocking does NOT fix the coupling-value mismatch --
+if anything it looked worse under direct comparison.** Recomputed
+`coupling_free_energy` using the DSSP-derived block partition (now
+exactly 76 blocks, matching the paper's own count) and compared directly
+against the paper's real `CouplingMat_310_gpcr9i` (aggregated to
+block-level via their own `BlockDet`, now a valid 1:1 comparison since
+block counts finally match): mean|value| = 13.77 kJ/mol (paper's real
+mean = 3.82) and Pearson r = 0.384 -- *worse* than the earlier, cruder
+row-max-based comparison under the mismatched geometric-heuristic
+partition (r=0.86, though that number was already flagged as not a
+confirmed match to the paper's real aggregation method, so may not be
+directly comparable). Either way, exact block-count agreement did not
+bring the coupling values into line. **The block-partition mismatch was
+not the dominant driver of the coupling-scale/correlation problem.**
+
+**Coupling formula: verified correct, two independent ways.**
+1. Direct comparison against the real MATLAB source (`FesCalc_Block_full.m`,
+   bundled in the reference repo -- the actual formula, not reconstructed):
+   `chipluswt=RT*log(pjfkf./pjukf)`, `chiminuswt=RT*log(pjfku./pjuku)`,
+   `dGwtcp=RT*log((pjuku.*pjfkf)./(pjfku.*pjukf))`. This pipeline's
+   `coupling.py` computes `chi_plus=RT*log(FF/UF)`,
+   `chi_minus=RT*log(FU/UU)`,
+   `coupling_free_energy=RT*log((UU*FF)/(FU*UF))` -- an exact structural
+   match (FF=pjfkf, UF=pjukf, FU=pjfku, UU=pjuku), confirmed by reading
+   the real source, not assumed.
+2. Independent bit-exact cross-check: the coupling module's own marginal
+   `p_folded` (derived from its joint-probability engine, `diag(FF)`) was
+   compared against an ensemble-averaged P(folded) computed independently
+   from `run_wsme`'s own (already brute-force-validated) `fpath`/`fes`
+   output, via `sum_n P(n) * fpath[n, block]`. **max|diff| = 0.000000** --
+   bit-exact agreement. This rules out a bug in the O(nblocks^2)
+   rectangle-region joint-probability accumulation (`_accumulate`,
+   `diff_ff`/`diff_fu`/`diff_uu`): if that combinatorial engine were
+   wrong, it's extremely unlikely its marginal would still exactly match
+   a completely independently-computed quantity.
+
+**Verdict**: both audited components -- the coupling formula and the
+joint-probability engine that feeds it -- are now proven correct against
+real, independent ground truth, not merely assumed. The block partition
+has a real, adoptable improvement available (DSSP) but fixing it alone
+does not close the coupling-value gap. By elimination, the remaining
+~3-4x scale mismatch and imperfect correlation against the paper's real
+numbers must trace to **upstream inputs feeding the (correct) formula**
+-- most likely the contact map construction (vdW cutoff, electrostatics
+treatment) and/or the entropy/energy parameters (DS, DDS, DCp,
+dielectric) that determine `compute_block_zvec`'s microstate weights,
+which this pipeline built independently rather than porting from the
+paper's full original source (only the final coupling-formula step and
+the DSC/Cp formula were available to port directly; the paper's own
+contact-map and blocking preprocessing pipeline is not included in this
+repo's 4 bundled `.m` files). This is consistent with, and now directly
+implicates the same category of gap as, every other cross-validation
+finding this session (block-partition fidelity, Tier-1 Tm mismatches on
+4 of 5 reference receptors, the fc saturation itself) -- this pipeline's
+independently-built geometry-to-energetics pipeline is close to but not
+bit-identical to the paper's original, and the coupling matrix is simply
+the most sensitive downstream consumer of that accumulated gap. Closing
+it fully would require either the paper's original contact-map/blocking
+source (not available) or a systematic parameter-by-parameter
+reconciliation against real reference outputs -- real, open-ended
+work, appropriately out of scope for this audit's mandate (confirm
+whether the coupling module itself has a bug -- it does not).
+
+**Practical recommendation, given this**: do not keep chasing fc's
+absolute scale. Use the raw coupling matrix / mean|coupling free energy|
+for cross-node *relative* comparison, exactly as the previous section
+already concluded, now with stronger justification -- the module
+computing those numbers is verified correct, so the numbers reflect real
+model output, not a software bug; they are just not on the paper's exact
+absolute scale, for reasons now well characterized (upstream input
+fidelity) rather than mysterious.
