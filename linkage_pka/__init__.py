@@ -39,6 +39,15 @@ from .dielectric_map import (
     write_dx,
     write_maps,
 )
+from .titration import (
+    TITRATABLE_RESIDUES,
+    PqrAtom,
+    build_microstate,
+    charge_delta,
+    load_amber_charges,
+    read_pqr,
+    write_pqr,
+)
 
 __all__ = [
     "LinkageResult",
@@ -63,4 +72,11 @@ __all__ = [
     "splice_membrane_slab",
     "write_dx",
     "write_maps",
+    "TITRATABLE_RESIDUES",
+    "PqrAtom",
+    "build_microstate",
+    "charge_delta",
+    "load_amber_charges",
+    "read_pqr",
+    "write_pqr",
 ]
