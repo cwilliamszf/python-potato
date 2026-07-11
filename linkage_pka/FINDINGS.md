@@ -1402,3 +1402,90 @@ sign-level signature. For a methods/negative-results framing this
 strengthens the contribution; for a biology-prediction framing it
 confirms calibration is blocked behind conformational sampling, not
 parameter choice.
+
+## Ancestral-reconstruction cooperativity pilot: mechanically works,
+## but the fc fidelity gate fails -- run the tree only after fixing it
+
+The user supplied four real AlphaFold-modeled ancestral nodes from the
+larger proton-sensing clade (node_20, node_148, node_80, node_34; ~320
+residues each, single chain, mean pLDDT 84-87 -- genuine per-residue
+confidence, unlike the GPCRdb homology models). Ran the WSME
+cooperativity pilot proposed in the previous section, to test whether a
+comparative cooperativity signal is real before committing to the full
+tree.
+
+**Structural QC + truncation (disorder-scope lesson applied):** all four
+share the same pLDDT profile as GPR68 -- low-confidence N-tail (res
+1-15, pLDDT ~63), well-ordered 7TM core (res ~16-285, pLDDT 85-97), and
+a low-confidence H8/C-tail (res ~300+, pLDDT dropping to 30-60). Applied
+the same fix from test 1: truncated every node to the common confident
+core res 16-285 (a strictly consistent protocol across nodes, the
+control the previous section flagged as mandatory). This is cleaner than
+GPR68's case -- here the truncation boundary is set by real pLDDT, not a
+geometric proxy.
+
+**What worked (mechanics are sound):**
+- All four load, truncate, and run through the identical untouched
+  pipeline (~68-72 blocks each).
+- 3 of 4 fold properly at the default xi (node_20/148/80 at 92-94%
+  folded); the truncation transfers the disorder-scope fix to these AF
+  models cleanly. (node_34 collapses to 9.7% at default xi -- see below.)
+- Per-node xi calibration to Tm=333K succeeds and lands near the paper's
+  own value (-48.9 +/- 2.76 J/mol): node_20 -46.6, node_80 -49.2 (both
+  within ~1 sigma), node_34 -52.8 (~1.4 sigma), node_148 -41.6 (~2.6
+  sigma). So the packing-energy scale is in the right regime.
+- The nodes genuinely differ in raw coupling scale (at matched default
+  xi): mean|coupling free energy| ranges 2.2 (node_148) to 10.0
+  (node_80), strong-pair counts 240 to 2060. There is a real,
+  substantial cross-node signal in the continuous coupling matrix.
+
+**What failed (the fidelity gate -- why the tree must not be run yet):**
+- **fc is 97-100% for every node, calibrated or not**, vs. the paper's
+  13.0 +/- 4.5% target. This is the same fc the regression gate
+  (examples/calibration_regression.py) was built to check, with the
+  paper's own instruction "do not proceed to receptor results until it
+  passes." It fails by ~7x, and per-node xi calibration does NOT fix it
+  (node_20 default fc 94% -> calibrated 97%; all others already at/near
+  100%). Because every node saturates at the ceiling, **fc as currently
+  computed cannot discriminate between nodes** -- it is useless as the
+  comparative cooperativity metric for exactly this application.
+- Two likely, non-exclusive causes, neither yet resolved: (1) the fc
+  threshold. `DEFAULT_FC_THRESHOLD_KJ_MOL` (1 RT at 310K, ~2.58 kJ/mol)
+  is documented in calibration.py itself as "a documented choice, not a
+  verified transcription of the paper's own threshold" -- with mean
+  |coupling| of 2-10 kJ/mol over a ~70x70 matrix, almost every block has
+  at least one partner above 2.58, forcing fc toward 100%. (2) A
+  truncation confound that is intrinsic to this application: cutting to
+  the ordered core (necessary for folding) removes the weakly-coupled
+  disordered periphery, which mechanically *raises* the coupled fraction
+  relative to the paper's whole-structure fc. So the truncation that
+  FIXES folding simultaneously BREAKS the apples-to-apples fc comparison
+  to the paper -- two requirements in direct tension, not yet reconciled.
+- node_34's collapse at default xi (9.7%) and the non-monotonic Tm(xi)
+  relationship for node_148 and node_34 (e.g. node_34: xi=-48 -> 336K,
+  -46 -> 382K, -44 -> 336K -- not monotonic, signalling messy/bimodal
+  thermograms) mean those two nodes' calibrations sit on noisier ground
+  than the single reported number suggests. A real run would need the
+  full-resolution bimodal-aware Tm treatment per node, not the coarse
+  interpolation used for this pilot.
+
+**Pilot verdict (this is what the pilot was for):** the cooperativity-
+evolution application is mechanically viable -- structures load,
+truncate, fold, and calibrate to near-paper xi, and there IS a real
+cross-node coupling signal -- but it is NOT yet trustworthy, because the
+one quantitative fidelity gate available (fc vs. the paper's 13%) fails
+by ~7x and, being saturated, cannot even rank the nodes. Running the
+full ancestral tree now would be building comparative evolutionary
+claims on an unvalidated, saturated metric. The de-risking succeeded
+exactly as intended: it stopped the tree before it started and named the
+specific blocker. **Required before any tree run:** (a) pin the fc
+definition/threshold to the paper's actual one and validate it
+reproduces fc≈13% on the paper's OWN 45 receptors (the reference .mat
+files are already in the scratchpad) -- not tuned to hit 13% on an
+ancestor, which would be the same circularity trap as the Gate A pdie;
+(b) resolve the truncation-vs-fc tension (either a coupling metric that
+is robust to periphery truncation, or a whole-structure fc with a
+disorder-aware coupling coordinate); (c) only then, with a validated
+discriminating metric, compare across nodes -- and even then as
+hypothesis generation with AltAll posterior-uncertainty controls, since
+no one has validated WSME cooperativity on ancestral sequences.
