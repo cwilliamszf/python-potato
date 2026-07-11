@@ -947,3 +947,28 @@ changes, restores a proper folded minimum at 97.5%. The active-state
 model surfaced a second, distinct, still-open problem in the course of
 testing this fix; it was not part of the original bug report and has
 not been fixed.
+
+## Does active need its own ξ recalibration? Tried it -- no meaningful
+## melting transition exists to calibrate against
+
+Ran `calibrate_xi_tm_mode` on the truncated active structure (residues
+14-302, same range that fixed inactive), full bracket [-80,-20] J/mol,
+target Tm=333K. Result: `CalibrationError`, correctly raised rather than
+returning a number. At the *most stabilizing* edge of the bracket
+(xi=-80 J/mol -- more stabilizing than any of the paper's real 45
+receptors), the partition function's Cp(T) curve has no resolvable peak
+at all: "too flat/monotonic to define a melting transition." At the
+other edge (xi=-20 J/mol) Tm=346K, 13K off target, and there's no
+evidence a valid two-state-like transition exists anywhere between the
+two edges either -- the function's own edge-check is what caught this,
+not an internal search failure.
+
+Conclusion: this isn't a case where the right ξ hasn't been found yet;
+within the entire physically-defensible range, there is no cooperative
+two-state melting transition to Tm-match against for this structure.
+Recalibrating ξ for active is not the fix and was correctly refused by
+the calibration machinery's own guardrail, consistent with (and adding
+independent evidence for) the test-1 finding that active's problem is
+structural/topological in the core bundle, not an energy-scale
+parameter. Whatever is wrong with active (test 3, still open) has to be
+resolved before a meaningful ξ calibration for it is even possible.
