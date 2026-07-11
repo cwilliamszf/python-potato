@@ -65,6 +65,22 @@ pip install -e ".[dev]"
 
 ## Usage
 
+### GUI
+
+A Streamlit GUI exposes every option (structure upload, chain/model, pH,
+secondary-structure source, block size, parameter preset and individual
+overrides, DSC sweep range):
+
+```bash
+pip install -e ".[gui]"
+streamlit run wsme_gpcr/app.py
+```
+
+Then open the printed local URL, upload a PDB/mmCIF file (try
+`examples/data/CI2.pdb` first), and click **Run**. Results (1D profile, 2D
+landscape, residue folding probability, and DSC if enabled) render inline
+with download buttons for the underlying data files.
+
 ### CLI
 
 ```bash
