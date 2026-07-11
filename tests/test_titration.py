@@ -7,9 +7,11 @@ import numpy as np
 import pytest
 
 from linkage_pka.titration import (
+    COULOMB_CONSTANT_KJ_ANG_PER_MOL_E2,
     GridParams,
     PqrAtom,
     TITRATABLE_RESIDUES,
+    _pairwise_coulomb_energy,
     build_microstate,
     build_model_compound_atoms,
     charge_delta,
@@ -18,10 +20,12 @@ from linkage_pka.titration import (
     compute_pairwise_coupling,
     compute_solvation_energy,
     load_amber_charges,
+    optimize_rotamer_for_microstate,
     place_titratable_hydrogen,
     read_pqr,
     write_pqr,
 )
+from linkage_pka.structure_prep import CHI_ATOMS, _dihedral_deg, _rotate_about_axis
 
 CI2 = Path(__file__).parent.parent / "examples" / "data" / "CI2.pdb"
 PDB2PQR_AVAILABLE = shutil.which("pdb2pqr30") is not None
@@ -319,3 +323,163 @@ def test_compute_cluster_joint_energies_matches_pairwise_coupling_double_differe
         work_dir=tmp_path / "coupling_ref", extra_h_position_i=h_pos_i, extra_h_position_j=h_pos_j,
     )
     assert w_ij_from_joint == pytest.approx(w_ij_direct, rel=1e-6)
+
+
+# ------------------------------------------------ conformational sampling --
+
+def _synthetic_asp_atoms(resnum=1, include_hd2=False):
+    coords = {
+        "N": np.array([0.0, 0.0, 0.0]),
+        "CA": np.array([1.46, 0.0, 0.0]),
+        "CB": np.array([2.0, 1.4, 0.0]),
+        "CG": np.array([3.5, 1.4, 0.0]),
+        "OD1": np.array([4.0, 2.5, 0.0]),
+        "OD2": np.array([4.2, 0.5, 1.0]),
+    }
+    charges = {"N": -0.52, "CA": 0.04, "CB": -0.02, "CG": 0.62, "OD1": -0.7, "OD2": -0.7}
+    atoms = [
+        PqrAtom(serial=i + 1, name=name, resname="ASP", resnum=resnum,
+                x=float(pos[0]), y=float(pos[1]), z=float(pos[2]), charge=charges[name], radius=1.7)
+        for i, (name, pos) in enumerate(coords.items())
+    ]
+    if include_hd2:
+        h_pos = place_titratable_hydrogen(atoms, resnum, "ASP")
+        atoms.append(PqrAtom(serial=100, name="HD2", resname="ASH", resnum=resnum,
+                              x=float(h_pos[0]), y=float(h_pos[1]), z=float(h_pos[2]), charge=0.44, radius=0.6))
+    return atoms
+
+
+def _apply_chi_sequence(coords_by_name: dict, resname: str, chi_values) -> dict:
+    """Test-only helper mirroring optimize_rotamer_for_microstate's
+    sequential rotation exactly (same primitives, same order) -- used only
+    to construct scenarios with a known geometric outcome (an engineered
+    clash), not to reimplement or duplicate-check the function under
+    test's own selection logic."""
+    coords = dict(coords_by_name)
+    for k, target_deg in enumerate(chi_values):
+        defining_atoms, moving_names = CHI_ATOMS[resname][k]
+        if not all(n in coords for n in defining_atoms):
+            continue
+        current = _dihedral_deg(*[coords[n] for n in defining_atoms])
+        delta = target_deg - current
+        axis_point, axis_end = coords[defining_atoms[1]], coords[defining_atoms[2]]
+        moving_names_present = [n for n in moving_names if n in coords]
+        if not moving_names_present:
+            continue
+        moving = np.array([coords[n] for n in moving_names_present])
+        rotated = _rotate_about_axis(moving, axis_point, axis_end - axis_point, delta)
+        for n, p in zip(moving_names_present, rotated):
+            coords[n] = p
+    return coords
+
+
+def test_pairwise_coulomb_energy_matches_manual_formula():
+    moving_coords = np.array([[0.0, 0.0, 0.0]])
+    moving_charges = np.array([0.5])
+    other_coords = np.array([[3.0, 0.0, 0.0]])
+    other_charges = np.array([-0.4])
+    e = _pairwise_coulomb_energy(moving_coords, moving_charges, other_coords, other_charges, dielectric=2.0)
+    expected = COULOMB_CONSTANT_KJ_ANG_PER_MOL_E2 * 0.5 * (-0.4) / (2.0 * 3.0)
+    assert e == pytest.approx(expected, rel=1e-10)
+
+
+def test_pairwise_coulomb_energy_respects_distance_cutoff():
+    moving_coords = np.array([[0.0, 0.0, 0.0]])
+    moving_charges = np.array([0.5])
+    other_coords = np.array([[100.0, 0.0, 0.0]])  # far outside any reasonable cutoff
+    other_charges = np.array([-0.4])
+    e = _pairwise_coulomb_energy(moving_coords, moving_charges, other_coords, other_charges,
+                                  dielectric=2.0, distance_cutoff_ang=15.0)
+    assert e == 0.0
+
+
+def test_optimize_rotamer_for_microstate_avoids_engineered_clash():
+    atoms = _synthetic_asp_atoms()
+    coords_by_name = {a.name: np.array([a.x, a.y, a.z]) for a in atoms}
+
+    # Regardless of which chi1 candidate ends up chosen, placing a strong
+    # same-sign (repulsive) charge exactly where OD1 would land under
+    # chi2=180 (for every one of the 3 chi1 candidates) guarantees chi2=180
+    # is the worst choice in the whole 3x3 grid.
+    clash_atoms = []
+    for i, chi1 in enumerate((-60.0, 60.0, 180.0)):
+        result_coords = _apply_chi_sequence(coords_by_name, "ASP", (chi1, 180.0))
+        p = result_coords["OD1"]
+        clash_atoms.append(PqrAtom(serial=200 + i, name=f"X{i}", resname="XXX", resnum=99,
+                                    x=float(p[0]), y=float(p[1]), z=float(p[2]), charge=-5.0, radius=1.0))
+
+    new_atoms, chosen_chi = optimize_rotamer_for_microstate(
+        atoms + clash_atoms, 1, "ASP", dielectric=2.0, distance_cutoff_ang=50.0,
+    )
+    assert chosen_chi[1] != 180.0
+
+
+def test_optimize_rotamer_for_microstate_preserves_charges_and_other_residues():
+    atoms = _synthetic_asp_atoms()
+    other = PqrAtom(serial=50, name="CA", resname="GLY", resnum=2, x=10.0, y=10.0, z=10.0, charge=0.1, radius=1.7)
+    new_atoms, _ = optimize_rotamer_for_microstate(atoms + [other], 1, "ASP", distance_cutoff_ang=50.0)
+
+    charges_before = {(a.resnum, a.name): a.charge for a in atoms + [other]}
+    charges_after = {(a.resnum, a.name): a.charge for a in new_atoms}
+    assert charges_before == charges_after
+
+    other_after = next(a for a in new_atoms if a.resnum == 2)
+    assert (other_after.x, other_after.y, other_after.z) == (10.0, 10.0, 10.0)  # untouched
+
+
+def test_optimize_rotamer_for_microstate_updates_titratable_h_geometry():
+    # resname is always the canonical type ("ASP"), matching how every
+    # caller in this module invokes it -- even for a microstate whose
+    # atoms are currently the protonated ASH variant, since CHI_ATOMS and
+    # TITRATABLE_RESIDUES are both keyed by the canonical name. HD2 is not
+    # in CHI_ATOMS' moving sets, so it must be repositioned via
+    # place_titratable_hydrogen after rotation, not left desynced from the
+    # rotated OD2.
+    atoms = _synthetic_asp_atoms(include_hd2=True)
+    new_atoms, chosen_chi = optimize_rotamer_for_microstate(atoms, 1, "ASP", distance_cutoff_ang=50.0)
+
+    coords = {a.name: np.array([a.x, a.y, a.z]) for a in new_atoms}
+    d_od2_hd2 = np.linalg.norm(coords["OD2"] - coords["HD2"])
+    assert d_od2_hd2 == pytest.approx(0.96, abs=1e-6)  # the configured O-H bond length, not stale
+
+
+def test_optimize_rotamer_for_microstate_unknown_resname_raises():
+    atoms = _synthetic_asp_atoms()
+    with pytest.raises(KeyError):
+        optimize_rotamer_for_microstate(atoms, 1, "NOTAREALRESNAME")
+
+
+def test_optimize_rotamer_for_microstate_unknown_resnum_raises():
+    atoms = _synthetic_asp_atoms()
+    with pytest.raises(KeyError):
+        optimize_rotamer_for_microstate(atoms, 999, "ASP")
+
+
+def test_optimize_rotamer_for_microstate_missing_chi_atom_does_not_crash():
+    atoms = [a for a in _synthetic_asp_atoms() if a.name != "OD1"]  # drop a chi2-defining atom
+    new_atoms, chosen_chi = optimize_rotamer_for_microstate(atoms, 1, "ASP", distance_cutoff_ang=50.0)
+    assert len(new_atoms) == len(atoms)
+    assert chosen_chi is not None
+
+
+@pytest.mark.skipif(not APBS_AVAILABLE, reason="requires apbs and pdb2pqr30 on PATH")
+def test_compute_intrinsic_pka_with_optimize_rotamer_runs_and_is_finite(ci2_pqr, tmp_path):
+    """End-to-end wiring check: optimize_rotamer=True must thread through
+    compute_environment_energies on both the protein and model-compound
+    sides without breaking the calculation (no accuracy claim -- this is
+    a plumbing test, not a validated-number test)."""
+    atoms = read_pqr(ci2_pqr)
+    resnum = sorted({a.resnum for a in atoms if a.resname == "ASP"})[0]
+    h_pos = place_titratable_hydrogen(atoms, resnum, "ASP")
+
+    protein_grid = GridParams(dime=(33, 33, 33), glen=(50.0, 50.0, 50.0), gcent="mol 1",
+                               pdie=2.0, sdie=78.54, ion_strength_m=0.150)
+    model_grid = GridParams(dime=(33, 33, 33), glen=(25.0, 25.0, 25.0), gcent="mol 1",
+                             pdie=2.0, sdie=78.54, ion_strength_m=0.150)
+
+    result = compute_intrinsic_pka(
+        atoms, resnum, "ASP", frame=None,
+        protein_grid_params=protein_grid, model_grid_params=model_grid,
+        work_dir=tmp_path / "pka_rotamer", extra_h_position=h_pos, optimize_rotamer=True,
+    )
+    assert np.isfinite(result.intrinsic_pka)

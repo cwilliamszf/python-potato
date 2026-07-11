@@ -1,7 +1,10 @@
 """linkage_pka: Wyman/Tanford proton-linkage analysis of GPCR activation --
 does acidification thermodynamically favor the active state, and by how
 many protons -- from Poisson-Boltzmann pKa's on fixed active/inactive
-structures. No molecular dynamics, no conformational sampling.
+structures. No molecular dynamics, no conformational ensemble sampling --
+only optional, explicit per-microstate side-chain rotamer relaxation (see
+``titration.optimize_rotamer_for_microstate``), always reported alongside
+the rigid-geometry result, never silently substituted for it.
 
 This is a deliberately separate tool from ``wsme_gpcr``: WSME normalizes
 each pH ensemble's partition function to 1 internally, which divides out
@@ -42,6 +45,7 @@ from .dielectric_map import (
     write_maps,
 )
 from .titration import (
+    COULOMB_CONSTANT_KJ_ANG_PER_MOL_E2,
     GridParams,
     SiteEnergyResult,
     TITRATABLE_RESIDUES,
@@ -55,6 +59,7 @@ from .titration import (
     compute_pairwise_coupling,
     compute_solvation_energy,
     load_amber_charges,
+    optimize_rotamer_for_microstate,
     place_titratable_hydrogen,
     read_pqr,
     write_pqr,
@@ -104,6 +109,7 @@ __all__ = [
     "splice_membrane_slab",
     "write_dx",
     "write_maps",
+    "COULOMB_CONSTANT_KJ_ANG_PER_MOL_E2",
     "GridParams",
     "SiteEnergyResult",
     "TITRATABLE_RESIDUES",
@@ -117,6 +123,7 @@ __all__ = [
     "compute_pairwise_coupling",
     "compute_solvation_energy",
     "load_amber_charges",
+    "optimize_rotamer_for_microstate",
     "place_titratable_hydrogen",
     "read_pqr",
     "write_pqr",

@@ -34,6 +34,33 @@ entries), consistent with Arg's very high model pKa (~12.5) meaning it is
 essentially never deprotonated across the pH 5-8 range this pipeline
 scans. Its contribution to Delta_n_H is therefore always ~0 and it is
 reported at its fixed model pKa rather than computed.
+
+Per-microstate conformational sampling
+---------------------------------------
+Every PB energy function below takes an ``optimize_rotamer`` flag (default
+False, preserving the original rigid-geometry behavior). When True, each
+microstate's target residue gets its own chi1/chi2 rotamer re-selected
+(see ``optimize_rotamer_for_microstate``) for *that* charge state, before
+the PB solve -- rather than reusing one fixed geometry (from
+``structure_prep``'s single, pre-titration rotamer pass) across every
+protonation state. This exists because different protonation states often
+favor different side-chain packing, and a single rigid structure is a
+worse approximation exactly when nearby charges are close enough for that
+to matter -- which is also when coupling matters most. Directly motivated
+by a real finding in this pipeline's development: a tightly-clustered
+4-residue GPCR loop's intrinsic pKa's, computed on ``structure_prep``'s
+single fixed geometry, converged (on PB grid refinement, ruling out a
+numerical artifact) to shifts of order -12 to -16 pKa units -- far beyond
+anything documented for buried ionizable groups (the most extreme
+published shifts, engineered cavity Lys in staphylococcal nuclease, are
+~5 units) -- consistent with the known failure mode of single-rigid-
+structure continuum PB for closely-packed charged clusters that
+conformational-sampling methods (e.g. MCCE's multi-rotamer treatment)
+exist specifically to avoid. Per the pipeline spec's own guardrail
+("Report ... with-rotamer-relaxation and without, every time"), this is
+implemented as an explicit, comparable sensitivity axis, not a silent
+default change -- existing rigid-geometry behavior and every existing
+test are unaffected unless a caller opts in.
 """
 
 from __future__ import annotations
@@ -44,6 +71,7 @@ from pathlib import Path
 import numpy as np
 
 from wsme_gpcr.structure import DEFAULT_PKA
+from .structure_prep import CHI_ATOMS, STAGGERED_ANGLES_DEG, _dihedral_deg, _rotate_about_axis
 
 R_KJ_PER_MOL_K = 8.31446261815324e-3
 LN10 = np.log(10.0)
@@ -229,6 +257,121 @@ def place_titratable_hydrogen(atoms: list, resnum: int, resname: str) -> np.ndar
     return parent_pos + geom["bond_length"] * (direction / norm)
 
 
+# Coulomb's constant, ke^2, in units of kJ*Angstrom/(mol*elementary_charge^2)
+# -- i.e. E[kJ/mol] = COULOMB_CONSTANT_KJ_ANG_PER_MOL_E2 * q1*q2 / (dielectric * r[Angstrom]).
+# Derived from 1/(4*pi*eps0) = 8.9875517923e9 N*m^2/C^2, converted via
+# elementary charge e=1.602176634e-19 C, N_A=6.02214076e23 /mol, 1 m=1e10 A,
+# 1 J = 1e-3 kJ: ke^2 * N_A * 1e10 * 1e-3 = 1389.354...
+COULOMB_CONSTANT_KJ_ANG_PER_MOL_E2 = 1389.35457696
+
+
+def _pairwise_coulomb_energy(moving_coords: np.ndarray, moving_charges: np.ndarray,
+                              other_coords: np.ndarray, other_charges: np.ndarray,
+                              dielectric: float, distance_cutoff_ang: float = None) -> float:
+    """Cheap, non-APBS pairwise Coulomb energy (kJ/mol) between a moving
+    atom set and the rest of the system -- a fast proxy scoring function
+    for *ranking* candidate rotamers (not a substitute for the real
+    Poisson-Boltzmann solvation energy computed afterward on the geometry
+    it selects). O(n_moving * n_other); a distance cutoff keeps this cheap
+    for large truncated environments since only relative ranking among
+    candidates for one residue's local geometry is needed."""
+    if len(other_coords) == 0:
+        return 0.0  # nothing to interact with (e.g. an isolated single-residue test fixture)
+    diff = moving_coords[:, None, :] - other_coords[None, :, :]  # (n_moving, n_other, 3)
+    dist = np.maximum(np.linalg.norm(diff, axis=2), 1e-3)  # avoid singularities
+    mask = dist <= distance_cutoff_ang if distance_cutoff_ang is not None else np.ones_like(dist, dtype=bool)
+    qq = moving_charges[:, None] * other_charges[None, :]
+    return float(np.sum(np.where(mask, COULOMB_CONSTANT_KJ_ANG_PER_MOL_E2 * qq / (dielectric * dist), 0.0)))
+
+
+def optimize_rotamer_for_microstate(atoms: list, resnum: int, resname: str,
+                                     candidate_angles=STAGGERED_ANGLES_DEG,
+                                     dielectric: float = 2.0, distance_cutoff_ang: float = 15.0) -> tuple:
+    """Re-select one residue's chi1/chi2 rotamer for its CURRENT charge
+    state -- call this after ``build_microstate`` has already swapped
+    ``resnum`` to its protonated/deprotonated AMBER charges, so the
+    scoring reflects that specific microstate's electrostatics, not
+    whatever state the structure happened to be prepared in (see the
+    module docstring's "Per-microstate conformational sampling" section
+    for why this matters).
+
+    Reuses ``structure_prep.py``'s chi-angle geometry (``CHI_ATOMS``) and
+    the same staggered gauche-/gauche+/trans candidate set (for the same
+    reason documented there: the empirical Dunbrack/Lovell-Richardson
+    rotamer library could not be verified/fetched in this environment) --
+    but scores candidates by cheap pairwise Coulomb energy
+    (``_pairwise_coulomb_energy``) rather than OpenMM single-point energy,
+    since this module's ``PqrAtom`` representation carries AMBER partial
+    charges directly and has no OpenMM force-field context of its own.
+
+    ASP/GLU fixup: their titratable hydrogen (HD2/HE2) is not part of
+    ``CHI_ATOMS``' moving-atom sets (that table predates per-microstate
+    titration and was built for ``structure_prep``'s single pass, where
+    these residues are typically still deprotonated) -- so if this
+    microstate is protonated and already carries that H, its position is
+    recomputed fresh via ``place_titratable_hydrogen`` after rotation
+    rather than left desynced from the newly-rotated OD2/OE2. HIS
+    (chi1/chi2) and LYS (chi4, beyond the reported chi1/chi2 but included
+    structurally) already carry their titratable H inside ``CHI_ATOMS``'
+    own moving sets and need no such fixup.
+
+    Returns ``(new_atoms, chosen_chi_deg)``.
+    """
+    if resname not in CHI_ATOMS:
+        raise KeyError(f"no chi-angle geometry defined for {resname!r}")
+    n_chi = min(2, len(CHI_ATOMS[resname]))
+
+    target_idx = [i for i, a in enumerate(atoms) if a.resnum == resnum]
+    if not target_idx:
+        raise KeyError(f"resnum {resnum} not found in atoms")
+    name_to_local = {atoms[i].name: j for j, i in enumerate(target_idx)}
+    base_coords = np.array([[atoms[i].x, atoms[i].y, atoms[i].z] for i in target_idx])
+    target_charges = np.array([atoms[i].charge for i in target_idx])
+
+    other_idx = [i for i, a in enumerate(atoms) if a.resnum != resnum]
+    other_coords = np.array([[atoms[i].x, atoms[i].y, atoms[i].z] for i in other_idx])
+    other_charges = np.array([atoms[i].charge for i in other_idx])
+
+    candidates = [(a,) for a in candidate_angles] if n_chi == 1 else \
+        [(a, b) for a in candidate_angles for b in candidate_angles]
+
+    best_energy = np.inf
+    best_coords = base_coords
+    best_chi = None
+    for cand in candidates:
+        trial = base_coords.copy()
+        for k, target_deg in enumerate(cand):
+            defining_atoms, moving_names = CHI_ATOMS[resname][k]
+            if not all(n in name_to_local for n in defining_atoms):
+                continue  # a chi-defining atom is missing from this residue's atom set (e.g. truncated cap); skip
+            pts = [trial[name_to_local[n]] for n in defining_atoms]
+            current = _dihedral_deg(*pts)
+            delta = target_deg - current
+            axis_point, axis_end = trial[name_to_local[defining_atoms[1]]], trial[name_to_local[defining_atoms[2]]]
+            moving_local = [name_to_local[n] for n in moving_names if n in name_to_local]
+            if moving_local:
+                trial[moving_local] = _rotate_about_axis(trial[moving_local], axis_point, axis_end - axis_point, delta)
+
+        energy = _pairwise_coulomb_energy(trial, target_charges, other_coords, other_charges,
+                                           dielectric, distance_cutoff_ang)
+        if energy < best_energy:
+            best_energy, best_coords, best_chi = energy, trial, cand
+
+    new_atoms = list(atoms)
+    for local_j, global_i in enumerate(target_idx):
+        new_atoms[global_i] = replace(new_atoms[global_i], x=float(best_coords[local_j, 0]),
+                                       y=float(best_coords[local_j, 1]), z=float(best_coords[local_j, 2]))
+
+    titratable_h_name = TITRATABLE_RESIDUES.get(resname, {}).get("titratable_h")
+    if resname in ("ASP", "GLU") and titratable_h_name is not None:
+        h_idx = next((i for i in target_idx if atoms[i].name == titratable_h_name), None)
+        if h_idx is not None:
+            new_pos = place_titratable_hydrogen(new_atoms, resnum, resname)
+            new_atoms[h_idx] = replace(new_atoms[h_idx], x=float(new_pos[0]), y=float(new_pos[1]), z=float(new_pos[2]))
+
+    return new_atoms, list(best_chi)
+
+
 def charge_delta(resname: str, amber_charges: dict) -> float:
     """Net charge change (protonated minus deprotonated) for one titratable
     residue type -- +1 for acids (Asp/Glu: deprotonated is anionic) and
@@ -344,16 +487,27 @@ def compute_solvation_energy(atoms: list, grid_params: GridParams, work_dir, fra
 
 def compute_environment_energies(atoms: list, resnum: int, resname: str, amber_charges: dict,
                                   grid_params: GridParams, work_dir, frame=None,
-                                  membrane_dielectric: float = 2.0, extra_h_position=None) -> tuple:
+                                  membrane_dielectric: float = 2.0, extra_h_position=None,
+                                  optimize_rotamer: bool = False) -> tuple:
     """Return (E_deprotonated, E_protonated): Born-cycle solvation energy
     (see ``compute_solvation_energy``) of the whole given atom set
     (protein, or an isolated single-residue model compound) with site
     ``resnum`` swapped between its two AMBER microstates, all other atoms
-    held fixed."""
+    held fixed.
+
+    ``optimize_rotamer=True`` re-selects ``resnum``'s chi1/chi2 rotamer
+    separately for each of the two microstates (see
+    ``optimize_rotamer_for_microstate`` and the module docstring's
+    "Per-microstate conformational sampling" section) before scoring --
+    default False preserves the original single-fixed-geometry behavior.
+    """
     work_dir = Path(work_dir)
     deprot_atoms = build_microstate(atoms, resnum, resname, protonated=False, amber_charges=amber_charges)
     prot_atoms = build_microstate(atoms, resnum, resname, protonated=True, amber_charges=amber_charges,
                                    extra_h_position=extra_h_position)
+    if optimize_rotamer:
+        deprot_atoms, _ = optimize_rotamer_for_microstate(deprot_atoms, resnum, resname)
+        prot_atoms, _ = optimize_rotamer_for_microstate(prot_atoms, resnum, resname)
 
     e_deprot = compute_solvation_energy(deprot_atoms, grid_params, work_dir / "deprot", frame, membrane_dielectric)
     e_prot = compute_solvation_energy(prot_atoms, grid_params, work_dir / "prot", frame, membrane_dielectric)
@@ -407,13 +561,18 @@ def build_model_compound_atoms(protein_atoms: list, resnum: int) -> list:
 def compute_intrinsic_pka(protein_atoms: list, resnum: int, resname: str, frame,
                            protein_grid_params: GridParams, model_grid_params: GridParams, work_dir,
                            amber_charges: dict = None, membrane_dielectric: float = 2.0,
-                           temp_k: float = 298.15, extra_h_position=None) -> SiteEnergyResult:
+                           temp_k: float = 298.15, extra_h_position=None,
+                           optimize_rotamer: bool = False) -> SiteEnergyResult:
     """One site's intrinsic pKa: PB energies in the full protein/membrane
     environment (``frame`` gives the membrane slab; pass ``frame=None`` for
     a soluble-protein calculation with no membrane) minus the same in an
     isolated single-residue model compound (see
     ``build_model_compound_atoms``), referenced against
     ``wsme_gpcr.structure.DEFAULT_PKA``.
+
+    ``optimize_rotamer=True`` re-optimizes this site's rotamer per
+    microstate on both the protein and model-compound sides -- see
+    ``compute_environment_energies``.
     """
     amber_charges = amber_charges or load_amber_charges()
     work_dir = Path(work_dir)
@@ -421,12 +580,13 @@ def compute_intrinsic_pka(protein_atoms: list, resnum: int, resname: str, frame,
     e_prot_deprot, e_prot_prot = compute_environment_energies(
         protein_atoms, resnum, resname, amber_charges, protein_grid_params, work_dir / "protein",
         frame=frame, membrane_dielectric=membrane_dielectric, extra_h_position=extra_h_position,
+        optimize_rotamer=optimize_rotamer,
     )
 
     model_atoms = build_model_compound_atoms(protein_atoms, resnum)
     e_model_deprot, e_model_prot = compute_environment_energies(
         model_atoms, resnum, resname, amber_charges, model_grid_params, work_dir / "model",
-        frame=None, extra_h_position=extra_h_position,
+        frame=None, extra_h_position=extra_h_position, optimize_rotamer=optimize_rotamer,
     )
 
     RT = R_KJ_PER_MOL_K * temp_k
@@ -446,7 +606,8 @@ def compute_intrinsic_pka(protein_atoms: list, resnum: int, resname: str, frame,
 def compute_pairwise_coupling(protein_atoms: list, resnum_i: int, resname_i: str,
                                resnum_j: int, resname_j: str, frame, grid_params: GridParams, work_dir,
                                amber_charges: dict = None, membrane_dielectric: float = 2.0,
-                               extra_h_position_i=None, extra_h_position_j=None) -> float:
+                               extra_h_position_i=None, extra_h_position_j=None,
+                               optimize_rotamer: bool = False) -> float:
     """W_ij (kJ/mol): the standard double-difference of four whole-system
     PB energies, isolating the pure electrostatic interaction between site
     i's and site j's charge differences (protonated - deprotonated) --
@@ -454,6 +615,10 @@ def compute_pairwise_coupling(protein_atoms: list, resnum_i: int, resname_i: str
     fixed background of every other site (the reduced-site/Bashford-Karplus
     coupling term the pipeline spec requires for the coupled histidine-
     shell + buried-carboxylate cluster).
+
+    ``optimize_rotamer=True`` re-optimizes both i's and j's rotamers for
+    each of the 4 joint microstates before scoring -- see
+    ``optimize_rotamer_for_microstate``.
     """
     amber_charges = amber_charges or load_amber_charges()
     work_dir = Path(work_dir)
@@ -464,6 +629,9 @@ def compute_pairwise_coupling(protein_atoms: list, resnum_i: int, resname_i: str
                                       extra_h_position=extra_h_position_i if i_prot else None)
             atoms = build_microstate(atoms, resnum_j, resname_j, j_prot, amber_charges,
                                       extra_h_position=extra_h_position_j if j_prot else None)
+            if optimize_rotamer:
+                atoms, _ = optimize_rotamer_for_microstate(atoms, resnum_i, resname_i)
+                atoms, _ = optimize_rotamer_for_microstate(atoms, resnum_j, resname_j)
             label = f"i{'p' if i_prot else 'd'}_j{'p' if j_prot else 'd'}"
             energies[(i_prot, j_prot)] = compute_solvation_energy(
                 atoms, grid_params, work_dir / label, frame, membrane_dielectric,
@@ -475,7 +643,7 @@ def compute_pairwise_coupling(protein_atoms: list, resnum_i: int, resname_i: str
 
 def compute_cluster_joint_energies(protein_atoms: list, sites: list, frame, grid_params: GridParams, work_dir,
                                     amber_charges: dict = None, membrane_dielectric: float = 2.0,
-                                    extra_h_positions: dict = None) -> dict:
+                                    extra_h_positions: dict = None, optimize_rotamer: bool = False) -> dict:
     """Whole-system Born-cycle solvation energy E_protein(x) for every one
     of a small cluster's 2^n joint protonation microstates x -- the exact,
     non-perturbative alternative to ``compute_intrinsic_pka`` (which freezes
@@ -502,11 +670,25 @@ def compute_cluster_joint_energies(protein_atoms: list, sites: list, frame, grid
     system energy directly, rather than decomposing it into per-site
     intrinsic terms plus pairwise corrections.
 
+    Tested on that same real cluster: removing the reduced-site
+    approximation did NOT resolve the anomaly (the joint energies showed
+    the same ~90 kJ/mol single-site swing), and further grid refinement
+    (dime 65->97) converged cleanly to a still-implausible ~-12 pKa-unit
+    shift rather than continuing to move -- ruling out both the
+    approximation and (to first order) an unconverged grid as the sole
+    cause. See ``optimize_rotamer`` below and the module docstring's
+    "Per-microstate conformational sampling" section for the next
+    hypothesis this motivated: a single rigid geometry per microstate.
+
     Returns ``{occupancy: energy}`` where ``occupancy`` is a tuple of bools
     (True=protonated) in the same order as ``sites``, and ``energy`` is the
     Born-cycle solvation energy (kJ/mol, see ``compute_solvation_energy``)
     of the whole given atom set with every site in ``sites`` simultaneously
     set to that occupancy, all other atoms held fixed.
+
+    ``optimize_rotamer=True`` re-optimizes every site's rotamer for each
+    joint microstate before scoring -- see
+    ``optimize_rotamer_for_microstate``.
 
     Cost: 2^n calls to ``compute_solvation_energy`` (each itself 2 APBS
     solves: solvated + reference), i.e. 2^(n+1) solves total -- tractable
@@ -524,6 +706,9 @@ def compute_cluster_joint_energies(protein_atoms: list, sites: list, frame, grid
         for (resnum, resname), protonated in zip(sites, occupancy):
             atoms = build_microstate(atoms, resnum, resname, protonated, amber_charges,
                                       extra_h_position=extra_h_positions.get(resnum) if protonated else None)
+        if optimize_rotamer:
+            for resnum, resname in sites:
+                atoms, _ = optimize_rotamer_for_microstate(atoms, resnum, resname)
         label = "".join("p" if b else "d" for b in occupancy)
         energies[occupancy] = compute_solvation_energy(atoms, grid_params, work_dir / label, frame, membrane_dielectric)
 
