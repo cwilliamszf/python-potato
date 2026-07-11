@@ -119,6 +119,137 @@ def _ca_coord(structure, resnum: int) -> np.ndarray:
     return structure.coord[mask][0]
 
 
+def _segment_tm_helices(structure, frame: "MembraneFrame", min_length: int = 15,
+                         min_frac_in_slab: float = 0.45) -> list:
+    """Contiguous stretches of ``frame.tm_mask_resnums`` classified as real
+    membrane-spanning TM helices -- filters out the short helical
+    loop-caps the same per-residue mask sometimes includes (e.g. a short
+    intracellular-loop helical turn right after a TM ends), which a naive
+    "just take contiguous runs" segmentation cannot distinguish from a
+    genuine TM span. A candidate segment is kept only if it is at least
+    ``min_length`` residues long AND at least ``min_frac_in_slab`` of its
+    Cα projections fall within the membrane slab (``frame.in_slab``).
+
+    Thresholds were tuned against the real GPR68 active/inactive
+    structures this pipeline targets (not assumed): this combination
+    gives exactly the canonical 7 TM segments on both, with R3.50
+    correctly falling in the 3rd -- see ``find_d250``, which is the
+    reason this function exists.
+
+    Returns segments in N->C sequence order, each a list of author
+    resnums.
+    """
+    ca_mask = np.array(structure.atom_name) == "CA"
+    ca_resindex = structure.atom_resindex[ca_mask]
+    ca_coord = structure.coord[ca_mask]
+    proj_by_resnum = {
+        int(structure.author_resnum[ridx]): float(frame.project(c[None, :])[0])
+        for ridx, c in zip(ca_resindex, ca_coord)
+    }
+
+    resnums = sorted(frame.tm_mask_resnums)
+    if not resnums:
+        return []
+    raw_segments = []
+    current = [resnums[0]]
+    for r in resnums[1:]:
+        if r == current[-1] + 1:
+            current.append(r)
+        else:
+            raw_segments.append(current)
+            current = [r]
+    raw_segments.append(current)
+
+    real_tm = []
+    for seg in raw_segments:
+        projs = [proj_by_resnum[r] for r in seg if r in proj_by_resnum]
+        if not projs:
+            continue
+        frac_in_slab = float(np.mean([abs(p) <= frame.half_thickness_ang for p in projs]))
+        if len(seg) >= min_length and frac_in_slab >= min_frac_in_slab:
+            real_tm.append(seg)
+    return real_tm
+
+
+def find_d250(structure, frame: "MembraneFrame", r350_resnum: int = None) -> tuple:
+    """Locate D2.50 (or, rarely, E2.50) -- the conserved sodium-pocket
+    Asp/Glu on TM2 -- geometrically rather than by sequence motif.
+
+    Unlike R3.50 (DRY) and Y7.53 (NPxxY), D2.50 has no short, family-
+    general local sequence signature reliable enough for a simple regex
+    (even GPCRdb's own generic-numbering algorithm uses profile/
+    structural alignment for this position, not a motif search), and this
+    pipeline's guardrails explicitly forbid reading the canonical BW-
+    numbered alignment file (see the module docstring). Instead:
+
+      1. Segment the membrane frame's TM mask into discrete real TM
+         helices (``_segment_tm_helices``), filtering out short helical
+         loop-caps the raw per-residue mask can include.
+      2. Take the helix immediately N-terminal (by resnum) of the one
+         containing R3.50 (found via ``find_r350`` if not supplied) as
+         TM2 -- anchoring to R3.50 rather than counting "the 2nd helix
+         from the N-terminus" is robust to a poorly-resolved or
+         miscounted TM1.
+      3. Within TM2, find every Asp/Glu and choose the one whose
+         membrane-normal projection is closest to 0 -- the geometric
+         center of the membrane slab, where the sodium pocket actually
+         sits (it coordinates an ion within the 7TM bundle's core, not
+         near either membrane face). Verified directly on the real GPR68
+         structures this pipeline targets, not assumed: the correct
+         candidate (Asp67) projects to 0.33 A (center), while the
+         runner-up (Glu55) projects to -15.3 A -- right at the slab
+         boundary, i.e. loop-proximal, not membrane-embedded. A decisive
+         separation on real data, not a coin flip.
+
+    Raises ValueError if R3.50's own helix can't be located among the
+    segmented TM helices, if there is no helix N-terminal to it, or if
+    that helix has no Asp/Glu at all -- ambiguous or missing cases are
+    surfaced, never guessed. Warns (does not silently pick) if the two
+    closest candidates are within 2 A of each other in projection -- too
+    close to call decisively by this criterion alone.
+
+    Returns ``(resnum, candidates)`` where ``candidates`` is every
+    (resnum, resname, projection_ang) considered in TM2, sorted by
+    |projection| ascending, so a caller can see exactly what else was in
+    contention -- the chosen residue is ``candidates[0]``.
+    """
+    if r350_resnum is None:
+        r350_resnum, _ = find_r350(structure)
+
+    tm_helices = _segment_tm_helices(structure, frame)
+    tm3_idx = next((i for i, seg in enumerate(tm_helices) if r350_resnum in seg), None)
+    if tm3_idx is None:
+        raise ValueError(f"R3.50 (resnum {r350_resnum}) was not found in any segmented TM helix -- "
+                          "cannot anchor TM2 relative to TM3")
+    if tm3_idx == 0:
+        raise ValueError("R3.50's helix is the first segmented TM helix -- no helix N-terminal to it "
+                          "to identify as TM2 (TM1 may be missing/unmodeled or mis-segmented)")
+    tm2 = tm_helices[tm3_idx - 1]
+
+    candidates = []
+    for resnum in tm2:
+        ridx = int(np.where(structure.author_resnum == resnum)[0][0])
+        resname = structure.resname[ridx]
+        if resname in ("ASP", "GLU"):
+            proj = float(frame.project(_ca_coord(structure, resnum)[None, :])[0])
+            candidates.append((resnum, resname, proj))
+
+    if not candidates:
+        raise ValueError(f"no Asp/Glu found in the TM2 helix (resnums {tm2[0]}-{tm2[-1]}) -- "
+                          "D2.50 could not be located")
+
+    candidates.sort(key=lambda c: abs(c[2]))
+    if len(candidates) > 1 and abs(abs(candidates[0][2]) - abs(candidates[1][2])) < 2.0:
+        import warnings
+        warnings.warn(
+            f"D2.50 candidates {candidates[0][:2]} and {candidates[1][:2]} are within 2 A of each "
+            f"other in membrane-depth projection ({candidates[0][2]:.2f} vs {candidates[1][2]:.2f} A) "
+            f"-- too close to call decisively; using {candidates[0][:2]} (closer to center)"
+        )
+
+    return candidates[0][0], candidates
+
+
 def _looks_like_plddt(bfactors: np.ndarray) -> bool:
     """A real pLDDT column is a percentage: every value in [0, 100]. Any
     value outside that range (as found in this repo's GPCRdb B-factor

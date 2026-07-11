@@ -33,6 +33,7 @@ from .structure_prep import (
 from .membrane_frame import (
     MembraneFrame,
     compute_membrane_frame,
+    find_d250,
     find_r350,
     find_y753,
 )
@@ -105,6 +106,7 @@ __all__ = [
     "run_structure_prep",
     "MembraneFrame",
     "compute_membrane_frame",
+    "find_d250",
     "find_r350",
     "find_y753",
     "DxMap",
