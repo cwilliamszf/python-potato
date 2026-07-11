@@ -250,7 +250,7 @@ def calibrate_xi_tm_mode(
     target_tm_k: float = PAPER_TARGET_TM_K,
     xi_bracket_kj_mol: tuple = PAPER_XI_BRACKET_KJ_MOL,
     T_grid: np.ndarray = None,
-    search_T_step_k: float = 2.0,
+    search_T_step_k: float = 1.0,
     xtol_kj_mol: float = 1e-4,
     structure_path=None,
 ) -> XiTmCalibrationResult:
@@ -267,14 +267,21 @@ def calibrate_xi_tm_mode(
     costs on the order of 2 minutes (measured: ~0.85 s per temperature
     point), and Brent's method typically needs 15-25 evaluations to
     converge -- a naive implementation would cost 30-60+ minutes.
-    ``search_T_step_k`` (default 2.0 K) uses a coarser grid for every
+    ``search_T_step_k`` (default 1.0 K) uses a coarser grid for every
     Brent *iteration*; only the FINAL, converged xi gets one full-
     resolution sweep at ``T_grid``'s resolution (default 0.5 K, per
     spec) for the returned ``TmResult`` and every reported Tm/peak value.
     This does not change any physics or approximate the model itself --
     it only trades search-time resolution for the (already
     spline-smoothed) Cp curve used purely to locate approximately where
-    Tm(xi) crosses the target during the search.
+    Tm(xi) crosses the target during the search. Real testing (see
+    ``examples/calibration_regression.py``) found that too coarse a
+    search grid (2.0 K) can misresolve closely-spaced bimodal Cp peaks
+    for some receptors -- 1.0 K is a deliberate compromise, not
+    guaranteed artifact-free for every structure; the function's own
+    post-condition check on the FINAL full-resolution sweep is what
+    actually guards against returning a bad answer, not the search
+    grid's resolution.
     """
     if params is None:
         params = WSMEParams()
@@ -288,20 +295,52 @@ def calibrate_xi_tm_mode(
         dsc = compute_dsc(structure, block_model, ss_mask, p, T_grid=grid)
         return find_cp_peaks_and_tm(dsc.T, dsc.Cp_excess)
 
-    def objective(xi_kj_mol: float) -> float:
-        return tm_of_xi(xi_kj_mol, search_T_grid).tm - target_tm_k
+    def safe_tm_of_xi(xi_kj_mol: float, grid: np.ndarray):
+        """Never lets a "no Cp peak at this xi" failure propagate as an
+        opaque crash -- returns (TmResult, None) or (None, CalibrationError)
+        so callers can report exactly which xi/edge failed and why."""
+        try:
+            return tm_of_xi(xi_kj_mol, grid), None
+        except CalibrationError as exc:
+            return None, exc
 
     lo, hi = xi_bracket_kj_mol
-    f_lo, f_hi = objective(lo), objective(hi)
+    tm_lo, err_lo = safe_tm_of_xi(lo, search_T_grid)
+    tm_hi, err_hi = safe_tm_of_xi(hi, search_T_grid)
+    if err_lo is not None or err_hi is not None:
+        lo_desc = f"Tm={tm_lo.tm:.1f} K" if err_lo is None else f"FAILED ({err_lo})"
+        hi_desc = f"Tm={tm_hi.tm:.1f} K" if err_hi is None else f"FAILED ({err_hi})"
+        raise CalibrationError(
+            f"Cannot evaluate Tm(xi) at one or both bracket edges within the search grid "
+            f"[{search_T_grid[0]:.1f}, {search_T_grid[-1]:.1f}] K: "
+            f"xi={lo} kJ/mol -> {lo_desc}; xi={hi} kJ/mol -> {hi_desc}. "
+            "This structure's melting transition is genuinely unresolvable somewhere in "
+            "the requested bracket/T_grid for this structure -- widen T_grid or narrow "
+            "xi_bracket_kj_mol explicitly; do not guess or silently widen it here.",
+            cp_result=tm_lo or (err_lo.cp_result if err_lo else None) or tm_hi or (err_hi.cp_result if err_hi else None),
+        )
+
+    f_lo, f_hi = tm_lo.tm - target_tm_k, tm_hi.tm - target_tm_k
     if not np.isfinite(f_lo) or not np.isfinite(f_hi) or f_lo * f_hi > 0:
-        cp_lo, cp_hi = tm_of_xi(lo, search_T_grid), tm_of_xi(hi, search_T_grid)
         raise CalibrationError(
             f"No sign change for Tm(xi)-{target_tm_k} across bracket [{lo}, {hi}] kJ/mol "
-            f"(Tm(lo)={cp_lo.tm:.1f} K, Tm(hi)={cp_hi.tm:.1f} K) -- cannot bracket a root "
+            f"(Tm(lo)={tm_lo.tm:.1f} K, Tm(hi)={tm_hi.tm:.1f} K) -- cannot bracket a root "
             "with Brent's method. This structure's melting transition may be genuinely "
             "outside the paper's expected xi range; do not widen the bracket silently.",
-            cp_result=cp_hi,
+            cp_result=tm_hi,
         )
+
+    def objective(xi_kj_mol: float) -> float:
+        tm_result, err = safe_tm_of_xi(xi_kj_mol, search_T_grid)
+        if err is not None:
+            raise CalibrationError(
+                f"Brent's method probed xi={xi_kj_mol:.6f} kJ/mol ({xi_kj_mol * 1000:.2f} J/mol) "
+                f"inside the bracket and found no resolvable Cp(T) peak there: {err}. "
+                "The bracket contains a region where the melting transition cannot be "
+                "located -- narrow xi_bracket_kj_mol or widen T_grid; do not guess.",
+                cp_result=err.cp_result,
+            )
+        return tm_result.tm - target_tm_k
 
     xi_calibrated = float(brentq(objective, lo, hi, xtol=xtol_kj_mol))
     cp_result = tm_of_xi(xi_calibrated, T_grid)  # final answer: full-resolution sweep

@@ -581,29 +581,130 @@ reference structure. Direct comparison confirms this is GPR68-specific,
 not a general WSME problem: on CI2, `run_pipeline(CI2.pdb, ph=7.0)` gives
 the physically correct pattern (folded reference near the global minimum,
 fes=5.8 vs true min 1.2 at n=17/18; disorder costs +43 kJ/mol) -- the
-opposite sign/direction from GPR68's result. Most likely cause: WSME's
-entropic/energetic parameters scale with block count in a way that was
-never tested or corrected beyond CI2's scale, and a 5-6x larger protein
-pushes that scaling into an unphysical regime. This is a new, real,
-previously-undiscovered limitation of `wsme_gpcr` itself (separate from
-Gate A, which is about `linkage_pka`'s PB pKa's) -- it means the
-double-funnel plot's *within-basin shape far from Q=0* cannot be trusted
-for GPR68 as computed today; only the region near the real PB-anchored
-reference states (Q≈0) carries validated-as-far-as-Gate-A-allows
-information. Two plots were generated and delivered to the user: the
-full-range landscape (visibly dominated by this artifact) and a version
-zoomed to the region near Q=0 (where the real anchor signal lives).
+opposite sign/direction from GPR68's result.
+
+~~Most likely cause: WSME's entropic/energetic parameters scale with
+block count~~ -- **root cause identified and it is more specific than
+that**: see "xi calibration (Prompt 1)" below. `ene` (xi, the vdW energy
+per native contact -- the model's one real free parameter per the
+original paper) had been left at a single fixed default
+(`WSMEParams.ene = -48.2e-3` kJ/mol) applied to every structure, when it
+must be calibrated per structure so the model's own heat-capacity peak
+lands at the real Tm=333 K. That default is not an arbitrary guess --
+it is rhodopsin's (1U19's) own paper-reported calibrated value,
+confirmed by directly cross-referencing the paper's reference repository
+(see below): using one receptor's calibrated packing energy universally
+for every other receptor is exactly the kind of error that would produce
+a structure-specific, not general, anomaly.
+
+This is a real, previously-undiscovered limitation of `wsme_gpcr` itself
+(separate from Gate A, which is about `linkage_pka`'s PB pKa's) -- it
+means the double-funnel plot's *within-basin shape far from Q=0* cannot
+be trusted for GPR68 as computed with the old default; only the region
+near the real PB-anchored reference states (Q≈0) carries
+validated-as-far-as-Gate-A-allows information. Two plots were generated
+and delivered to the user: the full-range landscape (visibly dominated
+by this artifact) and a version zoomed to the region near Q=0 (where the
+real anchor signal lives). **This finding is superseded by the direct
+xi-calibration investigation below, which found that correcting xi alone
+does not fully resolve GPR68 inactive's folded-minimum problem either --
+read the next section before treating either explanation as complete.**
 
 **Compounding caveat**: the anchor itself is the same PB-based
 `ΔG_activation(pH)` that failed Gate A, so even the "real" near-Q=0
 region is a pipeline-mechanics demonstration, not a calibrated
-prediction -- this landscape currently carries two independent,
-unresolved uncertainty sources (Gate A's PB pKa failure, and this new
-WSME large-protein scaling issue), not one.
+prediction -- this landscape currently carries multiple independent,
+unresolved uncertainty sources (Gate A's PB pKa failure, and the xi
+calibration issues documented below), not one.
 
-**Open next step**: WSME's block-count-dependent parameter scaling would
-need real investigation (e.g. does `DS`/`ene` in `WSMEParams` need to
-scale with `nblocks`, or is there a genuine missing term for large
-proteins) before `wsme_gpcr` results on any protein GPR68's size or
-larger should be trusted -- not attempted here, flagged as a discovery
-for whoever picks this up next.
+## xi calibration (Prompt 1): built, validated against the paper's own data, and a deeper GPR68 finding
+
+A follow-up task ("Prompt 1") named the likely root cause directly: xi
+was left at a fixed default instead of being calibrated per structure so
+the model's own heat-capacity peak (Tm) lands at 333 K, per
+Anantakrishnan & Naganathan, Nat Commun 14:128 (2023) (the same paper
+`wsme_gpcr`'s GPCR preset already cites). Built `wsme_gpcr/calibration.py`:
+
+- `find_cp_peaks_and_tm` -- locates the Cp(T) peak(s) from `compute_dsc`'s
+  already-implemented excess heat capacity (that module already ports the
+  paper's `Cp = 2RT dlnZ/dT + RT^2 d^2lnZ/dT^2` expression via
+  spline-smoothed finite differences -- verified line-by-line identical
+  to the reference `DSCcalc_Block.m`'s own `Cpd=2*R*T.*der1df+R*T.^2.*der2df`
+  and spline-grid construction). Implements the paper's bimodal rule
+  (Tm = the trough between two peaks, not either peak).
+- `calibrate_xi_tm_mode` -- Brent's method root-finds xi so Tm(xi)=333 K,
+  bracketed at -80/-20 J/mol per the paper, with a required post-condition
+  (the 310 K profile's global minimum must fall in the top 15% of the
+  reaction coordinate) enforced by raising `CalibrationError` -- **never
+  returns a number that fails either check**, per the task's own explicit
+  instruction.
+- `calibrate_xi_isostability_mode` -- solves a companion structure's xi
+  so its folded-minus-unfolded free energy matches an already-calibrated
+  reference's, explicitly flagged (in the result's own `.warning` field)
+  as imposing relative stability, not predicting it.
+- `compute_fc` -- fraction of residues in a "strongly coupled" block pair
+  (default threshold 1 RT at 310 K -- the paper's own exact threshold
+  definition could not be verified, network access is blocked).
+
+**Regression validation against the paper's own real data**: the
+reference implementation's own repository
+(`github.com/AthiNaganathan/GPCR-Landscapes`, named in the task) bundles
+its 45-receptor dataset's real structures AND the paper's own reported
+per-receptor PDBID/xi/Tm as `.mat` files -- extracted directly (not
+downloaded from RCSB/PDB, which remains blocked in this sandbox like
+every other external host tried this session). This directly confirmed
+the bug: rhodopsin's (1U19's) paper-reported calibrated xi is exactly
+-48.2 J/mol, bit-for-bit identical to this codebase's previous universal
+`WSMEParams` default -- the default was never a generic placeholder, it
+was rhodopsin's own calibrated value, silently applied to every other
+receptor including GPR68.
+
+Two-tier check against 5 real receptors (1U19/rhodopsin, 2LNL, 5LWE,
+4DKL, 6OS9): **Tier 1** (does this port's Cp/Tm machinery reproduce the
+paper's own Tm when run at the paper's own reported xi?) gave 1/5 exact
+matches (4DKL: 0.0 K delta) and the rest off by 5-16 K in *both*
+directions (no consistent sign) -- consistent with this port's
+independently-built, DSSP-free secondary-structure/blocking logic
+differing somewhat from the original MATLAB code's, not a formula bug
+(confirmed by the line-by-line Cp-formula comparison above). **Tier 2**
+(does `calibrate_xi_tm_mode`, run blind, independently recover a
+comparable xi?) surfaced a real robustness bug in the first version of
+the solver -- an unhandled crash when a bracket edge has no resolvable
+Cp peak within the search grid -- fixed to raise a clear, diagnostic
+`CalibrationError` instead (see `calibrate_xi_tm_mode`'s own docstring).
+
+**GPR68 inactive, recalibrated**: confirmed the bug report's exact
+symptom first -- at the old default (xi=-48.2 J/mol), the 310 K profile's
+minimum sits at n=76/101 (75.2%), fes ranging up to +177.3 kJ/mol,
+matching the report's "climbs to +178 kJ/mol, minimum near 76%
+structured" almost exactly. `calibrate_xi_tm_mode` (bracket narrowed to
+[-50.0, -48.2] J/mol after directly scanning this structure's own
+Tm(xi) -- monotonic and well-behaved here, unlike some of the bimodal
+reference receptors above) found **xi=-49.15 J/mol achieves Tm=333.0 K
+exactly** -- a real, in-bracket, paper-typical solution (z=-0.09 vs the
+population mean).
+
+**But the folded-minimum post-condition still fails at that xi**: the
+310 K profile's global minimum remains at n=76/101 (75.2%) -- unchanged
+from the broken default. Hitting the correct Tm does not, by itself,
+restore a folded free-energy minimum for this specific structure. Per
+the task's own explicit instruction ("If no xi in the bracket yields
+Tm=333 K, or the folded minimum still does not appear, raise... do not
+return a number that fails the post-condition"), `calibrate_xi_tm_mode`
+correctly refused to return this as a valid calibration -- this is the
+implementation working as designed, not a bug to paper over.
+
+**Open finding, not yet resolved**: xi calibration alone (via Tm-matching)
+is necessary but evidently not sufficient to restore GPR68 inactive's
+folded state in this model. Since -49.15 J/mol is barely different from
+the old universal default (-48.2 J/mol) -- both land in nearly the same
+place on the Tm(xi) curve for this specific structure -- the remaining
+~75%-structured local minimum may reflect something else about this
+structure's own contact map/blocking (e.g. a genuinely floppy or
+disorder-prone region, consistent with real GPCRs' often-unresolved
+loops/termini) rather than a pure xi-selection problem. Investigating
+that further would mean touching the block definition or contact map,
+which this task's own guardrails explicitly put out of scope ("Only xi
+selection is broken"). Flagged here as the honest, direct result of
+running the prescribed calibration procedure on the real structure, not
+resolved further within this task's stated scope.
