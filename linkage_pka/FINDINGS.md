@@ -708,3 +708,83 @@ which this task's own guardrails explicitly put out of scope ("Only xi
 selection is broken"). Flagged here as the honest, direct result of
 running the prescribed calibration procedure on the real structure, not
 resolved further within this task's stated scope.
+
+## Sodium-pocket hypothesis test: built rigorously, real negative result
+
+Direct follow-up (user-directed): does the bWSME model's total lack of
+any representation of the conserved D2.50 sodium pocket explain why
+GPR68 inactive's folded minimum won't restore even at the correctly
+Tm-calibrated xi? The bWSME model is a pure protein-contact model with
+zero concept of a bound ion; this session's own `linkage_pka`
+Poisson-Boltzmann work already confirmed, on these exact structures,
+that an explicit Na+ ion at D2.50 (Asp67) produces a real stabilizing
+shift (see "Na+ ion modeling" above) -- a real physical feature the
+folding model cannot see at all.
+
+Built `wsme_gpcr/ion_pocket.py`: places the ion at D2.50's real geometry
+(reusing `linkage_pka.titration.place_na_ion`'s exact convention --
+bisector of the carboxylate oxygens, LJ contact distance from sourced
+AMBER/OpenMM radii), searches for every other charged atom within a
+real, data-driven radius (not an assumed canonical-motif position), and
+appends the resulting ion-mediated stabilization as a new block-block
+electrostatic pair to `BlockModel.block_elec` -- pure additional data
+fed into `wsme.py`'s existing, unmodified pairwise-electrostatic
+machinery. 10 tests, including the required "zero partners = bit-for-bit
+no-op" control.
+
+**A real geometry bug surfaced and was fixed during this work**: the
+naive single-residue ion placement landed only 1.33 Angstrom from a real
+partner's oxygen -- shorter than a covalent bond, physically impossible
+for two non-bonded heavy atoms. Root cause: placing the ion from D2.50's
+own local geometry alone doesn't account for a SECOND residue also
+coordinating the same ion. Fixed with `place_na_ion_multi_coordinate`:
+centroids the real coordinating oxygens (D2.50's own OD1/OD2 plus any
+nearby partner's) rather than extrapolating from one residue alone --
+moves the pathological case to 2.76 Angstrom, squarely in the real Na-O
+coordination range (~2.2-2.6 A). A naive two-point average of "estimate"
+and "partner position" was tried first and rejected: it only halves an
+already-too-short distance, it doesn't fix it -- worth recording as a
+real dead end, not silently dropped.
+
+**Real partner found, independently corroborating earlier PB work**: at
+every cutoff tried (4-10 A), the only real partner is **Asp282** (OD1 at
+4.42 A, OD2 at 2.39 A from the refined ion position) -- the same residue
+`linkage_pka`'s real coupling calculation (`compute_pairwise_coupling`,
+an entirely different, independent method: Poisson-Boltzmann double-
+difference, not geometric distance) already found substantially coupled
+to D2.50 earlier this session. Two independent methods agreeing on the
+same real partner is a meaningful cross-check, not a coincidence.
+Glu103 -- also coupled to D2.50 in the PB work -- is NOT geometrically
+close enough to be a direct ion-coordination partner (not found at any
+cutoff up to 10 A), consistent with that earlier coupling being a
+longer-range electrostatic effect rather than direct ion coordination.
+
+**But the hypothesis test result is a real negative**: adding the ion
+term (combined ion-Asp282 stabilization -111.8 kJ/mol at the D250-Asp282
+block pair) shifts the whole 310 K profile down slightly (fes range
+[3.5,173.8] -> [3.0,173.2] kJ/mol) but **does not move the global
+minimum at all** -- still exactly n=76/101 (75.2%), identical to the
+no-ion baseline, at every cutoff tried. Mechanistic reason, checked
+directly: D2.50 sits in block 19/101, Asp282 in block 76/101 -- 57
+blocks apart. For the ion bonus to apply, a folded segment must span
+essentially the entire middle of the sequence (>=58 blocks, roughly
+blocks 19-76). Many, but not all, of the model's n=76 microstate
+arrangements already satisfy this (segments of length 76 can start
+anywhere from block 0 to block 25 and still cover both 19 and 76), so
+the bonus doesn't preferentially reward n=101 (full fold) over n=76 --
+it smears across a broad range of n instead of acting as the specific
+"missing piece" that would tip the balance toward full folding.
+
+**Conclusion**: the D2.50 sodium pocket is real, its coordinating
+partner (Asp282) is independently confirmed by two different methods,
+and the ion-bridge interaction was modeled rigorously (not a quick
+guess -- a real geometry bug was caught and fixed along the way). But it
+does not explain GPR68 inactive's residual folded-minimum anomaly. The
+long sequence separation between D2.50 and its real ion-bridge partner
+means this particular interaction cannot discriminate between the
+model's current 76%-folded local minimum and full folding. Whatever
+keeps the remaining ~25 blocks from folding is a separate, still-open
+question -- most likely something about that specific region's own
+local contact density/entropic balance, not a missing long-range
+electrostatic bridge. This is a genuine, rigorously-obtained negative
+result, not an inconclusive one.

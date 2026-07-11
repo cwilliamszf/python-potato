@@ -33,6 +33,7 @@ from .calibration import (
     find_cp_peaks_and_tm,
 )
 from .coupling import CouplingResult, compute_coupling
+from .ion_pocket import IonPocketPartner, IonPocketResult, add_ion_pocket_interaction, place_na_ion
 from .ionizable_network import IonizableNetworkResult, compute_ionizable_network, map_networks_to_blocks
 from .alanine_scan import AlanineScanResult, run_alanine_scan, scannable_positions
 from .pipeline import (
@@ -72,6 +73,10 @@ __all__ = [
     "find_cp_peaks_and_tm",
     "CouplingResult",
     "compute_coupling",
+    "IonPocketPartner",
+    "IonPocketResult",
+    "add_ion_pocket_interaction",
+    "place_na_ion",
     "IonizableNetworkResult",
     "compute_ionizable_network",
     "map_networks_to_blocks",
