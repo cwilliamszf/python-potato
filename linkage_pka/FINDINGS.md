@@ -1489,3 +1489,84 @@ disorder-aware coupling coordinate); (c) only then, with a validated
 discriminating metric, compare across nodes -- and even then as
 hypothesis generation with AltAll posterior-uncertainty controls, since
 no one has validated WSME cooperativity on ancestral sequences.
+
+## fc-fidelity validation, item (a) executed: NOT a threshold problem --
+## a real block-partition and coupling-scale mismatch against the
+## paper's own ground truth
+
+Item (a) above named the requirement precisely: pin fc to the paper's
+real definition and validate against their own 45 (53 available)
+reference receptors, not tune it on an ancestor -- the same discipline
+already used for Gate A's pdie. Executed that directly using the real
+`DeltaGc_310_<gpcr>` and `CouplingMat_310_<gpcr>` variables already
+bundled in the reference repo's `.mat` files (real per-receptor,
+paper-computed ground truth, not our own numbers).
+
+**Step 1 -- what threshold does the paper's OWN real data imply?** Swept
+a threshold against `|DeltaGc_310|` across all 53 usable receptors and
+found the value whose *mean* fraction-exceeding matches the paper's
+reported 13.0%: **~16 kJ/mol** (interpolated between 16.00 kJ/mol ->
+13.47% and 16.25 kJ/mol -> 12.77%), roughly **6.2x RT(310K)** -- not the
+1x RT (2.58 kJ/mol) `DEFAULT_FC_THRESHOLD_KJ_MOL` was guessing. That
+guess was off by ~6x. But the cross-receptor spread at this threshold
+(std ~17.5%) is far larger than the paper's reported ±4.5%, meaning a
+single fixed-kJ/mol threshold on `|DeltaGc|` reproduces their *mean* but
+not their *precision* -- this simple reconstruction is at best a proxy
+for their real fc methodology, not an exact transcription of it (their
+actual method, not included in this repo's 4 bundled `.m` files, may
+normalize per-receptor or use a different aggregation).
+
+**Step 2 -- does correcting the threshold fix OUR pipeline?** No. Ran
+`compute_coupling` on the real `gpcr9i.pdb` (4DKL) at the paper's own
+reported ene/Tm (-49.9 J/mol, 333 K) and computed fc at the corrected
+~16 kJ/mol threshold: **fc = 92.4%**, barely moved from the old
+threshold's 100%, nowhere near 13%. The threshold was never the
+dominant problem.
+
+**Step 3 -- root cause, found by direct comparison to the paper's own
+real numbers on their own reference structure:**
+- **Coupling-value scale mismatch.** Our `coupling_free_energy` on
+  gpcr9i has mean|value|=11.87 kJ/mol and max=37.18; the paper's real
+  `DeltaGc_310_gpcr9i` has mean=4.14, max=18.4 -- ours runs roughly 3x
+  hotter. A row-max-based reconstruction of `DeltaGc` from the paper's
+  own `CouplingMat` correlates only r=0.86 with their real `DeltaGc`,
+  confirming even the *aggregation* (not just the scale) isn't an exact
+  match to whatever their real formula does.
+- **Block-partition mismatch, found while trying to align the two
+  matrices for direct comparison.** Our own geometric (DSSP-free)
+  blocking produces 75 blocks on gpcr9i; the paper's own bundled
+  `BlockDet_gpcr9i` has 76, and the two partitions diverge as early as
+  block 9 (paper: sizes 3,3; ours: 2,4). This is a real, previously
+  undetected discrepancy in this pipeline's own block-partition logic
+  relative to the paper's own reference blocking, on their own
+  structure -- discovered as a side effect of this validation, not
+  something this pipeline's own Tier-1 Tm regression would have caught
+  (that only checks the resulting Tm, not block-by-block agreement).
+
+**Verdict**: the fc fidelity gate failure is not a tunable-constant
+problem and cannot be closed by adjusting `DEFAULT_FC_THRESHOLD_KJ_MOL`
+alone (verified directly, not assumed). It traces to two compounding,
+real mismatches against the paper's own ground truth: this pipeline's
+block partition doesn't exactly reproduce the paper's own reference
+blocking even on their own structure, and `coupling_free_energy` itself
+runs at roughly 3x the paper's real coupling scale with imperfect
+correlation. Both would need real, open-ended fixes (reconciling the
+geometric SS/blocking heuristic against the paper's real block
+boundaries; auditing the coupling free-energy formula itself, which the
+paper's methods this repo doesn't include the source for) -- not a
+threshold tune. This is a legitimate, decisive, non-circular negative
+result, obtained the same way the Gate A pdie finding was: by testing
+directly against real, independent ground truth rather than curve-fitting
+a knob. Combined with the previous section's truncation-vs-fc tension,
+**fc as currently implemented remains unusable as a cross-node
+cooperativity metric**, and the ancestral tree should still not be run
+on it. The path forward is either (a) a real block-partition and
+coupling-formula audit against the paper's bundled reference data (real
+method-development work, comparable in scope to the Gate A buried-
+carboxylate problem), or (b) dropping fc entirely in favor of the raw
+continuous coupling matrix / mean|coupling free energy| for cross-node
+comparison, which this pilot and the previous section both already show
+carries a real, substantial, non-saturated cross-node signal on its own
+-- unvalidated against the paper's absolute scale, but usable for
+*relative* comparison across consistently-processed nodes, which is
+what the evolutionary-cooperativity question actually needs.
