@@ -17,6 +17,19 @@ from .contacts import ContactMap, compute_contact_map
 from .blocking import BlockModel, build_blocks
 from .wsme import WSMEParams, WSMEResult, run_wsme
 from .dsc import compute_dsc, DSCResult
+from .calibration import (
+    CalibrationError,
+    IsoStabilityResult,
+    TmResult,
+    XiTmCalibrationResult,
+    PAPER_XI_MEAN_J_MOL,
+    PAPER_XI_STD_J_MOL,
+    PAPER_TARGET_TM_K,
+    calibrate_xi_isostability_mode,
+    calibrate_xi_tm_mode,
+    compute_delta_g_fold,
+    find_cp_peaks_and_tm,
+)
 from .coupling import CouplingResult, compute_coupling
 from .ionizable_network import IonizableNetworkResult, compute_ionizable_network, map_networks_to_blocks
 from .alanine_scan import AlanineScanResult, run_alanine_scan, scannable_positions
@@ -42,6 +55,17 @@ __all__ = [
     "run_wsme",
     "compute_dsc",
     "DSCResult",
+    "CalibrationError",
+    "IsoStabilityResult",
+    "TmResult",
+    "XiTmCalibrationResult",
+    "PAPER_XI_MEAN_J_MOL",
+    "PAPER_XI_STD_J_MOL",
+    "PAPER_TARGET_TM_K",
+    "calibrate_xi_isostability_mode",
+    "calibrate_xi_tm_mode",
+    "compute_delta_g_fold",
+    "find_cp_peaks_and_tm",
     "CouplingResult",
     "compute_coupling",
     "IonizableNetworkResult",
