@@ -788,3 +788,110 @@ question -- most likely something about that specific region's own
 local contact density/entropic balance, not a missing long-range
 electrostatic bridge. This is a genuine, rigorously-obtained negative
 result, not an inconclusive one.
+
+## Root-caused: the ~25 non-folding blocks are a construct-scope
+## mismatch, not a physics bug -- and the active-state model is far worse
+
+Follow-up investigation (block-level decomposition, not a code change)
+into exactly *which* blocks stay unfolded at GPR68 inactive's n=76/101
+global minimum, using `WSMEResult.fpath` (P(folded) per block at each
+n). The 25 non-folding blocks are not scattered noise -- they fall into
+three specific, contiguous regions:
+
+- blocks 0-4 = residues 1-13: the extracellular N-terminal tail.
+- block 46 = residues 166-168: the tip of ECL2 (flanked by clearly
+  non-helical, extended CA(i,i+4) geometry on both sides, res 160-179).
+- blocks 82-100 = residues ~303-365: helix 8 and the intracellular
+  C-terminal tail (19 of the 25 blocks -- the dominant contributor).
+
+Structural evidence that these are genuinely disordered/low-confidence
+regions in the GPCRdb model, not an artifact of the blocking or contact
+code: contact density (`block_cmap` row-sum) in blocks 76-101 is
+124 vs. 244 for blocks 0-75 (nearly half); mean CA B-factor jumps from
+~7-8 across the ordered bundle to 30-70+ starting at block 82
+(residue ~303); and the CA(i,i+4) distance for residues 311-365 is
+11-13.5 A throughout -- categorically non-helical (real alpha helices
+run 5.4-6.5 A), i.e. an extended/coil conformation, not just "loosely
+packed helix."
+
+Critically, the paper's own 5 real reference structures (the ones the
+Tier-1/Tier-2 regression gate validates against) do **not** show this
+cliff. `gpcr1i` (rhodopsin, 1U19, 348 residues, no gaps) tapers only
+mildly toward the C-terminus (contacts: Q1=291, Q4=186 -- rhodopsin is
+unusual in having a lipid-anchored, unusually ordered tail via
+palmitoylation at Cys322/323). `gpcr9i` (delta-opioid, 4DKL, 288
+residues, no gaps) is essentially flat (Q1=283, Q4=243). Neither shows
+GPR68's ~50% cliff. This is because real deposited GPCR structures are
+either naturally ordered to the end (rhodopsin) or are truncated
+crystallization constructs that simply never include the disordered
+H8/C-tail region in the model at all (very common -- ICL3 and the
+C-tail are the two most commonly truncated/fusion-replaced regions in
+GPCR crystallography). GPR68's `WT_Inactive/Active_GPCRdb.pdb` files are
+full-length homology models that explicitly build out the entire
+365-residue native sequence, including the ~55-residue disordered
+H8+tail that no crystallographer would normally feed into a folding
+calculation.
+
+**Diagnosis**: this is a construct-scope mismatch, not a ξ, entropy,
+electrostatics, or missing-interaction bug. The model is being asked to
+compute one cooperative 1D folding coordinate spanning both a rigid,
+densely-packed 7TM core and a ~55-residue intrinsically disordered tail
+that was never part of the paper's own calibration domain. Demanding
+the global minimum sit in the top 15% of that coordinate is
+mathematically close to demanding the disordered tail also "fold" --
+which no real GPCR C-tail does. This directly explains why neither the
+ξ recalibration nor the sodium-pocket bridge (both real, both correctly
+implemented) could fix it: they don't touch the part of the problem
+that's actually wrong (scope), only the parts that were fine
+(calibration, missing interactions).
+
+**Active-state comparison** (the other GPCRdb model, `WT_Active_GPCRdb.pdb`,
+run through the identical untouched pipeline at the same default ξ):
+dramatically worse, not better -- global minimum at n=6/97 (6.2%
+folded), fes range [4.8, 239.7] kJ/mol, 92 of 97 blocks unfolded at the
+minimum. This is *not* explained by reduced core-bundle packing: the
+transmembrane-bundle contact density (blocks spanning the first three
+quarters) is essentially identical active vs. inactive (245 vs. 244).
+So the active-state collapse is either (a) a stronger version of the
+same disorder-scope problem (its C-terminal quarter contact density is
+even lower than inactive's, 90.5 vs. 124.1), (b) a real, if
+exaggerated, reflection of genuine GPCR biophysics -- active-state
+conformations are well documented to be intrinsically less stable
+without a bound intracellular partner (G protein/arrestin/nanobody),
+which is exactly why they're hard to purify/crystallize on their own --
+or (c) an artifact of the active model's block partition differing from
+inactive's (97 vs. 101 blocks, a ~14-residue/4-block discrepancy, most
+likely in how ICL3 is packed by the homology-modeling pipeline for the
+two states). These are not mutually exclusive and have not yet been
+disentangled.
+
+**Proposed tests** (none require touching model physics):
+
+1. Truncation test: re-run both GPR68 structures with the N-terminal
+   tail (res 1-13) and H8+C-tail (res >~305) excluded from
+   `run_pipeline`'s modeled range, matching the scope convention the
+   paper's own reference structures already have by construction.
+   Prediction if the scope-mismatch diagnosis is right: the folded
+   minimum lands near the top of the now-shorter coordinate for both
+   states.
+2. Disorder-aware order parameter: keep all residues in the contact map
+   / energetics, but exclude the same three flagged regions from the
+   reaction coordinate used by the top-15% post-condition check, and
+   see whether a well-defined core-folded basin was already present
+   underneath the tail-dominated 1D profile.
+3. Active-state collapse triage: diff `block_elec` block-by-block
+   active vs. inactive for any anomalous repulsive term unique to the
+   active geometry, and diff the two block partitions directly (101 vs.
+   97 blocks) to localize the ICL3-region discrepancy and test whether
+   forcing matched block boundaries changes the result.
+4. Cross-check against the paper's own dataset: check whether any of
+   the 45 reference receptors in the bundled `.mat` files have both an
+   active and inactive structure, and whether real published pairs also
+   show this magnitude of active-state collapse -- if not, that's
+   further evidence the GPR68 active homology model specifically has a
+   construct-quality problem rather than this being generic model
+   behavior for any active GPCR conformation.
+
+None of this has been implemented yet -- it is a diagnosis and a set of
+proposed next steps, not a fix, pending direction on which test to run
+first.
