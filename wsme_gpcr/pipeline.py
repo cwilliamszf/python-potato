@@ -22,7 +22,11 @@ from .blocking import BlockModel, build_blocks
 from .contacts import ContactMap, compute_contact_map
 from .coupling import CouplingResult, compute_coupling
 from .dsc import DSCResult, compute_dsc
-from .secondary_structure import assign_secondary_structure, secondary_structure_from_codes
+from .secondary_structure import (
+    assign_secondary_structure,
+    secondary_structure_from_codes,
+    secondary_structure_from_dssp,
+)
 from .structure import Structure, load_structure
 from .wsme import WSMEParams, WSMEResult, run_wsme
 
@@ -48,6 +52,7 @@ def run_pipeline(
     ph: float = 7.0,
     pka_overrides: dict = None,
     ss_codes: str = None,
+    use_dssp: bool = False,
     block_size: int = 4,
     params: WSMEParams = None,
     with_dsc: bool = False,
@@ -59,6 +64,15 @@ def run_pipeline(
     ``pka_overrides`` maps an author residue number to a custom pKa (see
     ``structure.load_structure``), for probing a specific residue proposed
     to have an environment-shifted pKa (e.g. a candidate pH sensor).
+
+    Secondary structure comes from one of three sources, in priority
+    order: explicit ``ss_codes`` if given; real DSSP if ``use_dssp=True``
+    (requires ``mkdssp`` on PATH -- raises rather than silently falling
+    back if it's missing, see ``secondary_structure.DsspNotAvailableError``);
+    otherwise the dependency-free geometric heuristic. Prefer
+    ``use_dssp=True`` when ``mkdssp`` is available -- it's measurably
+    closer to the paper's own real STRIDE-based blocking (see
+    FINDINGS.md's block-partition audit).
     """
     if params is None:
         params = WSMEParams()
@@ -71,6 +85,11 @@ def run_pipeline(
 
     if ss_codes is not None:
         ss_mask = secondary_structure_from_codes(ss_codes)
+    elif use_dssp:
+        with warnings.catch_warnings(record=True) as caught:
+            warnings.simplefilter("always")
+            ss_mask = secondary_structure_from_dssp(pdb_path, structure)
+            caught_warnings.extend(str(w.message) for w in caught)
     else:
         ss_mask = assign_secondary_structure(structure)
 
@@ -110,6 +129,7 @@ def run_pipeline_multi_ph(
     model: int = 0,
     pka_overrides: dict = None,
     ss_codes: str = None,
+    use_dssp: bool = False,
     block_size: int = 4,
     params: WSMEParams = None,
     with_dsc: bool = False,
@@ -123,6 +143,12 @@ def run_pipeline_multi_ph(
 
     ``progress_callback(ph, index, total)`` is called before each pH run,
     if given (useful for GUI progress bars on what can be a slow batch).
+
+    ``use_dssp`` re-runs real DSSP at every pH (see ``run_pipeline``) --
+    the structure's backbone geometry doesn't change with pH, so this is
+    redundant work, not a correctness issue; block partitions come out
+    identical across pH unless a pH-dependent chain-break/gap changes what
+    DSSP can resolve.
     """
     results = {}
     total = len(ph_values)
@@ -136,6 +162,7 @@ def run_pipeline_multi_ph(
             ph=ph,
             pka_overrides=pka_overrides,
             ss_codes=ss_codes,
+            use_dssp=use_dssp,
             block_size=block_size,
             params=params,
             with_dsc=with_dsc,
@@ -163,6 +190,7 @@ def run_alanine_scan_pipeline(
     ph: float = 7.0,
     pka_overrides: dict = None,
     ss_codes: str = None,
+    use_dssp: bool = False,
     block_size: int = 4,
     params: WSMEParams = None,
     positions=None,
@@ -179,6 +207,9 @@ def run_alanine_scan_pipeline(
     to evenly subsample the full site list for a faster run. See
     ``alanine_scan.estimate_scan_seconds`` for a time estimate before
     committing to a large scan.
+
+    See ``run_pipeline`` for the ``ss_codes``/``use_dssp`` secondary-
+    structure source priority.
     """
     if params is None:
         params = WSMEParams()
@@ -191,6 +222,11 @@ def run_alanine_scan_pipeline(
 
     if ss_codes is not None:
         ss_mask = secondary_structure_from_codes(ss_codes)
+    elif use_dssp:
+        with warnings.catch_warnings(record=True) as caught:
+            warnings.simplefilter("always")
+            ss_mask = secondary_structure_from_dssp(pdb_path, structure)
+            caught_warnings.extend(str(w.message) for w in caught)
     else:
         ss_mask = assign_secondary_structure(structure)
 
@@ -217,6 +253,7 @@ def run_alanine_scan_pipeline_multi_ph(
     model: int = 0,
     pka_overrides: dict = None,
     ss_codes: str = None,
+    use_dssp: bool = False,
     block_size: int = 4,
     params: WSMEParams = None,
     positions=None,
@@ -247,7 +284,7 @@ def run_alanine_scan_pipeline_multi_ph(
 
         results[ph] = run_alanine_scan_pipeline(
             pdb_path, chain=chain, model=model, ph=ph, pka_overrides=pka_overrides, ss_codes=ss_codes,
-            block_size=block_size, params=params, positions=positions, max_positions=max_positions,
-            progress_callback=mutant_progress,
+            use_dssp=use_dssp, block_size=block_size, params=params, positions=positions,
+            max_positions=max_positions, progress_callback=mutant_progress,
         )
     return results

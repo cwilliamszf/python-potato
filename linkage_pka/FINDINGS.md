@@ -1679,3 +1679,50 @@ computing those numbers is verified correct, so the numbers reflect real
 model output, not a software bug; they are just not on the paper's exact
 absolute scale, for reasons now well characterized (upstream input
 fidelity) rather than mysterious.
+
+## DSSP wired into the pipeline as an opt-in SS-assignment source
+
+The audit above found real DSSP a genuine, adoptable improvement,
+independent of the fc question -- wired it in rather than leaving it a
+standalone scratchpad diagnostic.
+
+`wsme_gpcr/secondary_structure.py` gained `secondary_structure_from_dssp
+(pdb_path, structure)`: runs `mkdssp`, parses its legacy-format output
+into `{author_resnum: ss_code}` filtered to the structure's own
+`chain_id`, and maps to the same H/G/E-structured boolean convention as
+`secondary_structure_from_codes`. Two real, non-hypothetical robustness
+issues handled, both hit while building this: (1) `mkdssp` 4.x rejects
+legacy PDB files without a valid `HEADER` record (the GPCR-Landscapes
+reference PDBs are CASP-style and lack one) -- a synthetic `HEADER` is
+prepended in a temp copy, original file untouched; real mmCIF input
+(mkdssp's native format) passes through unmodified. (2) Chain-break
+sentinel rows (`!`) are skipped rather than parsed as residues. Raises
+`DsspNotAvailableError` (never silently falls back to the geometric
+heuristic) if `mkdssp`/`dssp` isn't on PATH.
+
+Threaded `use_dssp: bool = False` through `run_pipeline`,
+`run_pipeline_multi_ph`, `run_alanine_scan_pipeline`, and
+`run_alanine_scan_pipeline_multi_ph` (same priority order everywhere:
+explicit `ss_codes` > `use_dssp` > geometric default), and added a
+`--use-dssp` CLI flag (errors clearly if combined with
+`--ss-codes`/`--ss-file` rather than silently picking one). Verified via
+CLI smoke test on the real gpcr9i structure: reports "76 blocks" --
+the paper's own exact count, matching the audit's finding.
+
+11 new tests (`tests/test_dssp.py`): DSSP-output parsing (chain
+filtering, chain-break exclusion, missing-header-row error) against a
+synthetic DSSP text block, so most of the suite doesn't require
+`mkdssp` to be installed; the `HEADER`-patching logic (cif passthrough,
+already-valid-PDB passthrough, missing-header gets fixed without
+mutating the original file); `DsspNotAvailableError` when the binary is
+missing (mocked, not gated on absence); and `@pytest.mark.skipif`-gated
+real-`mkdssp` end-to-end tests confirming the exact 76-block/242-
+structured-residue result the audit found on gpcr9i, plus that
+`use_dssp=True` produces a different partition than the geometric
+default and that `use_dssp=False` never even probes for `mkdssp`. Full
+suite: 254 passed (243 before this session's DSSP work + 11 new).
+
+README updated to point at `use_dssp`/`--use-dssp` right next to the
+existing "No STRIDE dependency" section, with the audit's measured
+numbers (76 vs. 75 blocks, 17.4% vs. 24.7% boundary disagreement)
+instead of a vague "prefer if available."

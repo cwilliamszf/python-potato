@@ -12,7 +12,12 @@ Reference:
 """
 
 from .structure import Structure, load_structure
-from .secondary_structure import assign_secondary_structure
+from .secondary_structure import (
+    assign_secondary_structure,
+    secondary_structure_from_codes,
+    secondary_structure_from_dssp,
+    DsspNotAvailableError,
+)
 from .contacts import ContactMap, compute_contact_map
 from .blocking import BlockModel, build_blocks
 from .wsme import WSMEParams, WSMEResult, run_wsme
@@ -49,6 +54,9 @@ __all__ = [
     "Structure",
     "load_structure",
     "assign_secondary_structure",
+    "secondary_structure_from_codes",
+    "secondary_structure_from_dssp",
+    "DsspNotAvailableError",
     "ContactMap",
     "compute_contact_map",
     "BlockModel",

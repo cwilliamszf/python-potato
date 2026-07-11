@@ -62,6 +62,10 @@ def main(argv=None):
     p.add_argument("--dielectric", type=float, default=None, help="Medium dielectric constant (override preset)")
     p.add_argument("--ss-codes", default=None, help="Explicit per-residue SS code string (H/E/G/other), overrides geometric assignment")
     p.add_argument("--ss-file", default=None, help="Path to a file whose contents are per-residue SS codes (H/E/G/other)")
+    p.add_argument("--use-dssp", action="store_true",
+                    help="Run real DSSP (requires mkdssp on PATH) instead of the geometric heuristic; "
+                         "measurably closer to the original tool's real STRIDE-based blocking. "
+                         "Ignored if --ss-codes/--ss-file is also given (explicit codes take priority).")
     p.add_argument("--out-dir", default="wsme_output", help="Output directory (default: wsme_output)")
     p.add_argument("--dsc", action="store_true", help="Also compute a DSC thermogram (temperature sweep; slower)")
     p.add_argument("--dsc-tmin", type=float, default=273.0)
@@ -102,6 +106,9 @@ def main(argv=None):
 
     ss_codes = None
     if args.ss_codes or args.ss_file:
+        if args.use_dssp:
+            p.error("--use-dssp cannot be combined with --ss-codes/--ss-file (explicit codes already "
+                     "specify a source; pick one)")
         ss_codes = args.ss_codes if args.ss_codes else Path(args.ss_file).read_text().strip()
 
     pka_overrides = None
@@ -125,8 +132,8 @@ def main(argv=None):
 
         results = run_pipeline_multi_ph(
             args.pdb, ph_values=ph_values, chain=args.chain, model=args.model, pka_overrides=pka_overrides,
-            ss_codes=ss_codes, block_size=args.block_size, params=params, with_dsc=args.dsc,
-            dsc_T_grid=dsc_T_grid, with_coupling=args.coupling, progress_callback=progress,
+            ss_codes=ss_codes, use_dssp=args.use_dssp, block_size=args.block_size, params=params,
+            with_dsc=args.dsc, dsc_T_grid=dsc_T_grid, with_coupling=args.coupling, progress_callback=progress,
         )
         for ph, pr in results.items():
             _report(pr)
@@ -165,8 +172,8 @@ def main(argv=None):
 
     pr = run_pipeline(
         args.pdb, chain=args.chain, model=args.model, ph=args.ph, pka_overrides=pka_overrides, ss_codes=ss_codes,
-        block_size=args.block_size, params=params, with_dsc=args.dsc, dsc_T_grid=dsc_T_grid,
-        with_coupling=args.coupling,
+        use_dssp=args.use_dssp, block_size=args.block_size, params=params, with_dsc=args.dsc,
+        dsc_T_grid=dsc_T_grid, with_coupling=args.coupling,
     )
     _report(pr)
     _write_outputs(out_dir, pr, save_plot=not args.no_plots)
@@ -201,8 +208,8 @@ def _run_alanine_scan_cli(args, out_dir: Path, params: WSMEParams, pka_overrides
 
     scan_pr = run_alanine_scan_pipeline(
         args.pdb, chain=args.chain, model=args.model, ph=args.ph, pka_overrides=pka_overrides, ss_codes=ss_codes,
-        block_size=args.block_size, params=params, positions=positions, max_positions=max_positions,
-        progress_callback=progress,
+        use_dssp=args.use_dssp, block_size=args.block_size, params=params, positions=positions,
+        max_positions=max_positions, progress_callback=progress,
     )
     ala_dir = out_dir / "alanine_scan"
     ala_dir.mkdir(parents=True, exist_ok=True)
@@ -237,8 +244,8 @@ def _run_alanine_scan_multi_ph_cli(args, out_dir: Path, params: WSMEParams, pka_
 
     results = run_alanine_scan_pipeline_multi_ph(
         args.pdb, ph_values=ph_values, chain=args.chain, model=args.model, pka_overrides=pka_overrides,
-        ss_codes=ss_codes, block_size=args.block_size, params=params, positions=positions,
-        max_positions=max_positions, progress_callback=progress,
+        ss_codes=ss_codes, use_dssp=args.use_dssp, block_size=args.block_size, params=params,
+        positions=positions, max_positions=max_positions, progress_callback=progress,
     )
 
     ala_dir = out_dir / "alanine_scan"

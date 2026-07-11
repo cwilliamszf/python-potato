@@ -9,11 +9,23 @@ This module provides a self-contained, dependency-free geometric
 approximation of that H/E/G classification directly from backbone
 coordinates (a Ramachandran phi/psi classification with short-run
 smoothing), so the tool does not require installing STRIDE/DSSP.  If you
-do have STRIDE or DSSP output, use ``secondary_structure_from_codes`` to
-get bit-identical behavior to the original tool instead.
+have STRIDE output (or any other per-residue SS code string), use
+``secondary_structure_from_codes`` to consume it directly.  If ``mkdssp``
+is installed (e.g. ``apt-get install dssp``), ``secondary_structure_from_dssp``
+runs it directly and is measurably closer to the paper's own real
+STRIDE-based blocking than the geometric heuristic (exact block-count
+match and ~30% fewer boundary disagreements on the real gpcr9i reference
+structure -- see FINDINGS.md's block-partition audit); prefer it over
+the geometric heuristic whenever ``mkdssp`` is available.
 """
 
 from __future__ import annotations
+
+import shutil
+import subprocess
+import tempfile
+import warnings
+from pathlib import Path
 
 import numpy as np
 
@@ -125,3 +137,130 @@ def secondary_structure_from_codes(codes: str) -> np.ndarray:
     one char per residue drawn from H/E/G/other) to the structured mask.
     """
     return np.array([c in HEG_CODES for c in codes], dtype=bool)
+
+
+class DsspNotAvailableError(RuntimeError):
+    """Raised when ``mkdssp`` isn't on PATH. Never falls back silently to
+    the geometric heuristic -- that would swap in a different, weaker SS
+    assignment without the caller noticing, exactly the failure mode this
+    module's own real-vs-geometric validation (see FINDINGS.md's
+    block-partition audit) found matters."""
+
+
+def _find_dssp_binary() -> str:
+    for name in ("mkdssp", "dssp"):
+        path = shutil.which(name)
+        if path:
+            return path
+    raise DsspNotAvailableError(
+        "mkdssp not found on PATH. Install it (e.g. `apt-get install dssp` on "
+        "Debian/Ubuntu) to use secondary_structure_from_dssp; otherwise use the "
+        "default geometric heuristic (assign_secondary_structure) or pass "
+        "explicit codes via secondary_structure_from_codes."
+    )
+
+
+def _ensure_legacy_pdb_header(pdb_path: str, tmp_dir: str) -> str:
+    """mkdssp 4.x rejects legacy PDB files without a valid ``HEADER`` record
+    (e.g. CASP-style prediction files) and Biopython's own mmCIF re-export
+    lacks the chain/entity metadata modern mkdssp requires -- both real
+    failure modes hit while building this function, not hypothetical. For
+    an mmCIF input (mkdssp's native, preferred format) this is a no-op;
+    only legacy ``.pdb``/``.ent`` files missing a HEADER get a synthetic one
+    prepended, in a temp copy, leaving the original file untouched."""
+    suffix = Path(pdb_path).suffix.lower()
+    if suffix in (".cif", ".mmcif"):
+        return pdb_path
+    with open(pdb_path) as f:
+        first_line = f.readline()
+    if first_line.startswith("HEADER"):
+        return pdb_path
+    fixed_path = str(Path(tmp_dir) / "dssp_input.pdb")
+    with open(pdb_path) as src, open(fixed_path, "w") as dst:
+        dst.write("HEADER    SIGNALING PROTEIN                      01-JAN-00   XXXX              \n")
+        for line in src:
+            if line.startswith(("ATOM", "HETATM", "TER", "END")):
+                dst.write(line)
+    return fixed_path
+
+
+def _parse_dssp_output(dssp_text: str, chain_id: str | None) -> dict:
+    """Parse legacy-format ``mkdssp --output-format dssp`` output into
+    ``{author_resnum: ss_code}``, filtered to one chain (DSSP's own auth
+    chain column) if ``chain_id`` is given. Chain-break sentinel rows
+    (col 14 == ``!``) are skipped, not treated as a real residue."""
+    lines = dssp_text.splitlines()
+    try:
+        header_idx = next(i for i, l in enumerate(lines) if l.startswith("  #  RESIDUE"))
+    except StopIteration:
+        raise RuntimeError("mkdssp output did not contain the expected '  #  RESIDUE' header row")
+    codes_by_resnum = {}
+    for line in lines[header_idx + 1:]:
+        if len(line) < 17:
+            continue
+        if line[13] == "!":  # chain break / missing residue sentinel
+            continue
+        line_chain = line[11].strip()
+        if chain_id is not None and line_chain != chain_id:
+            continue
+        resnum_str = line[5:10].strip()
+        if not resnum_str:
+            continue
+        ss_code = line[16] if line[16] != " " else "-"
+        codes_by_resnum[int(resnum_str)] = ss_code
+    return codes_by_resnum
+
+
+def secondary_structure_from_dssp(pdb_path: str, structure: Structure) -> np.ndarray:
+    """Real DSSP-backed structured mask, aligned to ``structure``'s own
+    ``author_resnum`` ordering (the same ``Structure`` ``load_structure``
+    already produced from ``pdb_path``, so this doesn't need to re-derive
+    chain/residue selection independently).
+
+    Only H/G/E count as structured (matches this module's ``HEG_CODES``
+    convention and ``secondary_structure_from_codes``). Requires
+    ``mkdssp`` on PATH; raises ``DsspNotAvailableError`` rather than
+    silently falling back to the geometric heuristic if it's missing.
+
+    Measured, on the real reference structure gpcr9i (4DKL), to reproduce
+    the paper's own real block count exactly (76/76) and cut block-
+    boundary disagreement by ~30% relative to the geometric heuristic
+    (17.4% vs 24.7%) -- see FINDINGS.md's block-partition audit. The
+    residual gap against the paper's own STRIDE-based blocking is
+    expected: DSSP and STRIDE use different H-bond geometry criteria and
+    genuinely disagree on some ambiguous helix caps/3-10 helices.
+    """
+    dssp_bin = _find_dssp_binary()
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        dssp_input = _ensure_legacy_pdb_header(pdb_path, tmp_dir)
+        dssp_output = str(Path(tmp_dir) / "out.dssp")
+        proc = subprocess.run(
+            [dssp_bin, "--output-format", "dssp", dssp_input, dssp_output],
+            capture_output=True, text=True,
+        )
+        if proc.returncode != 0 or not Path(dssp_output).exists():
+            raise RuntimeError(
+                f"mkdssp failed (exit {proc.returncode}) on {pdb_path!r}: "
+                f"{proc.stderr.strip() or proc.stdout.strip()}"
+            )
+        dssp_text = Path(dssp_output).read_text()
+
+    codes_by_resnum = _parse_dssp_output(dssp_text, structure.chain_id)
+
+    mask = np.zeros(structure.nres, dtype=bool)
+    missing = []
+    for i, resnum in enumerate(structure.author_resnum):
+        code = codes_by_resnum.get(int(resnum))
+        if code is None:
+            missing.append(int(resnum))
+            continue
+        mask[i] = code in HEG_CODES
+    if missing:
+        warnings.warn(
+            f"DSSP produced no output for {len(missing)}/{structure.nres} residue(s) present in "
+            f"the structure (e.g. resnums {missing[:5]}{'...' if len(missing) > 5 else ''}); "
+            "treated as unstructured (coil). This can happen for residues DSSP considers part of "
+            "a chain break or otherwise unassignable.",
+            stacklevel=2,
+        )
+    return mask

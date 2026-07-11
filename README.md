@@ -96,7 +96,15 @@ function. From that you get:
   misclassified, as expected from torsion angles alone without H-bond
   geometry). If you have real STRIDE/DSSP output, pass it via
   `--ss-codes`/`--ss-file` (CLI) or `secondary_structure_from_codes()`
-  (API) for exact fidelity to the original tool.
+  (API) for exact fidelity to the original tool. If `mkdssp` is installed
+  (`apt-get install dssp` on Debian/Ubuntu; still no STRIDE dependency),
+  `run_pipeline(..., use_dssp=True)` runs it directly and is measurably
+  closer to the original MATLAB tool's real STRIDE-based blocking than the
+  geometric heuristic — on the real GPCR-Landscapes reference structure
+  gpcr9i (4DKL), it reproduces the paper's own block count exactly (76 vs.
+  the geometric heuristic's 75) and cuts block-boundary disagreement by
+  ~30% relative (17.4% vs. 24.7%). Prefer it over the geometric default
+  whenever `mkdssp` is available.
 - **Vectorized enumeration.** The MATLAB code recomputes contact-map
   submatrix sums from scratch in 2-4 nested loops per microstate, which
   is only practical for small proteins (their own docs: ~3 minutes for a
