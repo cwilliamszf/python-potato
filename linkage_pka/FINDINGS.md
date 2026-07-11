@@ -204,8 +204,34 @@ this sandbox.
   `titration.optimize_rotamers_with_neighbors` — multi-residue real-
   neighborhood relaxation (§6 above), `neighbor_radius_ang` parameter
   threaded through the same four PB energy functions.
+- `membrane_frame._segment_tm_helices`, `membrane_frame.find_d250` —
+  geometric (not sequence-motif) location of D2.50, the conserved
+  sodium-pocket Asp: segments the TM mask into real helices (length +
+  fraction-in-slab filtering, verified to recover exactly the canonical 7
+  on real GPR68 data), anchors TM2 as the helix immediately N-terminal to
+  the one containing R3.50, then picks the Asp/Glu closest to the
+  membrane's geometric center. Confirmed on both real GPR68 conformers:
+  Asp67, decisively separated from the runner-up (0.3 A vs 15.3 A from
+  center).
+- `titration.load_na_ion_parameters`, `titration.place_na_ion`,
+  `titration.build_na_ion_atom` — explicit Na+ ion modeling (pipeline
+  spec step 4): real ion charge/radius parsed from OpenMM's bundled
+  amber14/tip3p.xml (PDB2PQR's own AMBER.DAT has no ion entries at all),
+  positioned via the standard LJ combining-rule contact distance from
+  D2.50's carboxylate oxygens. No changes needed to the PB energy
+  functions themselves -- the ion is just another atom in `protein_atoms`
+  from their perspective; "with/without" is running the same calculation
+  with and without one atom appended. **Validated on the real GPR68
+  inactive structure** (Asp67, local 30 A neighborhood): intrinsic pKa
+  5.98 without the ion -> 9.35 with it, a +3.4 unit increase -- the
+  physically correct direction (a nearby +1 charge stabilizes the
+  protonated/neutral carboxylate over the deprotonated/anionic form) and
+  a sensible magnitude for direct ion contact, unlike the earlier ECL2
+  cluster's implausible >20-unit shifts. The clearest sign yet that this
+  pipeline's core PB machinery behaves correctly when the local
+  environment isn't a tightly-packed multi-charge cluster.
 
-Full test suite: 164 passed as of this writing (`pytest` from the repo
+Full test suite: 181 passed as of this writing (`pytest` from the repo
 root).
 
 ## Open questions / next steps
@@ -224,5 +250,8 @@ root).
    concrete example: three variants gave three different apparent pKa's,
    all "fixed" relative to the unrelaxed case).
 3. Gate A calibration remains blocked on dataset access (see above).
-4. Explicit Na⁺ ion modeling at D2.50 (pipeline spec step 4) not yet
-   started.
+4. ~~Explicit Na⁺ ion modeling at D2.50~~ — done and validated (see above).
+   Not yet done: running the ion with/without comparison across the full
+   pH grid via `multisite`/`compute_activation_linkage` (only a single-pH
+   intrinsic-pKa comparison has been run so far), and comparing active vs.
+   inactive conformers' sensitivity to the ion.
