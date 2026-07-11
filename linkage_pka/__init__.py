@@ -12,6 +12,8 @@ exactly the inter-pH free-energy offset this calculation needs. See
 from .linkage import (
     LinkageResult,
     compute_linkage,
+    delta_g_act_from_ln_z,
+    delta_n_h_from_theta,
     protonation_fraction,
     sensitivity_band,
 )
@@ -56,10 +58,21 @@ from .titration import (
     read_pqr,
     write_pqr,
 )
+from .multisite import (
+    MAX_EXACT_CLUSTER_SIZE,
+    DEFAULT_COUPLING_THRESHOLD_KJ_MOL,
+    ClusterTitrationResult,
+    MultiSiteTitrationResult,
+    cluster_sites,
+    solve_cluster_titration,
+    solve_titration,
+)
 
 __all__ = [
     "LinkageResult",
     "compute_linkage",
+    "delta_g_act_from_ln_z",
+    "delta_n_h_from_theta",
     "protonation_fraction",
     "sensitivity_band",
     "CHI_ATOMS",
@@ -95,4 +108,11 @@ __all__ = [
     "place_titratable_hydrogen",
     "read_pqr",
     "write_pqr",
+    "MAX_EXACT_CLUSTER_SIZE",
+    "DEFAULT_COUPLING_THRESHOLD_KJ_MOL",
+    "ClusterTitrationResult",
+    "MultiSiteTitrationResult",
+    "cluster_sites",
+    "solve_cluster_titration",
+    "solve_titration",
 ]

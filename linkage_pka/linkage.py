@@ -142,6 +142,52 @@ def compute_linkage(
     )
 
 
+def delta_n_h_from_theta(theta_active: dict, theta_inactive: dict) -> tuple:
+    """Delta_n_H(pH) = sum_i [theta_i,active(pH) - theta_i,inactive(pH)],
+    computed directly from pre-computed per-site occupancy arrays rather
+    than from a single per-site pKa.
+
+    This is the form needed when theta_i(pH) comes from a coupled
+    multi-site titration solve (``multisite.solve_titration``) rather than
+    independent-site Henderson-Hasselbalch: a coupled site's theta(pH) is
+    not, in general, expressible as a single effective pKa, so
+    ``compute_linkage`` (which requires exactly that) cannot be used
+    directly. The underlying identity is unchanged -- see the module
+    docstring -- it only requires theta_i(pH) values, however derived.
+
+    ``theta_active``/``theta_inactive`` map resnum -> theta(pH) array, all
+    on the same pH grid; only resnums present in both are used, matching
+    ``compute_linkage``'s convention for sites unresolved on one conformer.
+
+    Returns ``(resnums, delta_n_h_per_residue, delta_n_h)`` with
+    ``delta_n_h_per_residue`` shape (n_ph, n_sites) and ``delta_n_h`` shape
+    (n_ph,) -- summed over sites, matching ``LinkageResult``'s fields.
+    """
+    resnums = sorted(set(theta_active) & set(theta_inactive))
+    if not resnums:
+        raise ValueError("no residues with theta(pH) in both theta_active and theta_inactive")
+    per_residue = np.stack([theta_active[r] - theta_inactive[r] for r in resnums], axis=1)
+    delta_n_h = np.nansum(per_residue, axis=1)
+    return np.array(resnums), per_residue, delta_n_h
+
+
+def delta_g_act_from_ln_z(ln_z_active, ln_z_inactive, T: float = 298.15):
+    """DeltaDeltaG_act(pH) = -RT*[ln(Z_active) - ln(Z_inactive)], the
+    coupled-titration generalization of ``compute_linkage``'s closed-form
+    independent-site sum (which is exactly this expression specialized to
+    Z = prod_i (1+10^(pKa_i-pH)), i.e. ln(Z) = sum_i log1p_10pow(pKa_i-pH)).
+
+    Valid whenever ln(Z) is the properly shift-corrected total log
+    partition function for each conformer's full titratable system -- e.g.
+    ``multisite.MultiSiteTitrationResult.ln_z_total``, which sums
+    independent clusters' ln(Z) (clusters multiply, so their logs add).
+    """
+    RT = R_KJ_PER_MOL_K * T
+    ln_z_active = np.asarray(ln_z_active, dtype=float)
+    ln_z_inactive = np.asarray(ln_z_inactive, dtype=float)
+    return -RT * (ln_z_active - ln_z_inactive)
+
+
 def sensitivity_band(results: list) -> dict:
     """Given several ``LinkageResult``s from perturbed inputs (e.g. with/
     without the Na+ ion, with/without rotamer relaxation -- pipeline spec
