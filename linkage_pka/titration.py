@@ -186,6 +186,49 @@ def build_microstate(base_atoms: list, resnum: int, resname: str, protonated: bo
     return out
 
 
+# Geometric construction for the titratable hydrogen added when building a
+# protonated microstate from a base structure that doesn't already carry it:
+# place it a standard bond length from its parent heavy atom, pointing away
+# from the average position of that parent's other nearby bonded neighbors
+# (a simple, defensible heuristic -- avoids gross steric clashes and points
+# in a chemically reasonable direction -- not a substitute for real QM/MM
+# geometry optimization, which is unnecessary here since PB electrostatics
+# is dominated by which side of the molecule the charge sits on, not
+# sub-degree bond-angle precision).
+_TITRATABLE_H_GEOMETRY = {
+    "ASP": {"parent": "OD2", "away_from": ("CG", "OD1"), "bond_length": 0.96},
+    "GLU": {"parent": "OE2", "away_from": ("CD", "OE1"), "bond_length": 0.96},
+    "HIS": {"parent": "ND1", "away_from": ("CG", "CE1"), "bond_length": 1.01},
+    "LYS": {"parent": "NZ", "away_from": ("CE", "HZ2", "HZ3"), "bond_length": 1.01},
+}
+
+
+def place_titratable_hydrogen(atoms: list, resnum: int, resname: str) -> np.ndarray:
+    """3D position for the titratable hydrogen of ``resname`` at ``resnum``,
+    for use as ``build_microstate``'s ``extra_h_position`` when the base
+    structure doesn't already carry it."""
+    geom = _TITRATABLE_H_GEOMETRY[resname]
+    res_atoms = {a.name: a for a in atoms if a.resnum == resnum}
+    if geom["parent"] not in res_atoms:
+        raise KeyError(f"resnum {resnum} ({resname}) is missing its titratable-H parent atom {geom['parent']!r}")
+    parent_pos = np.array([res_atoms[geom["parent"]].x, res_atoms[geom["parent"]].y, res_atoms[geom["parent"]].z])
+
+    away_positions = [
+        np.array([res_atoms[name].x, res_atoms[name].y, res_atoms[name].z])
+        for name in geom["away_from"] if name in res_atoms
+    ]
+    if not away_positions:
+        raise KeyError(f"resnum {resnum} ({resname}) has none of its expected neighbor atoms "
+                        f"{geom['away_from']} to orient the titratable H away from")
+
+    direction = parent_pos - np.mean(away_positions, axis=0)
+    norm = np.linalg.norm(direction)
+    if norm < 1e-6:
+        raise ValueError(f"resnum {resnum} ({resname}): degenerate geometry, parent atom coincides "
+                          f"with the centroid of its neighbors -- cannot orient the titratable H")
+    return parent_pos + geom["bond_length"] * (direction / norm)
+
+
 def charge_delta(resname: str, amber_charges: dict) -> float:
     """Net charge change (protonated minus deprotonated) for one titratable
     residue type -- +1 for acids (Asp/Glu: deprotonated is anionic) and
@@ -196,3 +239,235 @@ def charge_delta(resname: str, amber_charges: dict) -> float:
     prot_total = sum(c for c, _ in amber_charges[info["protonated_resname"]].values())
     deprot_total = sum(c for c, _ in amber_charges[info["deprotonated_resname"]].values())
     return prot_total - deprot_total
+
+
+# --------------------------------------------------------- PB energy calc --
+# Sign convention (derived, not assumed -- see also the module docstring):
+#
+#   Ka = [H+][deprotonated]/[protonated]   (standard acid-dissociation
+#   constant; applies uniformly whether "protonated" is neutral, e.g.
+#   Asp-COOH, or cationic, e.g. Lys-NH3+ -- it's simply the form carrying
+#   the titratable proton)
+#   pKa = -log10(Ka),  dG_ionization = -RT ln(Ka) = RT ln(10) * pKa
+#
+# Moving a residue from a model compound into the protein/membrane
+# environment changes only the electrostatic part of dG_ionization:
+#
+#   pKa_protein = pKa_model + [dG_ion,protein - dG_ion,model] / (RT ln 10)
+#   dG_ion(env) = E_env(deprotonated) - E_env(protonated)
+#
+# where E_env(state) is a *solvation* energy (see compute_solvation_energy),
+# not APBS's raw "Total electrostatic energy" -- that raw quantity includes
+# each point charge's own Coulombic self-energy, which diverges as the grid
+# is refined instead of converging, and does not cancel between a
+# deprotonated/protonated pair (they have different charge sets on every
+# atom of the residue, not just the titratable proton, since AMBER
+# reparameterizes the whole residue per protonation state). Discovered
+# during development on a real test case: the raw-energy version of this
+# calculation gave a nonsensical intrinsic pKa around -30 that got *worse*
+# with finer grids; subtracting a same-spacing reference calculation with
+# sdie=pdie (uniform low dielectric, no solvent boundary at all -- the
+# standard Born-cycle reference) fixed both problems at once.
+#
+# Checked against the literature phenomenon this pipeline exists to detect
+# (Garcia-Moreno/Isom buried-ionizable series in staphylococcal nuclease,
+# Gate A): a buried Lys resists staying charged in a low-dielectric
+# environment, pushing E_protein(protonated) up relative to the model, so
+# dG_ion,protein becomes more negative than dG_ion,model, giving
+# pKa_protein < pKa_model -- a buried Lys should become *more acidic*
+# (pKa drops toward neutral), which is exactly the published effect.
+
+
+@dataclass
+class GridParams:
+    dime: tuple
+    glen: tuple
+    gcent: str
+    pdie: float
+    sdie: float
+    ion_strength_m: float
+    srad: float = 1.4
+    swin: float = 0.3
+
+
+def _solve_microstate_energy(atoms: list, grid_params: GridParams, work_dir, frame=None,
+                              membrane_dielectric: float = 2.0) -> float:
+    """PQR -> APBS mg-dummy maps -> (optional membrane splice) -> real
+    usemap solve, for one fixed set of atom charges. ``frame=None`` means
+    no membrane slab (the model-compound / pure-aqueous case)."""
+    from .dielectric_map import compute_dummy_maps, compute_energy_with_maps, splice_membrane_slab, write_maps
+
+    work_dir = Path(work_dir)
+    work_dir.mkdir(parents=True, exist_ok=True)
+    pqr_path = work_dir / "state.pqr"
+    write_pqr(pqr_path, atoms)
+
+    maps = compute_dummy_maps(
+        pqr_path, grid_params.dime, grid_params.glen, grid_params.gcent,
+        grid_params.pdie, grid_params.sdie, grid_params.ion_strength_m,
+        work_dir / "dummy", srad=grid_params.srad, swin=grid_params.swin,
+    )
+    if frame is not None:
+        maps = splice_membrane_slab(maps, frame, membrane_dielectric=membrane_dielectric, sdie=grid_params.sdie)
+    map_paths = write_maps(maps, work_dir / "maps")
+    return compute_energy_with_maps(
+        pqr_path, map_paths, grid_params.dime, grid_params.glen, grid_params.gcent,
+        grid_params.pdie, grid_params.sdie, grid_params.ion_strength_m,
+        work_dir / "solve", srad=grid_params.srad, swin=grid_params.swin,
+    )
+
+
+def compute_solvation_energy(atoms: list, grid_params: GridParams, work_dir, frame=None,
+                              membrane_dielectric: float = 2.0) -> float:
+    """Born-cycle electrostatic solvation energy for one fixed set of atom
+    charges: E(solvated, sdie=grid_params.sdie, with the membrane slab if
+    ``frame`` is given) minus E(reference, sdie=pdie -- i.e. no dielectric
+    boundary anywhere, a uniform low-dielectric medium). This reference
+    subtraction is not optional bookkeeping: the raw "Total electrostatic
+    energy" APBS reports includes each point charge's own Coulombic
+    self-energy, which *diverges* as the grid is refined (confirmed
+    empirically during development -- on a small test system, the raw
+    ionization energy grew from 202 to 731 to 1405 kJ/mol as grid spacing
+    was refined from 0.78 to 0.31 to 0.17 A, instead of converging). That
+    self-energy is identical whether or not solvent surrounds the charges,
+    so it cancels exactly against this reference at any shared grid
+    spacing, leaving the physically meaningful (and grid-convergent)
+    solvation contribution -- verified: the same test system's dG_solv went
+    from -56.4 to -49.6 kJ/mol (about 12%) over the same spacing range,
+    not a divergence.
+    """
+    e_solv = _solve_microstate_energy(atoms, grid_params, Path(work_dir) / "solv", frame, membrane_dielectric)
+    ref_grid_params = replace(grid_params, sdie=grid_params.pdie)
+    e_ref = _solve_microstate_energy(atoms, ref_grid_params, Path(work_dir) / "ref", frame=None)
+    return e_solv - e_ref
+
+
+def compute_environment_energies(atoms: list, resnum: int, resname: str, amber_charges: dict,
+                                  grid_params: GridParams, work_dir, frame=None,
+                                  membrane_dielectric: float = 2.0, extra_h_position=None) -> tuple:
+    """Return (E_deprotonated, E_protonated): Born-cycle solvation energy
+    (see ``compute_solvation_energy``) of the whole given atom set
+    (protein, or an isolated single-residue model compound) with site
+    ``resnum`` swapped between its two AMBER microstates, all other atoms
+    held fixed."""
+    work_dir = Path(work_dir)
+    deprot_atoms = build_microstate(atoms, resnum, resname, protonated=False, amber_charges=amber_charges)
+    prot_atoms = build_microstate(atoms, resnum, resname, protonated=True, amber_charges=amber_charges,
+                                   extra_h_position=extra_h_position)
+
+    e_deprot = compute_solvation_energy(deprot_atoms, grid_params, work_dir / "deprot", frame, membrane_dielectric)
+    e_prot = compute_solvation_energy(prot_atoms, grid_params, work_dir / "prot", frame, membrane_dielectric)
+    return e_deprot, e_prot
+
+
+@dataclass
+class SiteEnergyResult:
+    resnum: int
+    resname: str
+    model_pka: float
+    intrinsic_pka: float
+    dg_ion_protein: float  # kJ/mol
+    dg_ion_model: float    # kJ/mol
+    e_protein_deprot: float
+    e_protein_prot: float
+    e_model_deprot: float
+    e_model_prot: float
+
+
+def build_model_compound_atoms(protein_atoms: list, resnum: int) -> list:
+    """Model-compound fragment for one residue: its own atoms, plus the
+    real backbone C/O of residue ``resnum - 1`` and N/H of
+    ``resnum + 1`` -- i.e. the two peptide bonds this residue actually
+    makes, closed off with real, correctly AMBER-parameterized neighbor
+    atoms taken directly from the folded structure's own coordinates.
+
+    This matters more than it might look: a residue's own AMBER charges
+    differ substantially between its protonated/deprotonated templates
+    across the *whole residue*, not just the titratable proton (e.g. ASH's
+    backbone N carries -0.4157 e vs ASP's -0.5163 e) -- a fully isolated,
+    uncapped residue has nothing to electrostatically stabilize that
+    backbone charge redistribution, which was measured directly in this
+    module's development to produce a >20 pKa-unit artifact (dG_ion for a
+    bare-residue "model" reached +170 kJ/mol on a simple test case,
+    physically implausible for what should be a small reference shift).
+    Borrowing 2 real neighbor atoms per side is a much simpler fix than
+    synthesizing ACE/NME cap geometry from scratch, reuses real coordinates
+    instead of invented ones, and closes both dangling amide-like ends.
+    Residues at a chain terminus simply get a one-sided cap (whichever
+    neighbor exists).
+    """
+    model_atoms = [a for a in protein_atoms if a.resnum == resnum]
+    if not model_atoms:
+        raise KeyError(f"resnum {resnum} not found in protein_atoms")
+    prev_cap = [a for a in protein_atoms if a.resnum == resnum - 1 and a.name in ("C", "O")]
+    next_cap = [a for a in protein_atoms if a.resnum == resnum + 1 and a.name in ("N", "H")]
+    return prev_cap + model_atoms + next_cap
+
+
+def compute_intrinsic_pka(protein_atoms: list, resnum: int, resname: str, frame,
+                           protein_grid_params: GridParams, model_grid_params: GridParams, work_dir,
+                           amber_charges: dict = None, membrane_dielectric: float = 2.0,
+                           temp_k: float = 298.15, extra_h_position=None) -> SiteEnergyResult:
+    """One site's intrinsic pKa: PB energies in the full protein/membrane
+    environment (``frame`` gives the membrane slab; pass ``frame=None`` for
+    a soluble-protein calculation with no membrane) minus the same in an
+    isolated single-residue model compound (see
+    ``build_model_compound_atoms``), referenced against
+    ``wsme_gpcr.structure.DEFAULT_PKA``.
+    """
+    amber_charges = amber_charges or load_amber_charges()
+    work_dir = Path(work_dir)
+
+    e_prot_deprot, e_prot_prot = compute_environment_energies(
+        protein_atoms, resnum, resname, amber_charges, protein_grid_params, work_dir / "protein",
+        frame=frame, membrane_dielectric=membrane_dielectric, extra_h_position=extra_h_position,
+    )
+
+    model_atoms = build_model_compound_atoms(protein_atoms, resnum)
+    e_model_deprot, e_model_prot = compute_environment_energies(
+        model_atoms, resnum, resname, amber_charges, model_grid_params, work_dir / "model",
+        frame=None, extra_h_position=extra_h_position,
+    )
+
+    RT = R_KJ_PER_MOL_K * temp_k
+    dg_ion_protein = e_prot_deprot - e_prot_prot
+    dg_ion_model = e_model_deprot - e_model_prot
+    model_pka = DEFAULT_PKA[resname]
+    intrinsic_pka = model_pka + (dg_ion_protein - dg_ion_model) / (RT * LN10)
+
+    return SiteEnergyResult(
+        resnum=resnum, resname=resname, model_pka=model_pka, intrinsic_pka=intrinsic_pka,
+        dg_ion_protein=dg_ion_protein, dg_ion_model=dg_ion_model,
+        e_protein_deprot=e_prot_deprot, e_protein_prot=e_prot_prot,
+        e_model_deprot=e_model_deprot, e_model_prot=e_model_prot,
+    )
+
+
+def compute_pairwise_coupling(protein_atoms: list, resnum_i: int, resname_i: str,
+                               resnum_j: int, resname_j: str, frame, grid_params: GridParams, work_dir,
+                               amber_charges: dict = None, membrane_dielectric: float = 2.0,
+                               extra_h_position_i=None, extra_h_position_j=None) -> float:
+    """W_ij (kJ/mol): the standard double-difference of four whole-system
+    PB energies, isolating the pure electrostatic interaction between site
+    i's and site j's charge differences (protonated - deprotonated) --
+    cancels each site's own self-energy and any energy shared with the
+    fixed background of every other site (the reduced-site/Bashford-Karplus
+    coupling term the pipeline spec requires for the coupled histidine-
+    shell + buried-carboxylate cluster).
+    """
+    amber_charges = amber_charges or load_amber_charges()
+    work_dir = Path(work_dir)
+    energies = {}
+    for i_prot in (False, True):
+        for j_prot in (False, True):
+            atoms = build_microstate(protein_atoms, resnum_i, resname_i, i_prot, amber_charges,
+                                      extra_h_position=extra_h_position_i if i_prot else None)
+            atoms = build_microstate(atoms, resnum_j, resname_j, j_prot, amber_charges,
+                                      extra_h_position=extra_h_position_j if j_prot else None)
+            label = f"i{'p' if i_prot else 'd'}_j{'p' if j_prot else 'd'}"
+            energies[(i_prot, j_prot)] = compute_solvation_energy(
+                atoms, grid_params, work_dir / label, frame, membrane_dielectric,
+            )
+
+    return (energies[(True, True)] - energies[(True, False)]
+            - energies[(False, True)] + energies[(False, False)])
