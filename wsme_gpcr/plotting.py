@@ -3,6 +3,8 @@ FesCalc_Block.m / Plot_Imp_Variables.m / DSCcalc_Block.m."""
 
 from __future__ import annotations
 
+from pathlib import Path
+
 import numpy as np
 
 from .alanine_scan import AlanineScanResult
@@ -10,6 +12,23 @@ from .coupling import CouplingResult
 from .dsc import DSCResult
 from .ionizable_network import IonizableNetworkResult
 from .wsme import WSMEResult
+
+
+def save_figure(fig, path, dpi: int = 200, **kwargs) -> list:
+    """Save ``fig`` as both PNG (raster, fixed resolution) and SVG (vector,
+    scales cleanly for print/posters) alongside each other. ``path`` may be
+    given with or without an extension (any extension is replaced, not
+    appended) -- e.g. ``save_figure(fig, out_dir / "summary.png")`` writes
+    both ``summary.png`` and ``summary.svg``. Returns the two paths written.
+    """
+    path = Path(path)
+    stem_path = path.with_suffix("")
+    written = []
+    for ext in ("png", "svg"):
+        out_path = stem_path.with_suffix(f".{ext}")
+        fig.savefig(out_path, dpi=dpi, **kwargs)
+        written.append(out_path)
+    return written
 
 
 def plot_1d_profile(result: WSMEResult, ax=None, **kwargs):
@@ -421,7 +440,9 @@ def plot_dsc(dsc_result: DSCResult, ax=None, **kwargs):
 def plot_summary(result: WSMEResult, dsc_result: DSCResult = None, coupling_result: CouplingResult = None, save_path: str = None):
     """A single figure with the 1D profile, 2D landscape, residue folding
     probability, and (if provided) the DSC thermogram and coupling matrix
-    -- similar in spirit to Plot_Imp_Variables.m."""
+    -- similar in spirit to Plot_Imp_Variables.m. ``save_path`` writes both
+    a PNG and an SVG (any extension given is replaced, not appended) --
+    see ``save_figure``."""
     import matplotlib.pyplot as plt
 
     n_panels = 3 + int(dsc_result is not None) + int(coupling_result is not None)
@@ -449,5 +470,5 @@ def plot_summary(result: WSMEResult, dsc_result: DSCResult = None, coupling_resu
 
     fig.tight_layout()
     if save_path:
-        fig.savefig(save_path, dpi=200)
+        save_figure(fig, save_path)
     return fig

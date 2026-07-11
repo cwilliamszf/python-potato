@@ -136,22 +136,22 @@ def main(argv=None):
             print(f"  wrote outputs to {ph_dir}")
 
         if not args.no_plots:
-            from .plotting import plot_1d_profile_comparison, plot_2d_landscape_surface_comparison
+            from .plotting import plot_1d_profile_comparison, plot_2d_landscape_surface_comparison, save_figure
             import matplotlib.pyplot as plt
 
             fig, ax = plt.subplots(figsize=(8, 5))
             plot_1d_profile_comparison({ph: pr.result for ph, pr in results.items()}, ax=ax)
             ax.set_title("1D Free Energy Profile vs. pH")
             fig.tight_layout()
-            fig.savefig(out_dir / "pH_comparison.png", dpi=200)
+            written = save_figure(fig, out_dir / "pH_comparison.png")
             plt.close(fig)
-            print(f"Wrote {out_dir / 'pH_comparison.png'}")
+            print(f"Wrote {written[0].name} / {written[1].name}")
 
             fig = plot_2d_landscape_surface_comparison({f"pH {ph}": pr.result for ph, pr in results.items()})
             fig.suptitle("3D Free Energy Landscape vs. pH", fontsize=14)
-            fig.savefig(out_dir / "pH_comparison_3D.png", dpi=200, bbox_inches="tight")
+            written = save_figure(fig, out_dir / "pH_comparison_3D.png", bbox_inches="tight")
             plt.close(fig)
-            print(f"Wrote {out_dir / 'pH_comparison_3D.png'}")
+            print(f"Wrote {written[0].name} / {written[1].name}")
 
         if args.alanine_scan:
             if args.ala_all_ph:
@@ -280,6 +280,7 @@ def _run_alanine_scan_multi_ph_cli(args, out_dir: Path, params: WSMEParams, pka_
             plot_alanine_ph_magnitude_vs_sensitivity,
             plot_alanine_ph_pca,
             plot_mutational_response_comparison,
+            save_figure,
         )
         import matplotlib.pyplot as plt
 
@@ -287,17 +288,17 @@ def _run_alanine_scan_multi_ph_cli(args, out_dir: Path, params: WSMEParams, pka_
         plot_mutational_response_comparison(scan_by_ph, ax=ax)
         ax.set_title("Mutational Response vs. pH")
         fig.tight_layout()
-        fig.savefig(ala_dir / "MutationalResponse_vs_pH.png", dpi=200)
+        written = save_figure(fig, ala_dir / "MutationalResponse_vs_pH.png")
         plt.close(fig)
-        print(f"  Wrote {ala_dir / 'MutationalResponse_vs_pH.png'}")
+        print(f"  Wrote {written[0].name} / {written[1].name}")
 
         fig, axes = plt.subplots(1, 2, figsize=(16, 7))
         plot_alanine_ph_pca(scan_by_ph, ax=axes[0], n_clusters=args.ala_n_clusters, top_n_labels=args.ala_top_n)
         plot_alanine_ph_magnitude_vs_sensitivity(scan_by_ph, ax=axes[1], n_clusters=args.ala_n_clusters, top_n_labels=args.ala_top_n)
         fig.tight_layout()
-        fig.savefig(ala_dir / "PCA_Cluster.png", dpi=200)
+        written = save_figure(fig, ala_dir / "PCA_Cluster.png")
         plt.close(fig)
-        print(f"  Wrote {ala_dir / 'PCA_Cluster.png'}")
+        print(f"  Wrote {written[0].name} / {written[1].name}")
 
     print(f"Alanine scan (multi-pH): wrote outputs to {ala_dir}")
 
@@ -325,27 +326,27 @@ def _write_alanine_scan_outputs(out_dir: Path, scan_pr: AlanineScanPipelineResul
     print(f"  top {len(top_hits)} hits: {top_hits}")
 
     if save_plot:
-        from .plotting import plot_ddg_structure_map, plot_ddg_vs_distance, plot_mutational_response
+        from .plotting import plot_ddg_structure_map, plot_ddg_vs_distance, plot_mutational_response, save_figure
         import matplotlib.pyplot as plt
 
         fig, ax = plt.subplots(figsize=(10, 5))
         plot_mutational_response(scan, ax=ax, highlight={r: str(r) for r, _ in top_hits})
         fig.tight_layout()
-        fig.savefig(out_dir / "MutationalResponse.png", dpi=200)
+        save_figure(fig, out_dir / "MutationalResponse.png")
         plt.close(fig)
 
         for resnum, _ in top_hits:
             fig, ax = plt.subplots(figsize=(7, 5))
             plot_ddg_vs_distance(scan, resnum, ax=ax)
             fig.tight_layout()
-            fig.savefig(out_dir / f"DistanceDependence_{resnum}.png", dpi=200)
+            save_figure(fig, out_dir / f"DistanceDependence_{resnum}.png")
             plt.close(fig)
 
             fig = plt.figure(figsize=(8, 8))
             ax = fig.add_subplot(projection="3d")
             plot_ddg_structure_map(scan, resnum, ax=ax)
             fig.tight_layout()
-            fig.savefig(out_dir / f"StructureMap_{resnum}.png", dpi=200)
+            save_figure(fig, out_dir / f"StructureMap_{resnum}.png")
             plt.close(fig)
 
 
@@ -372,7 +373,7 @@ def _write_outputs(out_dir: Path, pr: PipelineResult, save_plot: bool):
     if pr.coupling_result is not None:
         _write_coupling(out_dir / "CouplingMatrix.txt", pr.coupling_result)
     if save_plot:
-        from .plotting import plot_2d_landscape_surface, plot_coupling_matrix, plot_summary
+        from .plotting import plot_2d_landscape_surface, plot_coupling_matrix, plot_summary, save_figure
         import matplotlib.pyplot as plt
 
         fig = plot_summary(result, dsc_result=pr.dsc_result, coupling_result=pr.coupling_result, save_path=str(out_dir / "summary.png"))
@@ -382,14 +383,14 @@ def _write_outputs(out_dir: Path, pr: PipelineResult, save_plot: bool):
         ax = fig.add_subplot(projection="3d")
         plot_2d_landscape_surface(result, ax=ax)
         fig.tight_layout()
-        fig.savefig(out_dir / "2D_FreeEnergyLandscape_3D.png", dpi=200)
+        save_figure(fig, out_dir / "2D_FreeEnergyLandscape_3D.png")
         plt.close(fig)
 
         if pr.coupling_result is not None:
             fig, ax = plt.subplots(figsize=(7, 6))
             plot_coupling_matrix(pr.coupling_result, ax=ax)
             fig.tight_layout()
-            fig.savefig(out_dir / "CouplingMatrix.png", dpi=200)
+            save_figure(fig, out_dir / "CouplingMatrix.png")
             plt.close(fig)
 
 

@@ -142,7 +142,9 @@ streamlit run wsme_gpcr/app.py
 Then open the printed local URL, upload a PDB/mmCIF file (try
 `examples/data/CI2.pdb` first), and click **Run**. Results (1D profile, 2D
 and 3D landscape, residue folding probability, and DSC/coupling if enabled)
-render inline with download buttons for the underlying data files.
+render inline with download buttons for the underlying data files, and every
+plot gets its own **PNG** (raster) and **SVG** (vector, for print/posters)
+download buttons alongside it.
 
 Check **Run for all pH values** to get the full analysis at pH 7, 5, 3.5,
 and 2 from a single upload -- each pH is a fully independent run (pH
@@ -193,20 +195,24 @@ the CI2 example in that repo). Any individual parameter (`--ene`, `--ds`,
 `--coupling` adds the residue-residue coupling free-energy matrix (roughly
 doubles run time). Run `wsme-gpcr --help` for the full option list.
 
+Every plot is written as both a PNG (raster) and an SVG (vector, for
+print/posters) with matching filenames, via `plotting.save_figure`.
+
 This writes `1D_FreeEnergyProfile.txt`, `2D_FreeEnergySurface.txt`,
-`2D_FreeEnergyLandscape_3D.png`, `ResFoldProb_vs_RC.txt`, `summary.png`
+`2D_FreeEnergyLandscape_3D.png`/`.svg`, `ResFoldProb_vs_RC.txt`,
+`summary.png`/`.svg`
 (plus `DSC_Thermogram.txt` with `--dsc`, and `CouplingMatrix.txt` /
-`CouplingMatrix.png` with `--coupling`) to the output directory. With
+`CouplingMatrix.png`/`.svg` with `--coupling`) to the output directory. With
 `--all-ph`, each pH gets its own `pH_<value>/` subdirectory plus
-top-level `pH_comparison.png` / `pH_comparison_3D.png` overlaying the
-four pH values.
+top-level `pH_comparison.png`/`.svg` / `pH_comparison_3D.png`/`.svg`
+overlaying the four pH values.
 
 `--alanine-scan` runs the mutational-response workflow described above
-and writes an `alanine_scan/` subdirectory: `MutationalResponse.txt`/`.png`
+and writes an `alanine_scan/` subdirectory: `MutationalResponse.txt`/`.png`/`.svg`
 (per-block mean ± std across all scanned mutants), `DeltaDeltaG.csv` (one
 row per mutation × block), `TopHits.txt` (mutation sites ranked by total
-perturbation magnitude), and per-top-hit `DistanceDependence_<resnum>.png`
-/ `StructureMap_<resnum>.png`. It applies to *any* structure/receptor, not
+perturbation magnitude), and per-top-hit `DistanceDependence_<resnum>.png`/`.svg`
+/ `StructureMap_<resnum>.png`/`.svg`. It applies to *any* structure/receptor, not
 just GPCRs, and by default scans every eligible residue — pass
 `--ala-max-n N` to evenly subsample N sites instead (prints a time
 estimate before running either way), or `--ala-positions 45,102,150` to
@@ -219,9 +225,9 @@ scan independently at every pH value instead: each pH gets its own
 `alanine_scan/pH_<value>/` subdirectory with the same files as above, plus
 top-level `pH_Sensitivity.txt` (mutation sites ranked by how much their
 perturbation swings across pH -- large swings flag candidate conformational
-pH sensors), `MutationalResponse_vs_pH.png` overlaying every pH's
+pH sensors), `MutationalResponse_vs_pH.png`/`.svg` overlaying every pH's
 mutational-response curve, `PCA_Cluster.csv` (per-residue magnitude,
-pH spread, cluster ID, and PCA coordinates), and `PCA_Cluster.png` (PCA
+pH spread, cluster ID, and PCA coordinates), and `PCA_Cluster.png`/`.svg` (PCA
 scatter + magnitude-vs-pH-spread scatter, clustering residues by the shape
 of their per-block × per-pH coupling perturbation -- `--ala-n-clusters`
 sets the number of k-means clusters, default 4). This is a long-running,
@@ -249,8 +255,14 @@ result = run_wsme(structure, blocks, ss_mask, params)
 coupling = compute_coupling(structure, blocks, ss_mask, params)  # optional
 
 print(result.zfin, result.stats)
-plot_summary(result, coupling_result=coupling, save_path="landscape.png")
+plot_summary(result, coupling_result=coupling, save_path="landscape.png")  # writes landscape.png AND landscape.svg
 ```
+
+Every `plot_*` function returns a matplotlib `Axes`/`Figure` you can save
+however you like; `plotting.save_figure(fig, path)` is a small helper that
+writes both a PNG and an SVG for any figure (the extension in `path` is
+replaced, not appended) -- what `save_path=` above and every CLI plot use
+under the hood.
 
 Or use `run_pipeline`/`run_pipeline_multi_ph` (what the CLI and GUI call
 under the hood) to get all of the above, plus optional DSC/coupling, in

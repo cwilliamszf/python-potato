@@ -6,6 +6,7 @@ Run with:
 
 from __future__ import annotations
 
+import io
 import tempfile
 from pathlib import Path
 
@@ -163,6 +164,18 @@ with st.sidebar:
     run_button = st.button("Run", type="primary", use_container_width=True)
 
 
+def _figure_download_buttons(fig, base_name: str, key_prefix: str):
+    """PNG + SVG download buttons for a matplotlib figure, side by side --
+    keeps every plot in the GUI downloadable in both formats, matching the
+    CLI's ``plotting.save_figure`` (PNG raster + SVG vector)."""
+    col1, col2 = st.columns(2)
+    for ext, mime, col in (("png", "image/png", col1), ("svg", "image/svg+xml", col2)):
+        buf = io.BytesIO()
+        fig.savefig(buf, format=ext, dpi=200)
+        col.download_button(f"Download {base_name}.{ext}", buf.getvalue(),
+                             file_name=f"{base_name}.{ext}", mime=mime, key=f"{key_prefix}_{ext}_dl")
+
+
 def _render_alanine_scan_results(scan_pr, top_n: int, key_prefix: str):
     """Render one AlanineScanPipelineResult's mutational-response plot, top-hits
     table, and per-hit distance/structure-map plots. Shared by the single-pH
@@ -175,6 +188,7 @@ def _render_alanine_scan_results(scan_pr, top_n: int, key_prefix: str):
 
     fig = plot_mutational_response(scan, highlight={r: str(r) for r, _ in scan.top_hits(top_n)}).figure
     st.pyplot(fig)
+    _figure_download_buttons(fig, f"MutationalResponse_pH{scan_pr.ph}", f"{key_prefix}_mrplot")
     st.download_button(
         "Download MutationalResponse.txt",
         "\n".join(f"{b} {m:.3f} {s:.3f}" for b, (m, s) in enumerate(zip(scan.MR_mean, scan.MR_std))),
@@ -203,11 +217,13 @@ def _render_alanine_scan_results(scan_pr, top_n: int, key_prefix: str):
             with col1:
                 fig = plot_ddg_vs_distance(scan, resnum).figure
                 st.pyplot(fig)
+                _figure_download_buttons(fig, f"DistanceDependence_{resnum}_pH{scan_pr.ph}", f"{key_prefix}_{resnum}_dist")
             with col2:
                 fig = plt.figure(figsize=(6, 6))
                 ax = fig.add_subplot(projection="3d")
                 plot_ddg_structure_map(scan, resnum, ax=ax)
                 st.pyplot(fig)
+                _figure_download_buttons(fig, f"StructureMap_{resnum}_pH{scan_pr.ph}", f"{key_prefix}_{resnum}_map")
 
 
 # ------------------------------------------------------------------ Run ---
@@ -326,9 +342,11 @@ if run_button:
         st.subheader("Comparison across pH")
         fig = plot_1d_profile_comparison({ph_val: pr.result for ph_val, pr in pipeline_results.items()}).figure
         st.pyplot(fig)
+        _figure_download_buttons(fig, "pH_comparison", "phcomp1d")
 
         fig = plot_2d_landscape_surface_comparison({f"pH {ph_val}": pr.result for ph_val, pr in pipeline_results.items()})
         st.pyplot(fig)
+        _figure_download_buttons(fig, "pH_comparison_3D", "phcomp3d")
 
         if show_comparison_grid:
             results_by_key = {f"pH {ph_val}": pr.result for ph_val, pr in pipeline_results.items()}
@@ -338,6 +356,7 @@ if run_button:
             with st.spinner("Building comparison grid..."):
                 fig = plot_comparison_grid(results_by_key, coupling_by_key=coupling_by_key)
             st.pyplot(fig)
+            _figure_download_buttons(fig, "ComparisonGrid", "compgrid")
 
         import pandas as pd
 
@@ -379,6 +398,7 @@ if run_button:
             with inner_tabs[0]:
                 fig = plot_1d_profile(result).figure
                 st.pyplot(fig)
+                _figure_download_buttons(fig, f"1D_FreeEnergyProfile_pH{ph_val}", f"1d_{ph_val}")
                 st.download_button(
                     "Download 1D_FreeEnergyProfile.txt",
                     "\n".join(f"{n} {fe:.3f}" for n, fe in zip(result.n_values, result.fes)),
@@ -389,34 +409,39 @@ if run_button:
             with inner_tabs[1]:
                 fig = plot_2d_landscape(result).figure
                 st.pyplot(fig)
+                _figure_download_buttons(fig, f"2D_FreeEnergySurface_pH{ph_val}", f"2d_{ph_val}")
                 lines = [f"{i} {j} {result.fes2D[i, j]:.3f}" for i in range(result.fes2D.shape[0]) for j in range(result.fes2D.shape[1])]
-                st.download_button("Download 2D_FreeEnergySurface.txt", "\n".join(lines), file_name=f"2D_FreeEnergySurface_pH{ph_val}.txt", key=f"2d_{ph_val}")
+                st.download_button("Download 2D_FreeEnergySurface.txt", "\n".join(lines), file_name=f"2D_FreeEnergySurface_pH{ph_val}.txt", key=f"2d_{ph_val}_txt")
 
             with inner_tabs[2]:
                 fig = plot_2d_landscape_surface(result).figure
                 st.pyplot(fig)
+                _figure_download_buttons(fig, f"2D_FreeEnergyLandscape_3D_pH{ph_val}", f"3d_{ph_val}")
 
             with inner_tabs[3]:
                 fig = plot_residue_folding_probability(result).figure
                 st.pyplot(fig)
+                _figure_download_buttons(fig, f"ResFoldProb_vs_RC_pH{ph_val}", f"fp_{ph_val}")
 
             next_tab = 4
             if pr.dsc_result:
                 with inner_tabs[next_tab]:
                     fig = plot_dsc(pr.dsc_result).figure
                     st.pyplot(fig)
+                    _figure_download_buttons(fig, f"DSC_Thermogram_pH{ph_val}", f"dsc_{ph_val}")
                     lines = [f"{T:.1f} {cp:.5f} {cpx:.5f}" for T, cp, cpx in zip(pr.dsc_result.T, pr.dsc_result.Cp, pr.dsc_result.Cp_excess)]
-                    st.download_button("Download DSC_Thermogram.txt", "\n".join(lines), file_name=f"DSC_Thermogram_pH{ph_val}.txt", key=f"dsc_{ph_val}")
+                    st.download_button("Download DSC_Thermogram.txt", "\n".join(lines), file_name=f"DSC_Thermogram_pH{ph_val}.txt", key=f"dsc_{ph_val}_txt")
                 next_tab += 1
 
             if pr.coupling_result:
                 with inner_tabs[next_tab]:
                     fig = plot_coupling_matrix(pr.coupling_result).figure
                     st.pyplot(fig)
+                    _figure_download_buttons(fig, f"CouplingMatrix_pH{ph_val}", f"coupling_{ph_val}")
                     mat = pr.coupling_result.coupling_free_energy
                     lines = [f"{j} {k} {mat[j, k]:.3f} {pr.coupling_result.p_folded_folded[j, k]:.4f}"
                              for j in range(mat.shape[0]) for k in range(mat.shape[1])]
-                    st.download_button("Download CouplingMatrix.txt", "\n".join(lines), file_name=f"CouplingMatrix_pH{ph_val}.txt", key=f"coupling_{ph_val}")
+                    st.download_button("Download CouplingMatrix.txt", "\n".join(lines), file_name=f"CouplingMatrix_pH{ph_val}.txt", key=f"coupling_{ph_val}_txt")
                 next_tab += 1
 
     if ala_scan_multi_ph is not None:
@@ -428,6 +453,7 @@ if run_button:
         plot_mutational_response_comparison(scan_by_ph, ax=ax)
         ax.set_title("Mutational Response vs. pH")
         st.pyplot(fig)
+        _figure_download_buttons(fig, "MutationalResponse_vs_pH", "mrvsph")
 
         import pandas as pd
 
@@ -459,6 +485,7 @@ if run_button:
         plot_alanine_ph_magnitude_vs_sensitivity(scan_by_ph, ax=axes[1], n_clusters=int(ala_n_clusters), top_n_labels=int(ala_top_n))
         fig.tight_layout()
         st.pyplot(fig)
+        _figure_download_buttons(fig, "PCA_Cluster", "pcacluster")
 
         cluster_rows = ph_cluster_table(scan_by_ph, n_clusters=int(ala_n_clusters))
         st.dataframe(
