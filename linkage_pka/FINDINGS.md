@@ -895,3 +895,55 @@ disentangled.
 None of this has been implemented yet -- it is a diagnosis and a set of
 proposed next steps, not a fix, pending direction on which test to run
 first.
+
+## Test 1 result: truncation fixes inactive almost completely; active is
+## a separate, unresolved problem
+
+Ran test 1 as proposed above: built truncated copies of both
+`WT_Inactive_GPCRdb.pdb` and `WT_Active_GPCRdb.pdb` keeping only
+residues 14-302 (author numbering; drops the N-terminal tail and the
+H8+C-tail flagged above), no other change -- same untouched pipeline,
+same contact/electrostatics/entropy code, same default ξ.
+
+**Inactive: essentially fixed.** Global minimum moves from n=76/101
+(75.2%) to n=77/79 (**97.5%**) after truncation, with only 2 residual
+soft blocks (down from 25), fes range shrinks from [4.4,177.3] to
+[3.5,28.1] kJ/mol. Holds at both the untouched default ξ (-48.2 J/mol)
+and the Tm-calibrated ξ (-49.15 J/mol) -- the fix comes from scope, not
+from ξ, exactly as the diagnosis predicted. This is strong direct
+confirmation that the disorder-scope mismatch, not a physics bug, was
+the cause of inactive's stuck minimum.
+
+**Active: not fixed.** Same truncation moves the minimum only from
+n=6/97 (6.2%) to n=6/73 (8.2%) -- still totally collapsed, 68 of 73
+blocks unfolded at the "minimum." The disorder-scope explanation is
+therefore *not* sufficient for the active-state model; something else,
+localized to the core 7TM bundle itself (residues 14-302, i.e. the same
+range that folds essentially perfectly for inactive), is broken for the
+active homology model specifically.
+
+Follow-up comparison of the two truncated structures (same 289-residue
+range in both) narrows it down, but doesn't close it: total contacts
+(19153 vs. 18015) and total electrostatic energy (-37.0 vs. -25.7
+kJ/mol) are comparable, not wildly different -- this isn't one giant
+repulsive outlier or a bulk contact-count collapse. Two smaller, real
+differences were found: active has more residues classified as coil
+(38/289, 13.1%) vs. inactive (26/289, 9.0%), and a lower fraction of
+long-range (tertiary, block-index separation >=10) contacts (0.152 vs.
+0.179). Both point toward active's secondary-structure geometry/contact
+topology being somewhat less regular/cooperative than inactive's, but
+neither is dramatic enough by itself to obviously explain a drop from
+97.5% to 8.2% folded -- this still needs test 3 (block-partition diff,
+block_elec block-by-block comparison) to actually localize the cause,
+or test 4 (checking whether the paper's own active/inactive receptor
+pairs, if any exist in the bundled dataset, show anything like this
+magnitude of asymmetry).
+
+**Net effect on the original bug report**: the inactive-state folded-minimum
+anomaly that motivated this entire investigation (ξ calibration, then
+the sodium-pocket hypothesis, then this scope diagnosis) is resolved --
+truncating the two flagged disordered termini, with zero physics
+changes, restores a proper folded minimum at 97.5%. The active-state
+model surfaced a second, distinct, still-open problem in the course of
+testing this fix; it was not part of the original bug report and has
+not been fixed.
