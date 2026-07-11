@@ -234,6 +234,59 @@ this sandbox.
 Full test suite: 181 passed as of this writing (`pytest` from the repo
 root).
 
+## Na+ ion comparison across the full pH grid
+
+Extended the single-pH validation above to both conformers and the full
+pH 5-8 grid, using `linkage.compute_linkage`/`protonation_fraction` on
+the four intrinsic pKa's already obtained (D2.50 treated as an isolated
+site here -- see caveat below):
+
+| structure | without ion | with ion |
+|---|---|---|
+| active   | 9.509  | 15.392 |
+| inactive | 5.977  | 9.346  |
+
+Both conformers shift in the same direction with the ion present (as
+expected: a bound +1 charge stabilizes the neutral/protonated carboxylate
+in either conformation), but the active conformer's baseline pKa (9.5,
+already a >5-unit shift from the model value before the ion is even
+added) is itself large by literature standards -- plausible for a
+genuinely buried, functionally special position like D2.50, but
+unvalidated without Gate A, and a separate finding from the with/without
+ion comparison itself.
+
+**Delta_n_H(pH) at D2.50 (active theta minus inactive theta):**
+
+| pH  | without ion | with ion |
+|---|---|---|
+| 5.0 | +0.095 | +0.000 |
+| 6.0 | +0.513 | +0.001 |
+| 7.0 | +0.910 | +0.005 |
+| 7.5 | +0.961 | +0.014 |
+| 8.0 | +0.961 | +0.043 |
+
+**Result: the ion doesn't just shift D2.50's pKa, it essentially switches
+off its contribution to the proton-linkage signal across the entire pH
+5-8 range.** Without the ion, D2.50 differentiates the two conformers
+substantially (peaking near Delta_n_H=+0.96 around pH 7.5) since their
+pKa's (9.51 vs 5.98) are different enough to matter in this range. With
+the ion, both conformers' pKa's (15.4, 9.3) sit high enough above pH 8
+that theta saturates to ~1.0 in both -- with both states pinned the same
+way, the difference between them collapses to near zero. Physically: a
+bound Na+ locks the carboxylate neutral regardless of conformational
+state, so it stops acting as a pH sensor at all once occupied.
+
+Caveats on this specific result (beyond the pipeline-wide ones already
+noted): (1) D2.50 was treated as an isolated titratable site -- there are
+two other titratable residues within ~9-9.3 A CA distance (Asp282,
+Glu103) whose real pairwise coupling has not been computed, so this is a
+single-site approximation, not the full coupled multisite treatment
+built earlier this session. (2) Only a single grid/rotamer-relaxation
+variant was run for these four pKa's (no grid-convergence or rotamer-
+relaxation sensitivity check, unlike the ECL2 cluster investigation
+above) -- these specific numbers should be treated as a first pass, not
+a converged result.
+
 ## Open questions / next steps
 
 1. **Local rotamer relaxation is exhausted as a lever for the inactive
