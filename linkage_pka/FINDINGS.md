@@ -1854,8 +1854,18 @@ real fix was a missing normalization step, not a missing calibration.
 The Methods section also independently confirmed several already-correct
 parameter choices (vdW cutoff 5 Å, dielectric 4, DS=-10 J/mol/K,
 DCp=-0.36 J/mol/K/contact all match this port already) and flagged one
-small, not-yet-investigated discrepancy worth a future look: the paper
-states DDS (excess coil entropic penalty) as a clean -6.1 J/mol/K, while
-this port's `WSMEParams.DDS` is 6.0606e-3 kJ/mol/K -- a suspiciously
-non-round number for what the paper reports as round; not chased further
-here since it wasn't blocking the fc question this entry answers.
+apparent discrepancy: the paper's prose states DDS (excess coil entropic
+penalty) as a clean -6.1 J/mol/K, while this port's `WSMEParams.DDS` is
+6.0606e-3 kJ/mol/K.
+
+**Chased and resolved: a false alarm, confirmed directly from the real
+MATLAB source rather than the paper's rounded prose.**
+`FesCalc_Block_full.m` line 31 (bundled in the reference repo): `DDS=
+6.0606;` -- the actual, active constant the authors' own code runs,
+byte-identical to this port's value. Even more tellingly, line 70 of the
+same file has a **commented-out** (disabled) alternative:
+`%zjj(disr2)=exp((DS-(6.1/1000))./R);` -- direct evidence the authors
+themselves rounded their real 6.0606 constant to 6.1 for the paper's
+prose (and apparently considered, then didn't ship, a version using the
+rounded value). This port already matches the authoritative source
+exactly; no bug, no fix needed.
