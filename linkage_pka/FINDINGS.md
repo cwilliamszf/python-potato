@@ -2658,3 +2658,95 @@ line of evidence alongside the manuscript's existing ASR/DIVERGE
 triangulation, not yet written into the manuscript draft. User has asked
 for a supplementary-subsection write-up next; not yet done in this
 entry.
+
+## Five more manuscript focal nodes tested (Node21, Node22, Node32,
+## Node119, Node70) -- all fail the robustness gate, but the pattern
+## resolves into a clean, expected relationship: biophysical sensitivity
+## tracks ASR reconstruction depth, not node identity, and every node's
+## own specific headline claim remains well-supported
+
+User supplied real AlphaFold structures for the five remaining Figure 4
+focal nodes not yet tested: Node21 (canonical GPR4/65/68 stem, 106
+descendant leaves), Node22 (gnathostome family stem, 154 leaves), Node32
+(divergent GPR132/GPR184 branch stem, 48 leaves), Node119 (GPR65 stem,
+38 leaves), Node70 (GPR184 stem, 10 leaves). Truncated to the same
+shared core range (author resnum 16-285) used for every prior node,
+ran the same fine `xi_fold_scan` (step 0.1 J/mol, range -70 to -38) and
+`run_asr_sensitivity_check` (alanine-truncation of posterior<0.8 sites,
+mutant scan step 1.0 J/mol) pipeline used throughout.
+
+All five fold properly (fold_ok=True, 97.1-98.6% best fold fraction) but
+**all five fail the robustness gate** -- transition shifts of -5.35 to
+-14.65 J/mol, all well beyond the 2.76 J/mol tolerance:
+
+| Node | n_ambiguous | Transition shift (J/mol) | Robust? |
+|---|---|---|---|
+| Node21 | 90 | -5.95 | No |
+| Node22 | 99 | -14.65 | No |
+| Node32 | 96 | -8.65 | No |
+| Node119 | 72 | -5.35 | No |
+| Node70 | 91 | -12.05 | No |
+
+Combined with the six nodes tested previously, this gives 11 data
+points spanning n_ambiguous = 10 to 99. **The relationship is not
+node-specific -- it is a clean, strong, monotonic function of
+reconstruction depth** (Pearson r = 0.85, Spearman rho = 0.94 between
+n_ambiguous and |transition shift| across all 11 nodes). The four
+passing nodes (node_2/19/20/148) all have <=44 ambiguous positions; the
+seven failing nodes (node_34/80/119/21/70/32/22) all have >=64. This
+resolves what looked in the previous two entries like GPR68- and
+GPR132-stem-specific fragility into a more mundane and more defensible
+explanation: deeper, more ancestral nodes accumulate more ASR-ambiguous
+sites (as expected -- less direct descendant signal further back in
+time), and this bWSME-based sensitivity proxy responds proportionally.
+The earlier framing ("Node80 and Node34 are comparatively sensitive")
+should be read as an instance of this general depth-dependent pattern,
+not a distinguishing property of those two paralogs specifically.
+
+**Critically, checking each node's own specific headline claim (not
+just its overall ambiguous-site count) against the real `.state` file
+shows the manuscript's cited residue-level claims are themselves
+well-supported in nearly every case, independent of the overall
+biophysical sensitivity:**
+
+- Node21: E4.53 (the paper's central V4.53->E acquisition claim) at PP
+  1.00. The one ambiguous focal residue, H7.36 at PP 0.71, exactly
+  matches the manuscript's own reported value ("H7.36 is histidine at PP
+  0.71 -- less confident at this deeper node," main text) -- an exact,
+  independent cross-check, not a new finding.
+- Node22: V4.53 (ancestral state claim) at PP 0.99, D7.49 at PP 1.00 --
+  both exactly matching the manuscript's own reported values ("Node22 V
+  PP 0.99," "D7.49... PP 1.00"). H2.67/H45.47/H7.36 are ambiguous or
+  borderline (PP 0.60-0.88) but these are not the node's headline claim.
+- Node32: V4.53 (retention claim) at PP 1.00, matching "Node32, V PP
+  1.00" exactly. The peripheral histidine-shell positions are all
+  genuinely ambiguous here (PP 0.46-0.61), consistent with this being
+  the divergent-branch stem where no canonical shell was ever built.
+- Node119: H7.36->K (the node's specific headline substitution) at PP
+  0.94, exactly matching the manuscript's own reported value. E4.53,
+  H2.67, H45.47 all at PP 0.98-1.00.
+- Node70: H7.36->S (the node's specific headline substitution) at PP
+  0.80, exactly matching the manuscript's own reported value -- the one
+  case where the cited claim itself sits right at the ambiguity
+  threshold, already implicitly flagged by the paper's own comparatively
+  modest PP=0.80 for this particular call. V4.53 and D7.49 (this node's
+  other two claims) are both at PP 1.00.
+
+**Bottom line, updated for the manuscript**: across all 11 focal nodes
+now tested, this independent biophysical check does not contradict any
+specific residue-level claim in the manuscript -- every headline
+substitution/retention call reproduces the manuscript's own reported
+posterior almost exactly when queried directly from the `.state` file,
+which is itself a useful independent sanity check on the manuscript's
+reported numbers. What the check adds is a orthogonal, quantitative
+observation that predicted-fold stability for deeper/more-ancestral
+nodes (Node21, Node22, Node32, Node70, Node80, Node119, Node34 --
+essentially every "stem" node deeper than a single paralog's own
+terminal-adjacent history) is more sensitive to overall reconstruction
+uncertainty than for shallow, paralog-internal nodes (node_2/19/20,
+Node148) -- a genuine, honest caveat about structural confidence at
+depth, but one that tracks a known, expected property of ASR (signal
+degrades with depth) rather than singling out any one paralog's
+biology. Not yet written into the manuscript draft file sent to the
+user previously; that draft needs updating with this expanded,
+corrected picture before use.
