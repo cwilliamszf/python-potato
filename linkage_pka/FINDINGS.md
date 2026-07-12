@@ -3549,3 +3549,69 @@ asked for:**
 Figure sent to the user (`triad_coupling/fig3_positional_control.png`).
 Raw results in `triad_coupling/positional_results.json` (not yet copied
 into the repo; available in the session scratchpad).
+
+## Real GPR68 active/inactive full pH scan at fixed xi: GPCRdb download
+## blocked (network policy), but the already-uploaded real GPR68
+## structures were fixed and now fold cleanly, with real active-vs-
+## inactive coupling and 2D-landscape differences
+
+User asked for real GPCRdb active/inactive structures for GPR4, GPR65,
+GPR68, and GPR132, a fixed-xi pH scan on each, and coupling + 2D
+landscape plots. GPCRdb (`gpcrdb.org`) is blocked by the same
+organization egress policy that has blocked every external host this
+session -- confirmed directly via `curl` (403 on the CONNECT tunnel at
+the proxy level, not a paywall), not something to route around per the
+proxy's own diagnostic guidance. Per user's direct choice, proceeded
+with GPR68 only (its real active/inactive GPCRdb structures were
+already uploaded earlier this session) and left GPR4/65/132 for a
+follow-up once those files can be supplied directly (the working
+pattern used for every other real structure this session).
+
+**The real, full-length (365-residue) GPCRdb structures did not fold at
+all under this pipeline** (`folds_anywhere=False`, plateauing at ~79-82%
+fold fraction even at xi as stabilizing as -100 J/mol, far outside any
+physically plausible range) -- not a hydrogen-atom artifact (`load_structure`
+already filters H/D atoms explicitly; confirmed by testing the raw,
+unprepped upload directly, not just the earlier OpenMM-processed
+version, with the same result). The real cause: these are untruncated,
+full-length constructs including N-/C-termini and loop regions that
+never adopt secondary structure under this model, capping the
+achievable fold fraction regardless of xi -- exactly the reason every
+AlphaFold ancestral-node model this session has been truncated to the
+7TM core (author resnum 16-285) before use. **Applying that same
+truncation to the real GPR68 structures fixed it**: both active and
+inactive fold cleanly (69 blocks each, single sharp transition, active
+at -55.1 J/mol, inactive at -51.3 J/mol, pH 7).
+
+Ran the full pH scan (8.0-5.0, 0.5 steps) at each state's own fixed xi
+(transition - 3.0 J/mol, the matched-stability convention used
+throughout this session: active -58.1, inactive -54.3 J/mol), with
+`compute_coupling`, on the real, DSSP-blocked structures:
+
+| State | fixed xi (J/mol) | fold_frac (all pH) | fc: pH8 -> pH5 | mean\|coupling\|: pH8 -> pH5 (kJ/mol) |
+|---|---|---|---|---|
+| Active | -58.1 | 89.9% (stable across the whole range) | 21.9% -> 4.4% | 10.54 -> 10.18 |
+| Inactive | -54.3 | 97.1% (stable across the whole range) | 17.8% -> 14.8% | 6.09 -> 4.76 |
+
+**Two real, structural findings, not yet interpreted further:**
+(1) the active state shows substantially higher raw coupling than the
+inactive state across the *entire* pH range tested (~10.2-10.7 vs
+4.8-6.2 kJ/mol) -- a real, large active/inactive difference in this
+model's predicted cooperativity, independent of pH; (2) `fc` drops
+sharply toward acid in the active state (21.9%->4.4%, a >4x drop) while
+the inactive state's `fc` declines much more gently (17.8%->14.8%).
+Both states' *raw* mean coupling declines mildly toward acid (not a
+Z-score-denominator artifact by the same check used in the Node148
+audit -- raw and `fc` move in the same direction here). Whether this
+reflects real GPR68 activation-state-dependent proton sensing or is an
+artifact of comparing two different real structures each with their own
+independently-fit xi has not been investigated -- flagged as the
+natural next question, not answered here.
+
+Two comparison-grid figures sent to the user
+(`GPR68_active_comparison_grid.png`, `GPR68_inactive_comparison_grid.png`),
+each a 3-row x 7-column grid (3D free-energy landscape / residue folding
+probability / coupling matrix, one column per pH) built with the
+existing `plotting.plot_comparison_grid` -- reused directly, not
+reimplemented. GPR4/GPR65/GPR132 remain outstanding, blocked on
+structure availability (GPCRdb unreachable; awaiting direct upload).
