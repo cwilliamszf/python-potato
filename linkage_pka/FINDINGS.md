@@ -2258,3 +2258,75 @@ folding) identifies exactly two candidates in the entire 162-node tree
 worth folding next with real expectation of a trustworthy result --
 a far more targeted use of any future structure-prediction compute than
 picking nodes without this check.
+
+## Node2 and Node19 folded and evaluated: both fail too, and NOT as an
+## ASR artifact -- 5 of 6 nodes now fail, a broader pattern than hoped
+
+User supplied real AlphaFold Server output for the two recommended
+candidates (`fold_2026_07_11_21_40_node_2.zip`, `fold_2026_07_11_21_41_node_19.zip`
+-- full job packages: 5 ranked models + confidence JSONs + MSAs +
+templates, not just a bare structure). Picked each node's own top-ranked
+model by `ranking_score` (model_0 for both: 0.89 and 0.88 respectively,
+consistent with AlphaFold's own ranking convention), confirmed same
+323-residue/resnum-1-323 convention as the original four nodes, and
+truncated to the identical shared core (res 16-285) for direct
+comparability.
+
+**Result, run through the same `evaluate_node_trustworthiness` used for
+all prior nodes:**
+
+| Node | nblocks | WT fold | sensitivity delta | fold_ok | sensitivity_ok | trustworthy |
+|---|---|---|---|---|---|---|
+| node_19 (Node19) | 71 | **5.6%** | +0.0pp (14 ambiguous) | NO | yes | NO |
+| node_2 (Node2) | 71 | **57.7%** | +0.0pp (10 ambiguous) | NO | yes | NO |
+
+Both fail the fold-quality gate -- node_19 severely (5.6%, close to
+total collapse), node_2 less so (57.7%, still well short of the 85%
+bar). **Neither failure is an ASR-uncertainty artifact**: both show
+exactly 0.0 percentage points of sensitivity to their own ambiguous
+positions, the same "robust, but robustly wrong" signature node_80/34
+showed, not node_20's "artifact" signature. This is a real, different,
+important result: these two nodes were specifically selected *because*
+they combined the largest clade sizes in the tree with unusually high
+per-site reconstruction confidence (97.1%, 96.7% mean posterior) --
+exactly the profile that should have predicted success if reconstruction
+quality were the dominant factor. It wasn't. High sequence-level
+confidence did not translate into a foldable WSME cooperative landscape.
+
+**Checked whether Tm-mode xi calibration rescues either -- no.** Same
+`CalibrationError` failure mode as node_148 and the original 9BHM/GPR68
+active-state finding: no resolvable Cp(T) peak anywhere in the
+physically valid xi bracket, for both nodes. Recalibration is not the
+fix here either.
+
+**Updated full picture across all six evaluated nodes:**
+
+| Node | clade rank (of 161) | fold_ok | sensitivity_ok | trustworthy |
+|---|---|---|---|---|
+| Node2 | **1st** (162 tips) | NO | yes (diffuse) | NO |
+| Node19 | 2nd (145 tips) | NO | yes (diffuse) | NO |
+| node_20 (Node20) | 3rd (137 tips) | NO | **NO (artifact)** | NO |
+| node_80 (Node80) | 8th (40 tips) | NO | yes (diffuse) | NO |
+| node_34 (Node34) | 12th (37 tips) | NO | yes (diffuse) | NO |
+| node_148 (Node148) | 155th (2 tips) | **yes** | **yes** | **YES** |
+
+**5 of 6 nodes fail. The one success remains the least evolutionarily
+significant node tested.** This is a materially different, more
+sobering picture than "just pick high-confidence, load-bearing nodes"
+would have predicted -- the two nodes chosen specifically for that
+combination both failed, and did so in the "diffuse, not an ASR
+artifact" way that 3 of the other 4 failures also show. Only node_20's
+failure has been shown to trace substantially to reconstruction
+uncertainty; the other four failures (Node2, Node19, node_80, node_34)
+look like a broader, still-unexplained pattern -- possibly something
+about how this WSME pipeline (as currently parameterized, at the
+untouched default xi, with Tm-calibration separately unable to resolve
+an alternative) handles this specific GPR4-clade ancestral sequence
+family generally, not a per-node reconstruction-quality issue. This
+would need real investigation (e.g. checking whether ANY real, solved
+GPR4-clade extant structure folds properly under this same pipeline, as
+a control -- analogous to what the real 9BHM cryo-EM structure did for
+the GPR68 active-state question) before drawing further conclusions.
+Not yet done. The honest state of the evolutionary-cooperativity
+question remains: one usable node, now confirmed via six real
+data points spanning the tree, not four.
