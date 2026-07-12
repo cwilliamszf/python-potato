@@ -2417,3 +2417,52 @@ Not done in this entry -- flagging it as the necessary next step before
 drawing further conclusions from the six-node table, rather than
 quietly leaving that table standing as more authoritative than it now
 deserves to be treated.
+
+## The xi sweep ran across all 7 structures: EVERY node folds properly
+## somewhere in the physical range -- "5 of 6 fail" was a testing-
+## methodology artifact, not a property of any structure
+
+Ran `xi_fold_scan` (step=0.1 J/mol, range -70 to -38 J/mol -- fine
+sampling per direct instruction, given how sharp the 4XNV transition
+turned out to be) on all six ancestral nodes plus the real 4XNV control,
+in the background (~14 minutes total, ~110-170s/structure at this
+resolution).
+
+**Every single structure folds (>=97%) somewhere in the range, each
+with exactly one sharp transition:**
+
+| Structure | folds_anywhere | best fold frac | transition (J/mol) |
+|---|---|---|---|
+| node_20 | **True** | 98.6% | -49.6 / -49.5 |
+| node_148 | **True** | 97.3% | -43.4 / -43.3 |
+| node_80 | **True** | 97.2% | -51.0 / -50.9 |
+| node_34 | **True** | 98.6% | -55.3 / -55.2 |
+| node_19 | **True** | 98.6% | -48.8 / -48.7 |
+| node_2 | **True** | 98.6% | -48.3 / -48.2 |
+| gpcr14i (4XNV, real) | **True** | 98.7% | -48.0 / -47.9 |
+
+Every structure -- ancestral or real -- has exactly one sharp,
+well-defined transition (`n_transitions=1`), and every one of them DOES
+fold properly on the correctly-stabilizing side of its own transition.
+The transition points cluster in a fairly narrow, physically plausible
+band (-43 to -55 J/mol, squarely inside the paper's own real
+inter-receptor range). The single fixed default xi tested throughout
+this investigation (-48.2 J/mol, rhodopsin's own paper-calibrated
+value) happens to sit almost exactly in the middle of this natural
+transition band -- meaning whether any given structure landed on the
+"folds" or "collapses" side of that one specific reference point was
+essentially decided by which side of a narrow window its own transition
+happened to fall on, not by anything about reconstruction quality,
+evolutionary depth, or a GPR4-clade-specific pipeline problem.
+
+**This confirms the previous entry's hypothesis directly and
+comprehensively, across all 7 structures, not just 4XNV.** "5 of 6
+ancestral nodes fail to fold" was real as a *single-point-test* result
+but was never a valid answer to "can this structure fold" -- every
+single one can. The `fold_ok` gate as implemented in
+`evaluate_node_trustworthiness` (testing WSME fold fraction at one fixed
+xi) was measuring the wrong thing. It needs to be replaced with
+`xi_fold_scan`'s `folds_anywhere`, and the whole six-node trustworthiness
+table from the last three entries needs to be re-derived on that
+corrected basis before it can be trusted -- not done yet in this entry,
+next step.
