@@ -131,10 +131,11 @@ def test_run_asr_sensitivity_check_no_ambiguous_positions_is_trivially_robust():
     result = run_pipeline(CI2, ph=7.0)
     check = run_asr_sensitivity_check(
         result.structure, result.block_model, result.ss_mask, result.params, ambiguous_resnums=[],
+        xi_range_j_mol=(-100.0, -90.0), wt_step_j_mol=5.0,
     )
     assert check.sensitivity_ok is True
-    assert check.delta_frac == 0.0
-    assert check.mutant_fold_frac == check.wt_fold_frac
+    assert check.transition_shift_j_mol == 0.0
+    assert check.mutant_folds_anywhere == check.wt_folds_anywhere
     assert check.trustworthy == check.fold_ok
 
 
@@ -148,14 +149,14 @@ def test_run_asr_sensitivity_check_real_ci2_plumbing():
 
     check = run_asr_sensitivity_check(
         st, result.block_model, result.ss_mask, result.params, ambiguous_resnums=[candidates[0]],
+        xi_range_j_mol=(-100.0, -90.0), wt_step_j_mol=5.0, mutant_step_j_mol=5.0,
         node="TestNode", posterior_threshold=0.8,
     )
     assert check.node == "TestNode"
     assert check.posterior_threshold == 0.8
     assert check.nblocks == result.block_model.nblocks
-    assert 0.0 <= check.wt_fold_frac <= 1.0
-    assert 0.0 <= check.mutant_fold_frac <= 1.0
-    assert check.delta_frac == pytest.approx(check.mutant_fold_frac - check.wt_fold_frac)
+    assert isinstance(check.wt_folds_anywhere, (bool, np.bool_))
+    assert isinstance(check.mutant_folds_anywhere, (bool, np.bool_))
     assert check.trustworthy == (check.fold_ok and check.sensitivity_ok)
 
 
@@ -163,17 +164,24 @@ def test_asr_sensitivity_result_reason_messages():
     from wsme_gpcr.asr import AsrSensitivityResult
 
     trustworthy = AsrSensitivityResult(node="A", posterior_threshold=0.8, nblocks=10,
-                                        wt_fold_frac=0.9, fold_ok=True, sensitivity_ok=True, trustworthy=True)
+                                        fold_ok=True, sensitivity_ok=True, trustworthy=True)
     assert "trustworthy" in trustworthy.reason() and "not trustworthy" not in trustworthy.reason()
 
     unfolded = AsrSensitivityResult(node="B", posterior_threshold=0.8, nblocks=10,
-                                     wt_fold_frac=0.2, fold_ok=False, sensitivity_ok=True, trustworthy=False)
+                                     fold_ok=False, sensitivity_ok=True, trustworthy=False)
     assert "does not fold" in unfolded.reason()
 
-    artifact = AsrSensitivityResult(node="C", posterior_threshold=0.8, nblocks=10, ambiguous_resnums=[1, 2, 3],
-                                     wt_fold_frac=0.9, delta_frac=-0.4, fold_ok=True, sensitivity_ok=False,
-                                     trustworthy=False)
-    assert "reconstruction-uncertainty artifact" in artifact.reason()
+    artifact_abolished = AsrSensitivityResult(node="C", posterior_threshold=0.8, nblocks=10,
+                                               ambiguous_resnums=[1, 2, 3], fold_ok=True,
+                                               mutant_folds_anywhere=False, sensitivity_ok=False, trustworthy=False)
+    assert "abolishes folding" in artifact_abolished.reason()
+
+    artifact_shifted = AsrSensitivityResult(node="D", posterior_threshold=0.8, nblocks=10,
+                                             ambiguous_resnums=[1, 2, 3], fold_ok=True,
+                                             mutant_folds_anywhere=True, transition_shift_j_mol=-5.0,
+                                             sensitivity_ok=False, trustworthy=False)
+    assert "reconstruction-uncertainty artifact" in artifact_shifted.reason()
+    assert "-5.0 J/mol" in artifact_shifted.reason()
 
 
 def test_evaluate_node_trustworthiness_end_to_end_ci2():
@@ -185,7 +193,10 @@ def test_evaluate_node_trustworthiness_end_to_end_ci2():
         second_state=["A"] * 64,
         second_posterior=np.full(64, 0.3),
     )
-    result = evaluate_node_trustworthiness(str(CI2), node, use_dssp=False)
+    result = evaluate_node_trustworthiness(
+        str(CI2), node, use_dssp=False,
+        xi_range_j_mol=(-100.0, -90.0), wt_step_j_mol=5.0, mutant_step_j_mol=5.0,
+    )
     assert result.node == "TestNode"
-    assert isinstance(result.trustworthy, bool) or isinstance(result.trustworthy, np.bool_)
-    assert 0.0 <= result.wt_fold_frac <= 1.0
+    assert isinstance(result.trustworthy, (bool, np.bool_))
+    assert isinstance(result.wt_folds_anywhere, (bool, np.bool_))
