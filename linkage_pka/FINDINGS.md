@@ -2162,3 +2162,99 @@ AlphaFold structures for whichever additional nodes are worth folding
 (prioritized by this same two-gate method once a first-pass triage is
 possible, e.g. from sequence-level ASR confidence alone before spending
 compute on structure prediction).
+
+## Parsed the real tree topology: our one "trustworthy" node is actually
+## the least load-bearing one in the entire tree
+
+The `.iqtree` report's ML tree (`Tree in newick format:`, line 638) has
+internal node labels in `NodeN/SH-aLRT/UFBoot` format, matching the
+`.state` file's node names exactly and carrying real branch-support data
+(SH-aLRT and ultrafast-bootstrap, 1000 replicates). Parsed with
+`Bio.Phylo` (already a dependency): 164 tips, 162 internal nodes
+(161 parsed with support values; the root/trifurcation point has none),
+confirming this is the full tree the 4 supplied AlphaFold structures
+were drawn from, not a different/partial one.
+
+**Computed clade size (descendant tip count) for every internal node --
+the direct measure of how "load-bearing" it is** (how much of the
+tree's downstream diversity depends on this ancestor being correctly
+reconstructed) **-- and looked up where our four already-evaluated
+nodes rank:**
+
+| Node | n_tips (of 164) | rank by clade size (of 161) | SH-aLRT | UFBoot | trustworthy? (prior entry) |
+|---|---|---|---|---|---|
+| node_20 | 137 | **3rd** | 84.9 | 56 | NO -- ASR-artifact-driven collapse |
+| node_80 | 40 | **8th** | 99.8 | 100 | NO -- diffuse collapse |
+| node_34 | 37 | **12th** | 64.1 | 95 | NO -- diffuse collapse |
+| node_148 | 2 | **155th of 161** | 99.6 | 100 | YES |
+
+**This reframes the whole result.** node_148 -- the only node that
+passed both trustworthiness gates -- is the ancestor of just 2 closely
+related extant sequences, essentially a shallow, recent split barely
+distinguishable from an extant protein, not a deep ancestral
+reconstruction. The three nodes that actually matter for an
+evolutionary-cooperativity question -- node_20, node_80, node_34, which
+between them are ancestral to 137, 40, and 37 of the tree's 164 taxa --
+all failed. The "1 of 4 nodes usable" finding from the previous entry is
+real, but it does not yet say anything about deep ancestral cooperativity;
+it says something about a shallow, low-stakes node.
+
+**Cross-referenced clade size against per-site ASR confidence
+(`parse_iqtree_state_file`) for the top 20 nodes by clade size**, to
+identify which large/important clades are worth prioritizing for future
+AlphaFold folding:
+
+| Node | n_tips | SH-aLRT | UFBoot | mean posterior | frac sites <0.8 |
+|---|---|---|---|---|---|
+| Node2 (near-root) | 162 | 70.7 | 86 | **0.971** | **5.3%** |
+| Node19 | 145 | 83.3 | 58 | **0.967** | **7.1%** |
+| Node20 (have) | 137 | 84.9 | 56 | 0.942 | 10.5% |
+| Node21 | 136 | **100.0** | **100** | 0.779 | 41.8% |
+| Node79 | 78 | 65.2 | 97 | 0.787 | 39.9% |
+| Node22 | 58 | 99.8 | 100 | 0.750 | 45.2% |
+| Node32 | 48 | 98.9 | 100 | 0.741 | 44.9% |
+| Node80 (have) | 40 | 99.8 | 100 | 0.829 | 33.4% |
+| Node34 (have) | 37 | 64.1 | 95 | 0.821 | 34.4% |
+
+**A real, important, separate signal surfaced by this table: branch
+support and per-site reconstruction confidence measure two different
+things and can diverge sharply.** Node21 has *perfect* topological
+support (SH-aLRT=100, UFBoot=100 -- IQ-TREE is completely certain this
+clade is real) but 41.8% of its own reconstructed sites are ambiguous
+(mean posterior only 0.779) -- a well-supported branch point does not
+imply a confidently reconstructed ancestral sequence at that point.
+Several other large, "well-supported" nodes (22, 32, 79) show the same
+pattern (~40-45% ambiguous sites despite UFBoot>=97). Given node_20's
+own demonstrated failure mode (a small number of ambiguous sites, not
+even a large fraction, was enough to flip its fold outcome), nodes with
+40%+ ambiguous sites should be expected, on priors, to fail the
+sensitivity gate at least as often as node_20 did, if not more.
+
+**Selected load-bearing candidates for future folding, prioritized by
+the combination that predicts both scientific value and a real chance
+of passing both trustworthiness gates:**
+
+1. **Node2** -- the single best candidate: largest clade in the tree
+   (162/164 tips, essentially the root of the whole receptor family) AND
+   unusually high reconstruction confidence for a node this deep (97.1%
+   mean posterior, only 5.3% ambiguous sites) -- a real, rare
+   combination of maximal evolutionary importance and low expected
+   reconstruction-artifact risk.
+2. **Node19** -- second choice, same profile (145 tips, 96.7% mean
+   posterior, 7.1% ambiguous).
+3. Everything else in the top 20 by clade size shows a sharp confidence
+   drop (mean posterior 0.74-0.87, 25-45% ambiguous sites) -- these
+   remain scientifically important (they're the deep, large-clade nodes
+   an evolutionary-cooperativity story actually needs) but should be
+   treated as likely to need the full sensitivity-check workflow (and a
+   real chance of failing it) rather than assumed foldable-and-trustworthy.
+
+**No new structures were folded in this entry** -- Node2/Node19 are
+recommendations for what to prioritize if/when more AlphaFold folding is
+done, not new results. The concrete, actionable takeaway: of the four
+nodes actually tested, the three that matter evolutionarily all failed,
+and the sequence-only triage this entry performed (which needs no new
+folding) identifies exactly two candidates in the entire 162-node tree
+worth folding next with real expectation of a trustworthy result --
+a far more targeted use of any future structure-prediction compute than
+picking nodes without this check.
