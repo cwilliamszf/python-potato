@@ -48,6 +48,7 @@ import numpy as np
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from wsme_gpcr.calibration import (
+    CalibrationError,
     PAPER_TARGET_TM_K,
     PAPER_XI_MEAN_J_MOL,
     PAPER_XI_STD_J_MOL,
@@ -164,7 +165,14 @@ def main():
         if r.tag not in TIER2_TAGS:
             continue
         t2 = time.time()
-        res = tier2_check(r)
+        try:
+            res = tier2_check(r)
+        except CalibrationError as e:
+            print(f"[FAIL] {r.tag} ({r.pdb_id}): calibrate_xi_tm_mode raised CalibrationError -- "
+                  f"{e} (t={time.time()-t2:.1f}s)", flush=True)
+            tier2_results.append({"tag": r.tag, "pdb_id": r.pdb_id, "passed_vs_paper": False,
+                                   "fc_within_paper_range": False})
+            continue
         tier2_results.append(res)
         status = "PASS" if res["passed_vs_paper"] else "FAIL"
         print(f"[{status}] {res['tag']} ({res['pdb_id']}): paper ene={res['paper_ene_j_mol']:.2f} J/mol, "

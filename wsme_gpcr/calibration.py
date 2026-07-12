@@ -48,6 +48,7 @@ from __future__ import annotations
 import hashlib
 import json
 import subprocess
+import warnings
 from dataclasses import asdict, dataclass, field, replace
 from pathlib import Path
 
@@ -60,14 +61,25 @@ from .dsc import DSCResult, compute_dsc
 from .structure import Structure
 from .wsme import WSMEParams, WSMEResult, run_wsme
 
-# "Strongly coupled" threshold for fc (see compute_fc): 1 RT at the 310 K
-# reference condition (~2.58 kJ/mol) -- a natural thermal-energy scale.
-# The paper's own exact operational definition of "strongly coupled
-# residue" could not be independently verified (network access to the
-# paper is blocked in this sandbox, same as every external host tried
-# this session) -- this is a documented, defensible default, not a
-# verified transcription of the paper's threshold.
-DEFAULT_FC_THRESHOLD_KJ_MOL = 0.008314 * 310.0
+# "Strongly coupled residue" Z-score threshold for fc (see compute_fc).
+# This IS the paper's own verified definition (not a guessed proxy -- see
+# the module's PDF, Methods/Results: "residue-averaged coupling free
+# energies <DeltaGc> ... were Z-scored to account for intrinsic
+# differences in the range of coupling free energies, and residues that
+# exhibit a Z-score greater than one were labeled as strongly coupled").
+# Confirmed directly against the paper's own bundled per-receptor
+# DeltaGc_310 ground truth (53 receptors, GPCR-Landscapes reference
+# repo): this Z-score procedure reproduces the paper's reported 13.0 +/-
+# 4.5% almost exactly (13.29 +/- 4.27% measured), and DeltaGc_310 itself
+# was confirmed to be the row-mean (not row-max) of CouplingMat_310 (r
+# =0.9998 against a direct row-mean reconstruction) -- see FINDINGS.md's
+# "fc definition corrected" entry for the full derivation. This superseded
+# an earlier, incorrect implementation that thresholded raw |coupling
+# free energy| against a fixed absolute value (1 RT ~= 2.58 kJ/mol, a
+# defensible-sounding but wrong guess): that formulation saturated fc at
+# 92-100% on every real receptor tested, because it wasn't scale-
+# invariant per receptor the way the paper's own Z-score procedure is.
+DEFAULT_FC_Z_THRESHOLD = 1.0
 
 # Paper's reported effective mean +/- std, over 45 receptors, in J/mol.
 PAPER_XI_MEAN_J_MOL = -48.9
@@ -462,29 +474,47 @@ def calibrate_xi_isostability_mode(
 
 
 def compute_fc(coupling_result: CouplingResult, block_model: BlockModel,
-                threshold_kj_mol: float = DEFAULT_FC_THRESHOLD_KJ_MOL) -> float:
-    """Fraction of residues belonging to at least one "strongly coupled"
-    block pair -- the paper's fc, reported as 13.0 +/- 4.5% over 45
-    receptors (a fidelity-gate target, see the regression script this
-    feeds into, NOT independently re-derivable from first principles).
+                z_threshold: float = DEFAULT_FC_Z_THRESHOLD) -> float:
+    """Fraction of strongly coupled residues -- the paper's fc, reported
+    as 13.0 +/- 4.5% over 45 receptors, reproduced here via the paper's
+    own real procedure (not a guessed proxy; see
+    ``DEFAULT_FC_Z_THRESHOLD``'s docstring for the verification against
+    the paper's own bundled per-receptor ground truth):
 
-    A block pair (j, k) counts as strongly coupled if
-    ``|coupling_free_energy[j, k]| > threshold_kj_mol`` (default: 1 RT at
-    310 K, see ``DEFAULT_FC_THRESHOLD_KJ_MOL`` -- a documented choice,
-    not a verified transcription of the paper's own threshold). NaN
-    entries (``coupling_free_energy``'s own near-zero-probability masking,
-    see ``coupling.py``) never count as strongly coupled.
+    1. For each block, the row-mean of ``coupling_free_energy`` over all
+       its partner blocks (NaN partners excluded) -- the paper's
+       "residue-averaged coupling free energy" <DeltaGc>_i.
+    2. Z-score that per-block vector using ITS OWN mean/std (i.e.
+       relative to this one receptor's own coupling-magnitude scale, not
+       an absolute kJ/mol cutoff) -- this is what makes fc comparable
+       across receptors/structures of very different absolute coupling
+       scale, and is the step the pipeline's earlier absolute-threshold
+       implementation was missing entirely.
+    3. A block counts as strongly coupled if its Z-score exceeds
+       ``z_threshold`` (paper: > 1).
 
     fc is computed at RESIDUE granularity (matching the paper's "fraction
-    of ... residues"): every residue in a block that has at least one
-    qualifying partner block counts, weighted by that block's real
-    residue count (not 1 count per block), so blocks of different sizes
-    contribute proportionally.
+    of ... residues"): every residue in a strongly-coupled block counts,
+    weighted by that block's real residue count, so blocks of different
+    sizes contribute proportionally. A block whose row-mean is undefined
+    (every partner NaN) is excluded from both the Z-scoring population
+    and the coupled set -- it can neither pull the mean/std around nor
+    itself be counted, rather than silently coercing to Z=0 or NaN>threshold
+    (which is False either way, but excluding it from the population
+    keeps the Z-scores of every OTHER block meaningful).
     """
     cfe = coupling_result.coupling_free_energy
-    with np.errstate(invalid="ignore"):
-        strong = np.abs(cfe) > threshold_kj_mol  # NaN comparisons are False, correctly excluded
-    block_is_coupled = strong.any(axis=1)  # (nblocks,) -- has >=1 qualifying partner
+    with warnings.catch_warnings():
+        # a block whose every partner is NaN (fully masked-out coupling
+        # row) legitimately produces "mean of empty slice" -- handled
+        # explicitly below via `valid`, not a real problem to surface.
+        warnings.simplefilter("ignore", category=RuntimeWarning)
+        row_mean = np.nanmean(cfe, axis=1)
+    valid = np.isfinite(row_mean)
+    z = np.full(block_model.nblocks, np.nan)
+    if valid.sum() >= 2 and np.nanstd(row_mean[valid]) > 0:
+        z[valid] = (row_mean[valid] - row_mean[valid].mean()) / row_mean[valid].std()
+    block_is_coupled = z > z_threshold  # NaN comparisons are False, correctly excluded
 
     residues_per_block = np.bincount(block_model.block_of_residue, minlength=block_model.nblocks)
     n_coupled_residues = int(residues_per_block[block_is_coupled].sum())

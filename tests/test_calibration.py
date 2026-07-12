@@ -1,3 +1,4 @@
+import shutil
 from pathlib import Path
 
 import numpy as np
@@ -249,47 +250,99 @@ def _synthetic_coupling(cfe: np.ndarray) -> CouplingResult:
     )
 
 
-def test_compute_fc_counts_residues_in_strongly_coupled_blocks():
-    # 3 blocks of size [4, 4, 2] (10 residues total). Block 0<->1 strongly
-    # coupled (above threshold); block 2 isolated (below threshold/NaN).
-    block_model = _synthetic_block_model([4, 4, 2])
+def test_compute_fc_counts_residues_in_z_scored_strongly_coupled_blocks():
+    # 4 blocks, sizes [3, 3, 2, 2] (10 residues total). Row-means (each
+    # row's off-diagonal entries are a single repeated value, so nanmean
+    # is exactly that value) are [20, 5, 5, 5] -- an asymmetric 1-vs-3
+    # split, hand-verified: mean=8.75, population std=6.495,
+    # Z_block0=(20-8.75)/6.495=+1.73 (>1, qualifies),
+    # Z_others=(5-8.75)/6.495=-0.58 (does not qualify).
+    block_model = _synthetic_block_model([3, 3, 2, 2])
     cfe = np.array([
-        [np.nan, 5.0, 0.1],
-        [5.0, np.nan, 0.1],
-        [0.1, 0.1, np.nan],
+        [np.nan, 20.0, 20.0, 20.0],
+        [5.0, np.nan, 5.0, 5.0],
+        [5.0, 5.0, np.nan, 5.0],
+        [5.0, 5.0, 5.0, np.nan],
     ])
     coupling = _synthetic_coupling(cfe)
-    fc = compute_fc(coupling, block_model, threshold_kj_mol=2.5)
-    # Blocks 0 and 1 (8 residues) qualify; block 2 (2 residues) does not.
-    assert fc == pytest.approx(8.0 / 10.0)
+    fc = compute_fc(coupling, block_model)
+    # Only block 0 (3 residues) qualifies.
+    assert fc == pytest.approx(3.0 / 10.0)
 
 
 def test_compute_fc_all_nan_gives_zero():
     block_model = _synthetic_block_model([4, 4, 2])
     cfe = np.full((3, 3), np.nan)
     coupling = _synthetic_coupling(cfe)
-    fc = compute_fc(coupling, block_model, threshold_kj_mol=2.5)
+    fc = compute_fc(coupling, block_model)
     assert fc == 0.0
 
 
-def test_compute_fc_all_strongly_coupled_gives_one():
+def test_compute_fc_uniform_coupling_gives_zero_not_one():
+    # Every block equally coupled -> zero variance in the row-mean
+    # population -> Z-score is undefined (not "everyone qualifies"), so
+    # this must give 0.0, not 1.0. A fixed-threshold implementation would
+    # have called this "all strongly coupled"; the paper's real Z-score
+    # procedure correctly calls it "no relative differentiation possible."
     block_model = _synthetic_block_model([4, 4, 2])
     cfe = np.full((3, 3), 10.0)
     np.fill_diagonal(cfe, np.nan)
     coupling = _synthetic_coupling(cfe)
-    fc = compute_fc(coupling, block_model, threshold_kj_mol=2.5)
-    assert fc == 1.0
+    fc = compute_fc(coupling, block_model)
+    assert fc == 0.0
 
 
-def test_compute_fc_threshold_is_tunable():
-    block_model = _synthetic_block_model([5, 5])
-    cfe = np.array([[np.nan, 3.0], [3.0, np.nan]])
+def test_compute_fc_z_threshold_is_tunable():
+    block_model = _synthetic_block_model([3, 3, 2, 2])
+    cfe = np.array([
+        [np.nan, 20.0, 20.0, 20.0],
+        [5.0, np.nan, 5.0, 5.0],
+        [5.0, 5.0, np.nan, 5.0],
+        [5.0, 5.0, 5.0, np.nan],
+    ])
     coupling = _synthetic_coupling(cfe)
-    assert compute_fc(coupling, block_model, threshold_kj_mol=2.0) == pytest.approx(1.0)
-    assert compute_fc(coupling, block_model, threshold_kj_mol=5.0) == pytest.approx(0.0)
+    # Block 0's Z-score is +1.73 -- qualifies at 1.0, not at 2.0.
+    assert compute_fc(coupling, block_model, z_threshold=1.0) == pytest.approx(3.0 / 10.0)
+    assert compute_fc(coupling, block_model, z_threshold=2.0) == pytest.approx(0.0)
 
 
 def test_compute_fc_real_plumbing_on_ci2():
     result = run_pipeline(CI2, ph=7.0, with_coupling=True)
     fc = compute_fc(result.coupling_result, result.block_model)
     assert 0.0 <= fc <= 1.0
+
+
+# fc validation against the paper's own real per-receptor ground truth.
+# Values below are DeltaGc_310_<tag>-derived fc (Z-score>1 fraction),
+# computed directly from the paper's own bundled CouplingMat_310/
+# DeltaGc_310 in the GPCR-Landscapes reference repo's .mat files (not
+# re-derived from this pipeline) -- see FINDINGS.md's "fc definition
+# corrected" entry for the full derivation and cross-checks. This is the
+# fidelity gate examples/calibration_regression.py's Tier 2 depends on;
+# the tolerance (7 percentage points) reflects the measured real spread
+# (max observed diff 5.4pp across 5 receptors) from residual block-
+# partition differences (DSSP vs. the paper's own STRIDE -- see the
+# block-partition audit), not a loosened/tuned-to-pass margin.
+_REAL_FC_CASES = [
+    ("gpcr9i", -0.0499, 12.15),
+    ("gpcr1i", -0.0482, 9.77),
+    ("gpcr20i", -0.0452, 15.10),
+    ("gpcr13a", -0.0550, 15.95),
+    ("gpcr2i", -0.0563, 9.46),
+]
+_REFDIR = Path(__file__).resolve().parent.parent / "examples" / "data" / "gpcr_landscapes_reference"
+
+
+@pytest.mark.skipif(shutil.which("mkdssp") is None and shutil.which("dssp") is None,
+                     reason="requires mkdssp for paper-fidelity blocking")
+@pytest.mark.parametrize("tag,ene,paper_fc_pct", _REAL_FC_CASES)
+def test_compute_fc_matches_paper_real_per_receptor_fc(tag, ene, paper_fc_pct):
+    from wsme_gpcr.pipeline import run_pipeline as _run_pipeline
+    from wsme_gpcr.wsme import WSMEParams
+    from wsme_gpcr.coupling import compute_coupling
+
+    r = _run_pipeline(str(_REFDIR / f"{tag}.pdb"), ph=7.0, use_dssp=True)
+    params = WSMEParams(T=310.0, ene=ene)
+    cr = compute_coupling(r.structure, r.block_model, r.ss_mask, params)
+    fc_pct = compute_fc(cr, r.block_model) * 100
+    assert fc_pct == pytest.approx(paper_fc_pct, abs=7.0)

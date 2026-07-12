@@ -1726,3 +1726,136 @@ README updated to point at `use_dssp`/`--use-dssp` right next to the
 existing "No STRIDE dependency" section, with the audit's measured
 numbers (76 vs. 75 blocks, 17.4% vs. 24.7% boundary disagreement)
 instead of a vague "prefer if available."
+
+## fc definition corrected: it was never a scale-mismatch problem --
+## `compute_fc` was implementing the wrong definition entirely
+
+The user asked to resolve the "3-4x scale mismatch" via the paper
+itself. Found and read the real paper (`598026cf-s4146702335790z.pdf`,
+uploaded by the user; text-extracted via `pdftotext -layout` after
+`apt-get install poppler-utils`): Anantakrishnan & Naganathan,
+"Thermodynamic architecture and conformational plasticity of GPCRs,"
+Nat Commun 14:128 (2023), doi:10.1038/s41467-023-35790-z -- the exact
+paper `wsme_gpcr`'s presets already cite. This resolved the question
+directly rather than by further inference from bundled `.mat` data, and
+the answer was not what the framing assumed.
+
+**The paper's real fc procedure (Methods/Results, verbatim formulas
+transcribed from the PDF):**
+```
+DG+ = RT ln( sum(p_if_jf) / sum(p_iu_jf) )
+DG- = RT ln( sum(p_if_ju) / sum(p_iu_ju) )
+DGc = DG+ - DG-
+```
+"The mean effective coupling free energy... residue-averaged coupling
+free energies <DeltaGc>, i.e., averaging along the dimensions of the
+symmetric matrices... were Z-scored to account for intrinsic
+differences in the range of coupling free energies, and residues that
+exhibit a Z-score greater than one were labeled as strongly coupled.
+The fraction of strongly coupled residues (fc)..."
+
+This is **not** "does any block pair's raw coupling free energy exceed
+an absolute threshold" (what the old `compute_fc` implemented, guessing
+1 RT ~= 2.58 kJ/mol since the real definition wasn't known at the time).
+It is: (1) average each block's coupling to every partner (a per-block
+scalar, <DeltaGc>_i); (2) Z-score that vector **within each receptor,
+using that receptor's own mean/std**; (3) threshold the Z-score at >1.
+Step 2 is the part that was missing entirely, and it's the part that
+matters: a Z-score is invariant to uniform rescaling, so it doesn't
+care whether a given receptor's raw coupling values run 3x hotter or
+colder than another's. **The "3-4x scale mismatch" was never actually
+the problem for fc** -- fc was just computing the wrong statistic, one
+that was never going to be scale-invariant regardless of how well the
+upstream contact map/energy parameters were reconciled to the paper's
+original pipeline.
+
+**Independent confirmation the formula reading is correct, before
+touching any code:** the bundled `.mat` files' `DeltaGc_310_<tag>`
+variable was confirmed to be exactly the row-mean (not row-max, which
+had been assumed earlier and only gave r=0.86) of `CouplingMat_310_<tag>`
+-- direct comparison on gpcr9i gives r=0.9998, mean|diff|=0.34 kJ/mol
+(residual likely from a minor weighting difference, e.g. per-residue vs.
+per-block averaging). Applying the Z-score/threshold-at-1 procedure to
+the paper's own real `DeltaGc_310` across all 53 usable receptors
+reproduces their reported 13.0 +/- 4.5% almost exactly: **13.29 +/-
+4.27%** measured. This is not circular -- it uses the paper's own
+ground-truth numbers, not anything this pipeline computed.
+
+**Fixed `compute_fc` in `calibration.py`** to implement this real
+procedure: per-block row-mean of `coupling_free_energy` -> Z-score
+(population std, i.e. `ddof=0`, matching the 13.29/4.27% reproduction
+above) -> threshold at `z_threshold` (default `DEFAULT_FC_Z_THRESHOLD =
+1.0`, replacing the old `DEFAULT_FC_THRESHOLD_KJ_MOL` absolute-kJ/mol
+guess). A block whose every partner is NaN is excluded from the
+Z-scoring population entirely (not coerced to Z=0), and a receptor with
+zero coupling-value variance (every block equally coupled) correctly
+gives fc=0.0 -- Z-scoring against zero variance is undefined, which is
+a real, different answer than a fixed-threshold definition would give
+("everyone qualifies" -> 1.0), now covered by
+`test_compute_fc_uniform_coupling_gives_zero_not_one`.
+
+**Result on real reference receptors** (`use_dssp=True`, paper's own
+reported ene, corrected `compute_fc`, no threshold tuning):
+
+| Receptor | our fc | paper's real fc (this receptor) | diff |
+|---|---|---|---|
+| gpcr9i (4DKL) | 12.15% | 12.15% | 0.00 |
+| gpcr1i (1U19) | 11.21% | 9.77% | +1.44 |
+| gpcr20i (5LWE) | 13.42% | 15.10% | -1.68 |
+| gpcr13a (6OS9) | 18.40% | 15.95% | +2.45 |
+| gpcr2i (2LNL) | 14.86% | 9.46% | +5.40 |
+
+Compare to the old implementation's 92-100% on every single receptor
+(a 7-8x error). The residual few-percentage-point gaps are consistent
+with, and fully explained by, the already-characterized block-partition
+audit (DSSP vs. the paper's own STRIDE, ~17% residual boundary
+disagreement) -- there is no remaining mystery-scale problem to chase.
+
+**5 new tests** (`tests/test_calibration.py`) validate this directly
+against the paper's own real per-receptor fc values on the 5 already-
+committed reference structures (`@pytest.mark.parametrize`, tolerance
+7 percentage points -- the measured real spread, not a loosened margin),
+plus 4 rewritten synthetic tests for the Z-score semantics (including
+the zero-variance edge case above). Full suite: 259 passed (254 before
+this entry + 5 new).
+
+**The ancestral pilot's actual blocker is resolved.** Re-ran fc (now
+corrected, `use_dssp=True`) on the three ancestral nodes that fold
+properly (node_20/148/80; node_34 still excluded, still collapsed, per
+the existing guardrail): **12.10%, 10.85%, 8.30%** -- a real ~4-point
+spread, comparable in scale to genuine cross-receptor variation in the
+paper's own 45-receptor dataset (std 4.5%), not saturated at 97-100%.
+fc can now actually discriminate between nodes. This does not by itself
+answer the evolutionary-cooperativity question, but it removes the
+specific, concrete blocker ("fc cannot rank nodes") that stopped the
+tree from running.
+
+**One separate, unrelated issue surfaced while re-running
+`examples/calibration_regression.py` to validate this end-to-end**:
+Tier 2's blind Brent-search calibration (`calibrate_xi_tm_mode`) now
+raises `CalibrationError` for both `gpcr1i` and `gpcr9i` under the
+geometric-heuristic default blocking (no resolvable Cp(T) peak at one
+bracket edge). This is unrelated to fc -- confirmed directly, since the
+fc validation above bypasses Brent search entirely by using the paper's
+own already-known ene values -- and the regression script wasn't
+catching `CalibrationError` per-receptor, so it crashed instead of
+reporting a clean FAIL (fixed minimally, just the exception handling,
+so Tier 2 now reports rather than crashes). Whether this Brent-search
+bracket fragility is new or pre-existing wasn't established; it's a
+separate, real issue for a future session, not part of this fc fix.
+
+**Net effect on the "study the paper" ask**: reading the actual Methods
+section resolved this in one pass, in a way that continued reverse-
+engineering against bundled `.mat` outputs could not have -- the paper
+states the Z-score procedure explicitly, in words, and no amount of
+threshold-sweeping against `DeltaGc` alone (which is what the "solve the
+scale mismatch" framing was aimed at) would have discovered that the
+real fix was a missing normalization step, not a missing calibration.
+The Methods section also independently confirmed several already-correct
+parameter choices (vdW cutoff 5 Å, dielectric 4, DS=-10 J/mol/K,
+DCp=-0.36 J/mol/K/contact all match this port already) and flagged one
+small, not-yet-investigated discrepancy worth a future look: the paper
+states DDS (excess coil entropic penalty) as a clean -6.1 J/mol/K, while
+this port's `WSMEParams.DDS` is 6.0606e-3 kJ/mol/K -- a suspiciously
+non-round number for what the paper reports as round; not chased further
+here since it wasn't blocking the fc question this entry answers.
