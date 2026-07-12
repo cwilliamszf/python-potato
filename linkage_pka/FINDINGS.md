@@ -3401,3 +3401,151 @@ here rather than smoothed over, per this session's standing practice.
   lineage-restricted M-vs-P gap) survives contact with the real
   224-condition run -- a negative result, reported plainly rather than
   reshaped to fit the predicted pattern.
+
+## Positional control (sensors vs non-sensors), per user spec -- and a
+## real data-integrity discovery that cut the usable sample from 8 nodes
+## to 5 before any biology could be interpreted
+
+User specified a corrected design fixing two problems in the prior run:
+(1) compare the *same structural positions* (pos2.50/pos4.53/pos7.49)
+across receptors regardless of which residue occupies them, rather than
+excluding absent triad members (which had made the divergent lineage's
+statistic an uncontrolled 2-residue-vs-3-residue comparison), and (2)
+report explicitly, per position, whether the residue present is even a
+charged type and whether it can titrate across pH 8-5 -- the mechanistic
+basis for predicted flatness in non-sensors.
+
+**Before any of that could be trusted, a systematic verification step
+(comparing the `.state` file's predicted residue identity against the
+*actual* residue in each folded structure, position by position, for
+every one of the 13 nodes used so far this session) surfaced a real
+problem**: 10 of 13 nodes match perfectly (100%: Node2, Node19, Node20,
+Node148, Node34, Node119, Node21, Node32, Node30, Node24), but three do
+not match at all -- Node80 (53%), Node70 (10%), Node22 (55%). This is
+not a simple indexing bug: shifting the resnum frame by up to +/-3 does
+not recover ~100% for any of the three (best fits 53-67%), and checking
+whether each structure's real sequence matches some *other* labeled
+node in the `.state` file (in case of a simple mislabeling) also tops
+out at 74-87%, never ~100%. The most likely explanation is that these
+three AlphaFold structures were folded from an earlier or different ASR
+run than the final `.iqtree`/`.state` file now in use -- IQ-TREE
+internal node numbers are not stable identifiers across separate runs.
+User was asked directly whether an older/matching state file was
+available; the file re-supplied was byte-identical to the one already
+in use, so the discrepancy is not explained by a stale copy on this
+session's end and was not otherwise resolved. **Per direct user
+instruction, proceeded with the 10 verified-clean nodes and excluded
+Node80, Node70, and Node22 from every BW-position claim from this point
+forward** -- their raw fold/coupling numbers as biophysical facts about
+those specific (real) structures are not in question, but which residue
+sits at which position in them is not trustworthy and should not be
+cited from any of this session's earlier entries either.
+
+This leaves, from the original spec's 8-node scope, **5 verified,
+usable nodes**: sensor lineage Node21 (canonical stem), Node20 (GPR4
+stem), Node119 (GPR65 stem); non-sensor lineage Node32 (divergent
+stem), Node34 (GPR132 stem). (Node70/GPR184 stem was the third
+non-sensor node in the original design and is now excluded.) Real
+extant GPR4/GPR65/GPR132/GPR184 structures and Node62 were confirmed
+not locally available (not fabricated); real GPR68
+(`gpr68_prep/inactive_prepped.pdb`) was attempted but excluded on a
+separate, independent basis -- it does not fold anywhere in the tested
+xi range under this pipeline's default DSSP-based protocol
+(`folds_anywhere=False, n_transitions=0`), most likely because that
+file was prepped (explicit hydrogens, OpenMM/pdbfixer output) for the
+separate PB-based `linkage_pka` pipeline, not this one -- not
+investigated further, reported as excluded rather than forced to run.
+
+**Position-identity and titration table (Model M), the mechanistic
+core of this run:**
+
+| Node | pos2.50 | pos4.53 | pos7.49 |
+|---|---|---|---|
+| Node21 (sensor) | ASP, charged, does not titrate 8->5 | GLU, charged, **titrates 8->5** | ASP, charged, does not titrate 8->5 |
+| Node20 (sensor) | ASP, charged, does not titrate 8->5 | GLU, charged, **titrates 8->5** | ASP, charged, does not titrate 8->5 |
+| Node119 (sensor) | ASP, charged, does not titrate 8->5 | GLU, charged, **titrates 8->5** | ASP, charged, does not titrate 8->5 |
+| Node32 (non-sensor) | ASP, charged, does not titrate 8->5 | VAL, not a charged type | ASP, charged, does not titrate 8->5 |
+| Node34 (non-sensor) | ASP, charged, does not titrate 8->5 | VAL, not a charged type | ASP, charged, does not titrate 8->5 |
+
+Under Model M, pos2.50 and pos7.49 are Asp in every node (sensor and
+non-sensor alike) and *neither titrates* across pH 8-5 (Asp's model pKa
+3.9 is too far below the window; consistent with the earlier Node148
+mechanistic audit). Only pos4.53 differs by lineage -- Glu (titrates,
+barely, model pKa 4.1) in sensors, Val (cannot titrate at all, no
+charge to begin with) in non-sensors. **This is the one position where
+Model M predicts a real, mechanistically legible sensor/non-sensor
+difference, and it is exactly the position ASR places E4.53's
+acquisition on (Node21).**
+
+Under Model P (PROPKA), the picture is different and more nuanced:
+pos2.50 titrates in *every* node checked, sensor and non-sensor alike
+(pKa 6.5-7.3 -- present and buried in all of them, since D2.50 is
+conserved family-wide, not sensor-specific). pos7.49's PROPKA pKa
+(9.1-10.0) is now so far *above* the 8-5 window that it fails the
+titration flag in every node (already near-fully protonated even at pH
+8) -- the same "already protonated at the top of the window" pattern
+seen for real GPR68 and Node80 earlier this session. pos4.53 remains
+the clear discriminator: titrates in every sensor node (PROPKA pKa
+6.7-6.8) and cannot be scored at all in non-sensors (Val isn't a
+titratable group PROPKA scores). **Under both models, pos4.53/Glu-vs-Val
+is the only position that mechanistically distinguishes sensors from
+non-sensors -- exactly matching the ASR-based, DIVERGE-based, and
+manuscript-based account already established independently this
+session, now corroborated a fourth way.**
+
+**Positional coupling and pH-slope, with the sign-flip gate applied
+(full 140-condition grid, 5 nodes x 2 models x 2 xi x 7 pH, all reused
+from the already-completed 224-condition run -- no data was regenerated
+for the 3 excluded nodes' worth):**
+
+| Node | Lineage | M slope (xi-3, xi-5) | M gate | P slope (xi-3, xi-5) | P gate |
+|---|---|---|---|---|---|
+| Node21 | sensor | +0.50, +0.93 | consistent | +0.54, -0.05 | **FLIP -- noise-limited** |
+| Node20 | sensor | +0.35, +0.15 | consistent | +0.02, -0.01 | **FLIP -- noise-limited (~0 magnitude)** |
+| Node119 | sensor | +1.21, +0.37 | consistent | +0.50, +0.16 | consistent |
+| Node32 | non-sensor | -1.44, -1.00 | consistent | -2.45, -0.69 | consistent |
+| Node34 | non-sensor | +0.01, +0.08 | consistent (weak, r2 0.03/0.82 split) | -0.39, +0.11 | **FLIP -- noise-limited** |
+
+Applying the gate strictly leaves only Node119 (sensor) and Node32
+(non-sensor) with a usable slope under *both* models. They point in
+opposite directions (Node119 positive under both M and P; Node32
+negative and, under P, larger in magnitude than under M) -- consistent
+with, but nowhere near powered to establish, a sensor/non-sensor
+contrast at n=1 usable node per group. **This run cannot conclude a
+statistically meaningful pH-slope difference between sensors and
+non-sensors** -- 3 of 5 nodes are noise-limited under Model P alone,
+which is itself informative (Model P's own predictions are less stable
+across the two xi offsets than Model M's, at this node count), but does
+not support a clean positive or negative verdict on Question 2 at this
+sample size. Positional percentile-vs-null remains at or near the floor
+in most conditions here too (same open methodological caveat as the
+prior entry -- not re-litigated, not resolved). Shell-reference
+percentiles are mixed (Node119 and Node32 both ~100th percentile,
+Node21 and Node20 much lower, Node34 has no scoreable shell histidines
+at all) -- no clean "shell is always the active channel" pattern either,
+reported plainly rather than cherry-picked.
+
+**What this run actually establishes, stated at the same scope the user
+asked for:**
+- CAN conclude: the positional design fix (include-by-location, not
+  include-by-identity) is implemented, tested, and produces a
+  mechanistically transparent identity/titration table -- pos4.53
+  (Glu-vs-Val) is the only position that distinguishes sensor from
+  non-sensor lineages under either charge model, matching this
+  session's independent ASR/DIVERGE/manuscript-based account of where
+  the canonical module was assembled.
+- CANNOT conclude: that this translates into a statistically
+  distinguishable pH-linked coupling signal between sensors and
+  non-sensors -- the verified-clean sample (n=3 sensor, n=2 non-sensor,
+  and only 1 of each survives the noise gate under Model P) is too
+  small, and this run does not manufacture significance it doesn't
+  have.
+- The data-integrity finding (3 of 13 nodes structurally mismatched to
+  the `.state` file) is arguably the most important, durable result of
+  this entry -- it is a real, generalizable caveat on every BW-position
+  claim made about Node80/Node70/Node22 anywhere in this session's
+  prior entries, not just in this run.
+
+Figure sent to the user (`triad_coupling/fig3_positional_control.png`).
+Raw results in `triad_coupling/positional_results.json` (not yet copied
+into the repo; available in the session scratchpad).
