@@ -2750,3 +2750,51 @@ degrades with depth) rather than singling out any one paralog's
 biology. Not yet written into the manuscript draft file sent to the
 user previously; that draft needs updating with this expanded,
 corrected picture before use.
+
+## Final two Figure 4 focal nodes tested (Node30, Node24) -- both
+## cyclostome trajectories -- complete the full 13-node set and give the
+## cleanest independent corroboration yet of a claim already in the
+## manuscript's own Limitations section
+
+User supplied the last two remaining Figure 4 focal nodes: Node30 (the
+basal *Petromyzon marinus* trio MRCA, 3 leaves) and Node24 (the
+long-branch hagfish-inclusive cyclostome cluster MRCA, 4 leaves). Same
+truncation (author resnum 16-285) and same fine `xi_fold_scan` +
+`run_asr_sensitivity_check` pipeline as every other node.
+
+Node30 passes robustly: only 5 ambiguous sites (PP<0.8), transition
+shift -1.25 J/mol, well inside tolerance. Node24 fails: 94 ambiguous
+sites, transition shift -5.65 J/mol. This is not a new observation --
+**it is an exact, independently-derived reproduction of a distinction
+the manuscript's own Limitations section already draws in words**:
+"The basal *P. marinus* trio is much more robust to long-branch
+effects... The long-branch [cyclostome] cluster... is vulnerable to
+long-branch attraction artifacts." Our biophysical sensitivity check,
+built with zero reference to that text, reproduces the same qualitative
+split quantitatively, from a completely different data source (folded
+AlphaFold structures + a statistical mechanical model) than the
+phylogenetic long-branch-attraction reasoning the manuscript's own
+claim rests on.
+
+Checked focal BW-position posteriors directly against the `.state` file
+as with every other node -- again, exact matches to the manuscript's own
+reported values: Node30's H2.67->E (PP 1.00) and H7.36->S (PP 1.00)
+reproduce "H2.67 is replaced by E (PP 1.00)... H7.36 by S (PP 1.00)"
+verbatim; Node24's V4.53 (PP 0.96), H7.36->R (PP 0.86), and D7.49 (PP
+1.00) reproduce "V4.53 state... PP 0.96," "Node24 R PP 0.86," and
+"D7.49 is retained at PP 1.00" verbatim. (Node30's H45.47 site is a
+majority-gap alignment column at this node -- state "-", PP 0.08 --
+correctly flagged ambiguous by the 0.8 threshold, but reflecting a real
+gap/indel rather than reconstruction noise at a present residue.)
+
+**All 13 of the manuscript's Figure 3/4 focal nodes are now tested.**
+Updated correlation between n_ambiguous and |transition shift| across
+all 13: Pearson r = 0.82, Spearman rho = 0.88 (p = 8e-5). The pattern
+holds: Node30 (5 ambiguous, robust) sits at the low-uncertainty end
+alongside node_2/19/20 and Node148; Node24 (94 ambiguous, not robust)
+sits with the other deep/long-branch nodes. This is now a complete,
+internally consistent, cross-validated (against the manuscript's own
+reported posteriors in every single case checked) supplementary
+robustness analysis ready for the manuscript. Manuscript draft file
+needs one more update to add these final two rows and the refreshed
+correlation statistic; not yet done in this entry.
