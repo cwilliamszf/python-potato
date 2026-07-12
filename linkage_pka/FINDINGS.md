@@ -2798,3 +2798,109 @@ reported posteriors in every single case checked) supplementary
 robustness analysis ready for the manuscript. Manuscript draft file
 needs one more update to add these final two rows and the refreshed
 correlation statistic; not yet done in this entry.
+
+## pH scan across all 13 focal nodes: every structure remains foldable
+## from pH 8 to pH 5, the fold-stability transition shifts modestly
+## toward less-negative xi at low pH in most nodes, but node-to-node
+## fc/coupling changes are small and mostly within block-count
+## quantization noise -- no clean uniform "cooperativity increases under
+## acid" signal, a few individual nodes stand out
+
+User asked whether folding/cooperativity changes under acidic conditions
+across the 13 ancestral nodes, per direct instruction to "run the
+revised pH scan on each of these nodes." Per the user's explicit choices
+(all 13 nodes; pH = 8.0, 7.5, 7.0, 6.5, 6.0, 5.5, 5.0; full
+`xi_fold_scan` re-run at every pH rather than a fixed xi), built and ran
+`ph_scan/run_ph_scan.py`: for each of 13 nodes x 7 pH values (91
+conditions), ran `run_pipeline(path, ph=ph, use_dssp=True)` (DSSP
+blocking end-to-end, confirmed directly in the script and re-confirmed
+to the user on request), then a full `xi_fold_scan` (range -70 to -38
+J/mol, step 0.2 J/mol -- coarser than the 0.1 step used for the pH-7
+baseline scans, a deliberate tradeoff to keep a 91-condition full-rescan
+batch tractable in ~82 minutes rather than ~4x longer) to locate that
+pH's fold/unfold transition, then `compute_coupling`/`compute_fc` at
+`transition_xi - 3.0 J/mol` (the same matched-stability convention used
+in the earlier cross-node fc comparison). Ran to completion in the
+background, 4922.6s (~82 min) total.
+
+**Every one of the 91 conditions folds properly (`folds_anywhere=True`,
+exactly one clean transition each)** -- no node collapses anywhere in
+the pH 8-5 range at its own appropriately-located xi. This is itself a
+real result: physiological-to-moderately-acidic pH does not destabilize
+any of these reconstructed folds outright.
+
+**Fold-transition location (stability) shifts modestly toward
+less-negative xi as pH drops, in most but not all nodes** -- i.e. less
+intrinsic (vdW/hydrophobic) stabilization is needed to fold at low pH,
+consistent with net-stabilizing electrostatic contributions from
+protonation as the qualitative direction expected for a proton sensor.
+7 of 13 nodes shift positive (less-negative) from pH 8 to pH 5 (Node2
++1.6, Node19 +2.0, Node20 +1.8, Node34 +0.2, Node80 +3.0, Node21 +1.6,
+Node70 +2.0 J/mol); 3 shift negative (Node148 -1.6, Node32 -1.4, Node30
+-1.0); 2 are exactly flat (Node119, Node24); one is nearly flat (Node22
+-0.2). Mean shift across all 13 is +0.6 J/mol -- directionally
+consistent with the expected mechanism but modest relative to the 2.76
+J/mol tolerance used as the "real" scale elsewhere in this
+investigation, and not something to overstate from a single run per
+condition with no replicate/bootstrap error bars.
+
+**fc (Z-scored coupling) vs. pH is noisier and does not show a clean,
+uniform increase toward acid across all nodes** -- deltas from pH 8 to
+pH 5 range from -4.07 to +4.44 percentage points, roughly split between
+increasing and decreasing nodes:
+
+| Node | fc @ pH8 | fc @ pH5 | delta pH8->pH5 | Direction |
+|---|---|---|---|---|
+| Node2 | 18.15% | 20.00% | +1.85pp | up |
+| Node19 | 16.30% | 16.30% | +0.00pp | flat |
+| Node20 (GPR4 stem) | 18.15% | 21.11% | +2.96pp | up, cleanest monotonic-ish rise (peaks 23.0% at pH6) |
+| Node148 (anuran GPR65) | 8.15% | 7.78% | -0.37pp | flat |
+| Node34 (GPR132 stem) | 18.52% | 18.15% | -0.37pp | flat |
+| Node80 (GPR68 stem) | 18.89% | 16.30% | -2.59pp | down |
+| Node119 (GPR65 stem) | 18.52% | 15.19% | -3.33pp | down |
+| Node21 (canonical stem) | 23.33% | 19.26% | -4.07pp | down, largest single move |
+| Node70 (GPR184 stem) | 12.22% | 16.67% | +4.44pp | up |
+| Node32 (divergent stem) | 17.41% | 21.85% | +4.44pp | up |
+| Node22 (family stem) | 11.48% | 13.70% | +2.22pp | up |
+| Node30 (basal cyclostome) | 19.26% | 20.74% | +1.48pp | up |
+| Node24 (long-branch cyclostome) | 18.15% | 18.15% | +0.00pp | perfectly flat across all 7 pH values |
+
+**An important caveat this analysis surfaced**: `fc` is a discrete
+residue-count-over-nblocks ratio on a ~70-71-block system, so its
+natural quantization step is ~1.4 percentage points per single block
+flipping in/out of the Z>1 threshold. Most of the deltas above (roughly
++/-0.4 to +/-3pp) are only 1-2 quantization steps, i.e. not clearly
+distinguishable from single-block-membership noise given a single WSME
+run per condition with no replicate averaging. The two largest moves
+(Node21 -4.07pp, Node70/Node32 +4.44pp each) are the ones most likely to
+reflect a real signal rather than quantization noise, but this has not
+been confirmed with replicates or a denser pH grid.
+
+**Interesting dissociation worth flagging, not yet explained**: Node80
+(GPR68 stem) shows the largest positive fold-stability shift (+3.0
+J/mol, i.e. becomes easier to fold at low pH) but its fc simultaneously
+*decreases* (-2.59pp) over the same pH range -- stability and
+cooperativity are not moving together at this node, contrary to a naive
+"more stable at low pH -> more cooperative at low pH" expectation. Not
+investigated further in this entry.
+
+**Bottom line for the user's original question**: no clean, uniform
+"cooperativity increases under acid conditions" signal emerges across
+all 13 nodes from this single-pass scan -- some individual nodes show
+directionally consistent, plausibly real increases (Node20, Node70,
+Node32, Node22), some show decreases (Node21, Node80, Node119), and
+several are flat within noise (Node19, Node148, Node34, Node30, Node24
+-- Node24 is suspiciously exactly flat across all 7 pH values, worth a
+sanity check on whether its titratable-residue network is actually
+responding to the pH-dependent electrostatics term at all). The
+fold-stability-transition signal (xi shift) is more consistent in
+direction (7 of 13 positive, mean +0.6 J/mol) than the fc/coupling
+signal, suggesting pH's clearest effect in this data is on overall fold
+stability rather than on the specific block-coupling network fc is
+designed to measure -- though neither effect is large relative to this
+analysis's own noise floor. Raw per-pH-per-node results are in
+`ph_scan/results.json`; not yet plotted or subjected to any
+statistical test beyond the deltas reported here. Next steps not yet
+taken: a denser pH grid or replicate runs to separate real trend from
+quantization noise, and checking why Node24's electrostatics appear pH-
+insensitive.
