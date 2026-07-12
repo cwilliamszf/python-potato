@@ -2020,3 +2020,71 @@ core-region ambiguous sites (or node_80/34's 71/75) measurably shifts
 the WSME fold outcome -- a real, if partial, robustness signal,
 achievable with tools already in this repo. Not built yet, pending
 direction.
+
+## Point-mutation sensitivity proxy: built and run -- node_20's collapse
+## is substantially an ASR-uncertainty artifact; node_148's success is
+## robust to it
+
+Built the proposed proxy: for each node, every ambiguous core-region
+site (`.state` MAP posterior <0.8, ALA/GLY/PRO excluded per the existing
+`EXCLUDED_FROM_SCAN` convention) is truncated to alanine
+*simultaneously* (reusing `alanine_scan.py`'s `alanine_exclude_mask` +
+`compute_contact_map(exclude_atoms=...)` + `build_blocks`, unmodified),
+and the resulting WSME landscape's fold fraction is compared to the
+unperturbed baseline. This tests "how much do specifically the
+positions ASR is uncertain about matter to the fold outcome" -- not a
+true identity swap (no rotamer placement, still no real refolding), but
+a real, honest, directly informative signal, explicitly scoped as such.
+
+**Results** (default xi=-48.2 J/mol, DSSP blocking, same core structures
+as the tree run):
+
+| Node | n ambiguous positions truncated | WT fold | mutant fold | delta |
+|---|---|---|---|---|
+| node_20 | 16 (of 270, 5.9%) | 59.2% | 15.5% | **-43.7 pp** |
+| node_148 | 44 (16.3%) | 90.4% | 90.4% | **+0.0 pp** |
+| node_80 | 66 (24.4%) | 16.9% | 12.7% | -4.2 pp |
+| node_34 | 71 (26.3%) | 10.0% | 4.3% | -5.7 pp |
+
+**This resolves the node_20 puzzle from the previous section, and
+flips the earlier tentative read.** node_20 has the *highest* average
+ASR confidence of the four (0.942 mean posterior) but only 16 truly
+ambiguous core positions -- and truncating exactly those 16 collapses
+its fold fraction by 43.7 percentage points, by far the largest effect
+of any node, on the fewest perturbed positions. High *average*
+confidence was the wrong summary statistic to look at; what matters is
+whether the *few* uncertain positions happen to be load-bearing, and for
+node_20 they clearly are. This is real, direct evidence that node_20's
+collapse under DSSP blocking is substantially entangled with genuine
+sequence-identity uncertainty at a small number of specific sites --
+not necessarily a stable property of "this ancestral protein," and not
+safe to report as real evolved biology without an actual AltAll refold
+(still not possible in this sandbox, see previous section).
+
+**node_148, by contrast, is completely insensitive to its own 44
+ambiguous positions** (zero change). Its "folds properly, fc=13.70%"
+result does not depend on how ASR called its uncertain sites -- this is
+real, positive evidence that node_148's result is robust and can be
+treated as the more trustworthy of the four, not merely the one that
+happened to clear an arbitrary threshold.
+
+**node_80/34's collapse looks more diffuse/structural, not concentrated
+in a few uncertain sites** -- truncating a much larger fraction of their
+sequence (24-26% of positions, vs. node_20's 6%) produces comparatively
+modest further degradation (-4 to -6 pp) on top of an already-severe
+baseline collapse (10-17%). Their poor fold quality is not something a
+handful of different ASR calls would likely rescue; whatever is wrong
+looks more pervasive across the sequence than node_20's problem does.
+This doesn't rule out reconstruction quality as a contributor (they also
+have the lowest average confidence of the four), but the mechanism looks
+different in kind from node_20's -- broadly weak rather than a few
+critical positions.
+
+**Updated bottom line for a future full tree run**: node_148-style
+robustness (fc/fold outcome insensitive to the node's own ambiguous
+sites) should be treated as a real requirement before trusting any
+node's coupling result, not just the fold-fraction threshold already in
+use -- this sensitivity check is cheap (no new folding needed) and
+directly separates "real signal" (node_148) from "sequence-uncertainty
+artifact" (node_20) in a way the fold-fraction number and the average
+posterior confidence number both individually missed.
