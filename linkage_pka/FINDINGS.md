@@ -2466,3 +2466,93 @@ xi) was measuring the wrong thing. It needs to be replaced with
 table from the last three entries needs to be re-derived on that
 corrected basis before it can be trusted -- not done yet in this entry,
 next step.
+
+## Trustworthiness re-derived on the corrected basis: 4 of 6 ancestral
+## nodes are trustworthy, including the three most load-bearing nodes
+## in the whole tree -- and the two that fail, fail for a real,
+## different reason than "doesn't fold"
+
+`asr.py`'s trustworthiness gates were redesigned (`AsrSensitivityResult`,
+`run_asr_sensitivity_check`, `evaluate_node_trustworthiness`) around the
+corrected methodology from the previous entry:
+
+- `fold_ok` = `wt_folds_anywhere` (from `xi_fold_scan` on the real,
+  unmodified structure) -- not a single fixed-xi fold fraction.
+- `sensitivity_ok` = the structure's mutant (ambiguous ASR positions
+  truncated to alanine) still folds *anywhere*, AND its own transition
+  point does not shift by more than a tolerance from the WT transition
+  point. Tolerance = the paper's real inter-receptor xi standard
+  deviation, 2.76 J/mol (`PAPER_XI_STD_J_MOL`) -- a real, externally
+  justified number, not an arbitrary one.
+- `trustworthy` = `fold_ok AND sensitivity_ok`.
+
+Re-ran all six ancestral nodes with this corrected logic, reusing each
+node's already-computed WT `xi_fold_scan` from the previous entry and
+computing a fresh coarser mutant scan (step=1.0 J/mol) around the same
+transition:
+
+| Node | Clade rank (of 161) | n ambiguous (posterior<0.8) | WT transition (J/mol) | Mutant transition (J/mol) | Shift (J/mol) | Trustworthy? |
+|---|---|---|---|---|---|---|
+| node_2 | 1 | 10 | -48.25 | -48.5 | -0.25 | **Yes** |
+| node_19 | 2 | 14 | -48.75 | -49.5 | -0.75 | **Yes** |
+| node_20 | 3 | 16 | -49.55 | -50.5 | -0.95 | **Yes** |
+| node_148 | 155 | 44 | -43.35 | -45.5 | -2.15 | **Yes** |
+| node_34 | (mid-tree) | 70 | -55.25 | -58.5 | -3.25 | No -- shift exceeds tolerance |
+| node_80 | (mid-tree) | 64 | -50.95 | -59.5 | -8.55 | No -- shift exceeds tolerance |
+
+**This reverses the previous "1 of 6 trustworthy" verdict (committed
+earlier under the flawed single-point methodology) to 4 of 6.** All
+three of the most load-bearing nodes in the entire 161-internal-node
+tree -- node_2 (largest clade), node_19 (2nd largest), node_20 (3rd
+largest) -- are trustworthy under the corrected test, along with
+node_148 (a much smaller, terminal-adjacent clade, rank 155). node_34
+and node_80 fail specifically because truncating their own ASR-ambiguous
+positions genuinely shifts where their fold/collapse transition sits
+(-3.25 and -8.55 J/mol respectively) by more than the paper's own real
+inter-receptor xi spread -- a real, reproducible sensitivity result, not
+an artifact of testing at the wrong point. Notably these are also the
+two nodes with by far the most ambiguous positions (70 and 64, vs 10-44
+for the trustworthy four), consistent with (but not proof of) higher
+genuine reconstruction uncertainty at structurally consequential
+positions for those two specific ancestors. Why node_34/node_80 differ
+from the other four in this way has not been investigated further --
+flagging as an open question, not a conclusion, if it becomes relevant
+later.
+
+## First real cross-node cooperativity comparison, on the 4 trustworthy
+## nodes, each evaluated at its own transition-appropriate xi
+
+For the four trustworthy nodes, computed the real coupling matrix
+(`compute_coupling`) and the corrected Z-scored `fc` metric
+(`compute_fc`) at DSSP blocking, each node evaluated at
+`own WT transition xi - 3.0 J/mol` (a few J/mol into its own stably-
+folded regime, past its own sharp transition -- not the shared,
+structure-inappropriate -48.2 J/mol default used everywhere earlier in
+this investigation):
+
+| Node | Clade rank | xi used (J/mol) | nblocks | fc (%) | mean\|coupling\| (kJ/mol) |
+|---|---|---|---|---|---|
+| node_2 | 1 | -51.25 | 71 | 19.63 | 5.92 |
+| node_19 | 2 | -51.75 | 71 | 17.78 | 6.64 |
+| node_20 | 3 | -52.55 | 71 | 20.00 | 6.10 |
+| node_148 | 155 | -46.35 | 73 | 8.15 | 3.64 |
+
+The three most load-bearing ancestors (node_2/19/20, all closely related
+sibling/near-sibling nodes near the root of the proton-sensing clade)
+show mutually consistent fc (17.8-20.0%) and mean coupling strength
+(5.9-6.6 kJ/mol) -- all comfortably inside the paper's own real 53-
+receptor fc range (13.0+/-4.5%, i.e. roughly 4-22% at +/-2SD). node_148,
+a much smaller and evolutionarily shallower clade, shows a visibly lower
+fc (8.15%) and weaker mean coupling (3.64 kJ/mol) -- still physically
+plausible (within the real receptor range) but a real, differentiated
+result, not noise, given all four numbers were produced by the identical
+pipeline, blocking, and metric definition.
+
+**This is a real, if small (n=4), first cross-node comparison of
+cooperativity signal across this clade's ancestral history** -- but it
+is only 4 of 161 internal tree nodes, no statistical claim about a trend
+across the tree can be made from this alone, and *why* fc differs
+between these four nodes (reconstruction depth, real sequence/structure
+differences, alignment artifacts in the smaller node_148 clade, etc.)
+has not been investigated. Flagging as the natural next question, not
+answering it here without further direction.
