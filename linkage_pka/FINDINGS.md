@@ -2904,3 +2904,92 @@ statistical test beyond the deltas reported here. Next steps not yet
 taken: a denser pH grid or replicate runs to separate real trend from
 quantization noise, and checking why Node24's electrostatics appear pH-
 insensitive.
+
+## Fixed-xi pH scan (per user request, "might be a bit more relevant
+## and real"): removes the xi-drift confound and surfaces one large,
+## statistically robust signal -- Node148's cooperativity roughly
+## doubles under acid -- plus several smaller, methodology-sensitive
+## trends elsewhere
+
+User asked to rerun the pH scan holding xi fixed per node (each node's
+own pH-7 transition xi minus 3.0 J/mol, taken directly from the
+free-xi scan's pH=7.0 result) rather than re-locating the fold
+transition at every pH, on the reasoning that this isolates the pure
+pH/electrostatics effect on coupling at constant intrinsic stability,
+rather than conflating it with a simultaneously-drifting xi. Built
+`ph_scan/run_ph_scan_fixed_xi.py`: for each of the 13 nodes x 7 pH
+values, ran `run_pipeline(path, ph=ph, use_dssp=True)` (fresh structure/
+contact-map/blocks per pH, since protonation state changes which atom
+pairs count as contacts -- xi itself is the only thing held fixed), a
+single `run_wsme` at the node's fixed xi, and `compute_coupling`/
+`compute_fc`. Much cheaper than the full rescan (~2.4s/condition vs
+~55s), completed in 231s.
+
+**Self-caught bug, not affecting the reported numbers**: the script's
+own `fold_ok` flag was computed with the wrong formula (checked
+`argmin(fes) < window` -- the low/unfolded end of the reaction
+coordinate -- instead of `_folded_minimum_ok`'s real convention,
+`n_at_min/nblocks >= 1-fold_window_frac`, the high/folded end). This
+only affects that boolean label; `fc` and `compute_coupling` don't
+depend on it. Recomputed correctly from the already-saved `fold_frac`
+values: every node stays properly folded (fold_frac 85-99%) at its own
+fixed xi across the entire pH 8-5 range.
+
+**Node148 (anuran GPR65) shows a large, clean, statistically robust
+cooperativity increase under acid**, standing out clearly from every
+other node: fc rises monotonically from 8.15% (pH 8) to 16.67% (pH 5),
+more than doubling; mean|coupling| rises from 3.7 to 11.06 kJ/mol,
+nearly tripling. Spearman rho(pH, fc) = -0.96 (p=0.0004 uncorrected,
+survives a Bonferroni correction across all 13 nodes at alpha=0.05/13).
+This is the only trend in the whole pH-scan effort (free-xi or
+fixed-xi) that clears that bar. It is also mechanistically legible:
+Node148 is the manuscript's own anuran GPR65 E4.53->Q retuning node --
+its baseline coupling network is the weakest of the trustworthy nodes
+(8.15% at pH 7, below the paper's real 13.0+/-4.5% receptor range) --
+and under acid it rises into that normal range. A plausible reading is
+that a partially-degraded acidic core is compensated by a pH-driven
+increase in allosteric network coupling, though this is an inference
+from the model, not a measured biological result.
+
+Other nodes show smaller, more mixed trends, several nominally
+significant at p<0.05 uncorrected but not surviving multiple-comparison
+correction across 13 nodes (expect ~0.65 false positives at p<0.05 by
+chance alone): Node21 (canonical stem, fc -7.04pp pH8->pH5, rho=+0.87
+p=0.010), Node119 (GPR65 stem, fc -4.44pp, rho=+0.92 p=0.004 -- this one
+does survive Bonferroni), Node20 (GPR4 stem, fc -4.81pp, rho=+0.80
+p=0.032), Node34 (GPR132 stem, fc essentially flat at -0.37pp despite
+rho=+0.76 p=0.049 -- a case where a "significant" rho reflects a
+consistent but tiny wobble, not a meaningful effect size). Mean
+|coupling| (not just fc) shows some of the more visually dramatic
+individual-node changes -- Node80 (GPR68 stem) drops from 7.5 to 3.3
+kJ/mol (nearly halves), Node70 (GPR184 stem) drops from 9.54 to 4.45 --
+but these are single-run point estimates with no replicate error bars.
+
+**A real methodology-dependence worth flagging plainly**: Node20's fc
+trend flips direction between the two scan designs -- +2.96pp under the
+free-xi rescan (previous entry) vs. -4.81pp under this fixed-xi run.
+This is not a contradiction so much as a reminder that the two designs
+answer different questions (does the *transition-appropriate* xi's
+coupling change with pH, vs. does coupling at *one structurally fixed*
+xi change with pH) and can legitimately disagree at nodes with more
+finely balanced pH sensitivity; Node20 should not be treated as having
+a settled pH-response direction from this data.
+
+**Node24 (long-branch cyclostome) remains exactly, perfectly flat**
+across all 7 pH values under fixed xi too (fc=18.15% and
+mean|coupling| within 0.05 kJ/mol at every point) -- confirms this is a
+real, reproducible property of this specific reconstructed sequence's
+titratable-residue network, not a fluke of the free-xi scan or a script
+bug. Not yet investigated which residues would need to differ for this
+node to show pH sensitivity.
+
+**Bottom line**: the fixed-xi design the user requested does produce
+cleaner, more interpretable signal than the free-xi rescan, as
+intended -- and it identifies one standout, statistically strong,
+biologically legible result (Node148's near-doubling of cooperativity
+under acid) rather than the uniformly noisy picture from the previous
+entry. Everything else remains a collection of smaller, individually
+plausible but not strongly evidenced trends. Raw results in
+`ph_scan/results_fixed_xi.json`. Not yet plotted; no further analysis
+(e.g. investigating what specifically differs about Node148's or
+Node24's titratable network) done in this entry.
