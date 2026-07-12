@@ -1869,3 +1869,77 @@ themselves rounded their real 6.0606 constant to 6.1 for the paper's
 prose (and apparently considered, then didn't ship, a version using the
 rounded value). This port already matches the authoritative source
 exactly; no bug, no fix needed.
+
+## Ran the ancestral tree with both fixes in place: only 1 of 4 nodes
+## survives -- a real result, not the multi-node comparison hoped for
+
+Re-ran the four ancestral nodes end to end through the now-fixed
+pipeline (real DSSP blocking + corrected Z-score fc), reusing the
+shared-truncation-range (res 16-285) core structures already built by
+the earlier concurrent-session pilot (`asr_pilot/node_*_core.cif`,
+predates this entry's fixes) rather than rebuilding, but recomputing
+every downstream quantity fresh -- the old `.npy` coupling matrices in
+that directory predate both the DSSP wiring and the fc fix and were not
+reused.
+
+**Result: dramatically different from the earlier pilot's (geometric-
+heuristic) numbers.**
+
+| Node | nblocks (DSSP) | default-xi min | folded_ok (>=85%) |
+|---|---|---|---|
+| node_20 | 71 | 42/71 (59.2%) | **NO** |
+| node_148 | 73 | 66/73 (90.4%) | yes |
+| node_80 | 71 | 12/71 (16.9%) | **NO** |
+| node_34 | 70 | 7/70 (10.0%) | **NO** (already known) |
+
+Under the geometric heuristic, node_20 and node_80 had folded at 92-94%;
+under real DSSP blocking, they collapse to 59.2% and 16.9%. Only
+node_148 still folds properly. This is not a DSSP-parsing artifact --
+checked directly: DSSP's structured-residue counts on all four nodes
+(206-213/270) are sane and consistently, modestly lower than the
+geometric heuristic's (238-241/270), the same direction and rough
+magnitude of difference already characterized on real reference
+receptors, not an outlier or a sign DSSP is failing on these AlphaFold-
+predicted structures.
+
+**Per the existing guardrail (same one applied to GPR68-active), coupling/
+fc was only computed for node_148**, the one node whose landscape found
+its own reference fold: fc=13.70%, mean|coupling|=2.67 kJ/mol (at the
+default, uncalibrated xi=-48.2 J/mol -- node_148's own Tm-calibration
+also failed to resolve a Cp(T) peak in the physically valid bracket, a
+separate CalibrationError, so this is not a Tm-matched number). fc=13.70%
+sits squarely inside the paper's own real 13.0+/-4.5% receptor
+distribution -- by itself a reassuring plumbing-fidelity signal for this
+one node, not a comparative result.
+
+**Honest bottom line: this is not the multi-node cooperativity
+comparison the research question needs.** With only one node clearing
+the fold-quality bar, there is nothing to compare across nodes from
+this specific 4-node example set -- fc/coupling values exist for
+exactly one of them. This is a real, if sobering, consequence of doing
+the validation properly: the more accurate the blocking (DSSP over the
+geometric heuristic) and the more correct the fidelity gate (Z-scored fc
+over the old saturated absolute threshold), the smaller the set of
+ancestral nodes that can currently support a trustworthy comparison
+shrinks from 3/4 to 1/4. That is the honest result of running the tree
+with the fixes in place, not a new bug to chase.
+
+**What this means going forward, options, none pursued yet without
+further direction:**
+1. This 4-node example set is almost certainly too small to draw any
+   real evolutionary conclusion from regardless -- a genuine ancestral-
+   tree run needs many more nodes so a 1-in-4 fold-quality attrition rate
+   doesn't zero out the comparison entirely by chance.
+2. Whether node_20/80's collapse under DSSP blocking is itself
+   biologically meaningful (these specific ancestral reconstructions
+   being genuinely less thermodynamically robust/cooperative under this
+   model) or an artifact of AlphaFold prediction quality at these nodes
+   specifically has not been investigated -- would need the same kind of
+   real-structure cross-check that resolved the GPR68 active-state
+   question (not available here; there is no experimentally solved
+   structure for any internal ancestral node, by definition).
+3. A real run would need this fold-quality attrition rate itself
+   characterized across many more nodes before treating any single
+   node's coupling matrix as informative -- if most ancestral
+   reconstructions fail this bar, that ratio is itself a finding worth
+   reporting, not just a nuisance to filter past.
