@@ -3249,3 +3249,155 @@ different, richer pH-response picture given the triad would now titrate
 alongside histidine, and a rewrite of several already-committed
 conclusions), explicitly not undertaken in this entry pending direction
 on scope.
+
+## Triad coupling-emergence across the tree, with pH dependence (Model M
+## vs Model P) -- run per detailed user spec; NEITHER hypothesized
+## signature was cleanly confirmed, and that negative result is itself
+## the finding
+
+**Header (per the spec's own acceptance-gate requirement -- this applies
+to every number below):** Model M = default fixed pKa (Asp 3.9, Glu 4.1,
+His 6.0). Model P = PROPKA3 per-structure pKa (`use_propka_pka`,
+committed this session). New since the user's spec was written: Model
+P's carboxylate predictions were run against this codebase's own real
+Gate A dataset (`linkage_pka/gate_a.py`, real PKAD-2/Castaneda 2009 1STN
+data, previously used only against the separate PB-based `linkage_pka`
+pipeline, which failed sign-inverted) -- **PROPKA passes** (RMSE=0.719 <
+1.0 threshold, n=17; Asp/Glu-only subset n=13, Pearson r=+0.53, p=0.062,
+Spearman rho=+0.34 -- positively correlated, NOT anti-correlated/sign-
+inverted like the PB pipeline). This is real, quantified, and more
+precise than "consistent-with-literature, not internally validated" --
+but it is still a modest, non-significant correlation on n=13 WT
+surface/near-surface carboxylates in a small soluble protein, not a
+validation on a buried, cation-pocket-adjacent GPCR triad specifically.
+Treat Model P's absolute triad pKa/coupling values with real but bounded
+confidence; the M-vs-P *contrast* remains the more defensible unit of
+claim, per the spec's own design.
+
+**Method, exactly as specified:** 8 nodes (Node22, Node21, Node20,
+Node80, Node119, Node32, Node34, Node70; same truncated cores,
+author resnum 16-285, DSSP blocking, used throughout this session), 2
+charge models (M, P), 2 xi values per node (that node's own pH-7
+`xi_fold_scan` transition minus 3.0 and minus 5.0 J/mol), 7 pH values
+(8.0-5.0 in 0.5 steps) = 224 conditions, ~9.5 min total. Triad/shell BW
+sites mapped to real resnums per node via `site_to_resnum` against the
+real `.state` file (not degapped), with explicit absence flagging --
+confirmed directly (table below) that Node32/34/70 (divergent branch)
+retain V4.53 (no E4.53 to couple) and lack 2-3 of the 3 canonical
+histidine-shell positions, while Node21/20/80/119 (sensor branch) carry
+the complete D2.50/E4.53/D7.49 triad, exactly matching this session's
+earlier BW-mapping work and the manuscript's own reported states --
+cross-check, not new information. Triad/shell statistic = mean |coupling
+free energy| (raw kJ/mol, `compute_coupling`) between the group's
+present blocks and every other block. Null = bootstrap (2000 draws,
+vectorized) substituting each triad/shell block with a block-count-
+matched-pool block at the same spatial (CA-centroid) distance from the
+same partner, tolerance max(2.0 Angstrom, 15% of distance), widened up
+to 5x if empty; percentile = rank of the observed mean against the null
+distribution of means.
+
+**Per-node snapshot at pH 7.0, xi = transition-3.0 (full 224-condition
+grid in `triad_coupling/results.json`):**
+
+| Node | Triad present | Absent (flagged) | M: triad mean\|cpl\| (pct) | P: triad mean\|cpl\| (pct) | M: shell mean\|cpl\| (pct) | P: shell mean\|cpl\| (pct) |
+|---|---|---|---|---|---|---|
+| Node22 | D2.50, D7.49 | E4.53, H7.36 | 3.84 (p0.05) | 4.17 (p2.75) | 6.93 (p98.0) | 2.72 (p67.6) |
+| Node21 | D2.50, E4.53, D7.49 | -- | 6.32 (p0.05) | 2.80 (p1.70) | 6.37 (p0.10) | 2.51 (p32.7) |
+| Node20 | D2.50, E4.53, D7.49 | -- | 4.15 (p0.05) | 3.28 (p0.05) | 5.31 (p22.3) | 6.10 (p99.9) |
+| Node80 | D2.50, E4.53, D7.49 | -- | 4.48 (p0.05) | 2.55 (p0.05) | 5.42 (p0.90) | 3.27 (p68.0) |
+| Node119 | D2.50, E4.53, D7.49 | H7.36 | 5.62 (p1.10) | 4.59 (p24.1) | 9.11 (p100) | 3.99 (p100) |
+| Node32 | D2.50, D7.49 | E4.53, H2.67, H7.36 | 3.03 (p0.05) | 3.96 (p13.1) | 8.11 (p100) | 4.43 (p82.3) |
+| Node34 | D2.50, D7.49 | E4.53, H2.67, H45.47, H7.36 | 4.19 (p0.05) | 5.90 (p97.7) | N/A (shell fully absent) | N/A |
+| Node70 | D2.50, D7.49 | E4.53, H2.67, H7.36 | 10.15 (p67.0) | 2.47 (p0.35) | 5.81 (p2.05) | 5.04 (p98.6) |
+
+### Question 1 (emergence, pH-independent, Model M): NOT confirmed
+
+The predicted signature was "low at Node22, rising at Node21 (E4.53
+acquisition), high at the paralog stems; flat on Node32->34->70." The
+real, pH-averaged Model-M data does not show this. Sensor lineage:
+Node22 4.12 -> Node21 4.41 -> Node20 3.49 / Node80 2.97 / Node119 3.97
+kJ/mol -- a small rise from Node22 to Node21 (+0.29) consistent with the
+prediction's direction, but the paralog stems are *not* elevated above
+Node21; two of three (Node20, Node80) are lower. Divergent lineage:
+Node32 3.34 -> Node34 4.01 -> Node70 8.33 kJ/mol -- not flat at all; it
+rises sharply at Node70, the opposite of the predicted signature, despite
+Node70 never acquiring E4.53. Figure sent to the user
+(`triad_coupling/fig1_emergence.png`). **This entry does not claim the
+acidic core's coupling emergence tracks ASR-inferred assembly order** --
+the tree-wide raw-coupling pattern this run measured does not support
+that claim in either lineage.
+
+### Question 2 (pH-responsiveness, M-vs-P contrast): NOT cleanly
+### confirmed -- most nodes are noise-limited under the two-xi gate
+
+Per the spec's own required gate, a node's pH-slope is reported "noise-
+limited, not averaged" if the slope's sign flips between the xi-3 and
+xi-5 J/mol offsets. Applying that gate strictly:
+
+| Node | Lineage | M slope (xi-3, xi-5) | M gate | P slope (xi-3, xi-5) | P gate |
+|---|---|---|---|---|---|
+| Node22 | sensor | -0.78, -0.94 | consistent | -0.82, -0.77 | consistent |
+| Node21 | sensor | +0.50, +0.93 | consistent | +0.54, -0.05 | **FLIP -- noise-limited** |
+| Node20 | sensor | +0.35, +0.15 | consistent | +0.02, -0.01 | **FLIP -- noise-limited (also ~0 magnitude)** |
+| Node80 | sensor | +0.69, +0.20 | consistent | +0.18, +0.06 | consistent |
+| Node119 | sensor | +1.21, +0.37 | consistent | +0.50, +0.16 | consistent |
+| Node32 | divergent | -1.16, -0.62 | consistent | -2.59, -0.72 | consistent |
+| Node34 | divergent | -0.01, +0.11 | **FLIP -- noise-limited (~0 magnitude)** | -0.39, +0.17 | **FLIP -- noise-limited** |
+| Node70 | divergent | +1.89, +1.96 | consistent | +0.88, NaN | **unusable -- NaN at pH8.0 (data-quality flag, not silently dropped)** |
+
+Three of eight nodes have Model P flagged noise-limited/unusable
+(Node21, Node20, Node70), plus Node34 noise-limited under *both* models.
+The spec's headline hypothesis -- "the M->P gap is present on the sensor
+lineage and absent on the divergent lineage" -- is not supported cleanly:
+Model P is noise-limited at 2 of 5 usable sensor nodes (Node21, Node20)
+and at 0 of the 2 usable divergent nodes (Node32, Node70's M side only).
+If anything, among the nodes where both models give a usable (non-
+flipping) slope, the pattern runs partly *opposite* to predicted: Node80
+and Node119 (sensor) show M and P slopes of the *same sign* (both
+positive, P about half M's magnitude -- a real M-vs-P gap in magnitude,
+not a qualitative on/off contrast), while Node32 (divergent) also shows
+same-sign M and P slopes (both negative, P larger in magnitude than M --
+the opposite of "pH-responsiveness restricted to the sensor lineage").
+Figure sent to the user (`triad_coupling/fig2_ph_responsiveness.png`).
+
+### A methodological red flag on the null itself, surfaced by this run,
+### not silently absorbed into the headline numbers
+
+The triad's percentile-vs-null is at or near the floor (0.05, the
+minimum possible with 2000 bootstrap draws) in the *large majority* of
+conditions across both lineages and both charge models -- not
+selectively on one lineage or one model, which is what would be expected
+if this reflected real triad-specific biology. This uniformity is itself
+suspicious: a plausible confound is that the distance-matched null pool
+is dominated by *sequence-adjacent* block pairs (which are almost always
+also spatially close in a folded receptor, and carry large, "trivial"
+local-cooperativity coupling for reasons unrelated to the triad's
+specific tertiary network), while the triad's own long-range tertiary
+contacts are spatially close but sequence-distant -- a systematic
+downward bias against *any* genuinely tertiary (non-local) contact, not
+a triad-specific result. This was not corrected in this run (the spec
+calls for spatial distance-matching specifically, and this entry followed
+that literally), but it should be treated as an open methodological
+question before the percentile numbers above are read as "the triad is
+significantly non-special" -- that reading is not yet earned. Recorded
+here rather than smoothed over, per this session's standing practice.
+
+### What this entry does NOT claim (per the spec's own gates, honored)
+
+- Does NOT claim the triad drives pH-dependent cooperativity.
+- Does NOT claim this establishes that the triad titrates -- that
+  remains Rowe & Isom (2021) plus the separately-cited MD literature,
+  not this tool's contribution; those citations were verified to the
+  extent this session's blocked network access allowed (see the earlier
+  PROPKA-fix entry) and are not re-verified here.
+- Does NOT claim the ASR-inferred assembly order (E4.53 at Node21) is
+  corroborated by rising coupling -- the raw data given above does not
+  show that pattern cleanly.
+- The two defensible contributions from this run are narrower than the
+  spec's hoped-for headline: (a) the real, per-node, per-model,
+  per-condition coupling/percentile/absence-flag dataset now exists and
+  is reusable (`triad_coupling/results.json`), and (b) neither
+  hypothesized signature (Question 1's emergence pattern, Question 2's
+  lineage-restricted M-vs-P gap) survives contact with the real
+  224-condition run -- a negative result, reported plainly rather than
+  reshaped to fit the predicted pattern.
