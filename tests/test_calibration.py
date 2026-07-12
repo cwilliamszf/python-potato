@@ -11,11 +11,13 @@ from wsme_gpcr.calibration import (
     PAPER_XI_MEAN_J_MOL,
     PAPER_XI_STD_J_MOL,
     XiTmCalibrationResult,
+    XiFoldScanResult,
     calibrate_xi_isostability_mode,
     calibrate_xi_tm_mode,
     compute_delta_g_fold,
     compute_fc,
     find_cp_peaks_and_tm,
+    xi_fold_scan,
 )
 from wsme_gpcr.coupling import CouplingResult
 from wsme_gpcr.pipeline import run_pipeline
@@ -346,3 +348,79 @@ def test_compute_fc_matches_paper_real_per_receptor_fc(tag, ene, paper_fc_pct):
     cr = compute_coupling(r.structure, r.block_model, r.ss_mask, params)
     fc_pct = compute_fc(cr, r.block_model) * 100
     assert fc_pct == pytest.approx(paper_fc_pct, abs=7.0)
+
+
+# --------------------------------------------------------------- xi_fold_scan --
+
+def test_xi_fold_scan_real_plumbing_ci2():
+    result = run_pipeline(CI2, ph=7.0)
+    params = WSMEParams.soluble_protein_defaults()
+    scan = xi_fold_scan(result.structure, result.block_model, result.ss_mask, params,
+                         xi_range_j_mol=(-100.0, -90.0), step_j_mol=5.0)
+    assert isinstance(scan, XiFoldScanResult)
+    assert scan.xi_values_j_mol.tolist() == [-100.0, -95.0, -90.0]
+    assert len(scan.fold_fracs) == 3
+    # CI2 folds robustly across this whole strongly-stabilizing range.
+    assert scan.folds_anywhere is True
+    assert scan.best_fold_frac == pytest.approx(max(scan.fold_fracs))
+
+
+def test_xi_fold_scan_detects_a_sharp_synthetic_transition(monkeypatch):
+    # Force run_wsme to return a fold fraction that flips sharply at a
+    # known xi, so n_transitions/folds_anywhere can be checked exactly
+    # without depending on a real structure's own transition location.
+    import wsme_gpcr.calibration as calib_mod
+
+    class FakeResult:
+        def __init__(self, n_values, fes):
+            self.n_values = n_values
+            self.fes = fes
+
+    def fake_run_wsme(structure, block_model, ss_mask, params):
+        nblocks = 10
+        n_values = np.arange(1, nblocks + 1)
+        # folded (n=9) is the minimum only when ene <= -50 J/mol; otherwise n=1 wins.
+        fes = np.full(nblocks, 100.0)
+        if params.ene * 1000 <= -50.0:
+            fes[8] = 0.0
+        else:
+            fes[0] = 0.0
+        return FakeResult(n_values, fes)
+
+    monkeypatch.setattr(calib_mod, "run_wsme", fake_run_wsme)
+
+    class FakeBlockModel:
+        nblocks = 10
+
+    scan = xi_fold_scan(None, FakeBlockModel(), None, WSMEParams(),
+                         xi_range_j_mol=(-55.0, -45.0), step_j_mol=1.0)
+    assert scan.folds_anywhere is True
+    assert scan.best_xi_j_mol <= -50.0
+    assert scan.best_fold_frac == pytest.approx(0.9)
+    assert scan.n_transitions == 1  # exactly one flip, at the -50 boundary
+
+
+def test_xi_fold_scan_folds_anywhere_false_when_never_folds(monkeypatch):
+    import wsme_gpcr.calibration as calib_mod
+
+    class FakeResult:
+        def __init__(self, n_values, fes):
+            self.n_values = n_values
+            self.fes = fes
+
+    def fake_run_wsme(structure, block_model, ss_mask, params):
+        nblocks = 10
+        n_values = np.arange(1, nblocks + 1)
+        fes = np.full(nblocks, 100.0)
+        fes[0] = 0.0  # always fully unfolded, regardless of ene
+        return FakeResult(n_values, fes)
+
+    monkeypatch.setattr(calib_mod, "run_wsme", fake_run_wsme)
+
+    class FakeBlockModel:
+        nblocks = 10
+
+    scan = xi_fold_scan(None, FakeBlockModel(), None, WSMEParams(),
+                         xi_range_j_mol=(-55.0, -45.0), step_j_mol=1.0)
+    assert scan.folds_anywhere is False
+    assert scan.n_transitions == 0

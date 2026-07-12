@@ -202,6 +202,71 @@ def _folded_minimum_ok(result: WSMEResult, nblocks: int, fold_window_frac: float
     return ok, n_at_min, frac_at_min
 
 
+DEFAULT_XI_SCAN_RANGE_J_MOL = (-65.0, -40.0)
+DEFAULT_XI_SCAN_STEP_J_MOL = 0.25
+
+
+@dataclass
+class XiFoldScanResult:
+    """Result of sweeping xi over a range and recording the WSME 1D
+    landscape's fold fraction at each point -- see ``xi_fold_scan``."""
+
+    xi_values_j_mol: np.ndarray
+    fold_fracs: np.ndarray
+    folds_anywhere: bool       # does ANY point in the scan clear the fold_window_frac bar?
+    best_xi_j_mol: float       # the xi giving the highest fold fraction in the scan
+    best_fold_frac: float
+    n_transitions: int         # number of fold_ok True<->False flips across the scan -- a sharpness indicator
+
+
+def xi_fold_scan(structure: Structure, block_model: BlockModel, ss_mask: np.ndarray,
+                  params: WSMEParams = None,
+                  xi_range_j_mol: tuple = DEFAULT_XI_SCAN_RANGE_J_MOL,
+                  step_j_mol: float = DEFAULT_XI_SCAN_STEP_J_MOL,
+                  fold_window_frac: float = FOLD_WINDOW_FRAC) -> XiFoldScanResult:
+    """Does this structure fold ANYWHERE in a physically plausible xi
+    range, rather than only at one fixed reference point?
+
+    Necessary because a real paper reference receptor (4XNV/gpcr14i) was
+    found to flip from 97.4% folded to 5.1% collapsed across a xi window
+    under 0.7 J/mol (see FINDINGS.md's real-structure-control entry), and
+    ``calibrate_xi_tm_mode`` -- the tool meant to locate a structure's own
+    transition point via its Cp(T) peak -- fails broadly under real DSSP
+    blocking, confirmed on that same real reference receptor, not just
+    edge-case ancestral nodes. Single-point testing at one xi (e.g. the
+    rhodopsin-derived default, -48.2 J/mol) can therefore misclassify a
+    genuinely foldable structure as a failure purely by chance of which
+    side of a sharp transition it happens to land on.
+
+    ``xi_range_j_mol``/``step_j_mol`` default to a fairly fine scan
+    (0.25 J/mol steps over a 25 J/mol window) since the transition found
+    in the 4XNV case was this sharp; widen the range if a structure's own
+    transition might plausibly sit outside the default window (e.g. an
+    already-severely-collapsed structure at the default xi may need a
+    more negative range to find where, if anywhere, it folds).
+    """
+    if params is None:
+        params = WSMEParams()
+    xi_values = np.arange(xi_range_j_mol[0], xi_range_j_mol[1] + step_j_mol / 2, step_j_mol)
+    fold_fracs = np.zeros(len(xi_values))
+    for i, xi in enumerate(xi_values):
+        p = replace(params, ene=xi * 1e-3)
+        res = run_wsme(structure, block_model, ss_mask, p)
+        amin = int(np.argmin(res.fes))
+        fold_fracs[i] = res.n_values[amin] / block_model.nblocks
+
+    fold_ok_mask = fold_fracs >= (1.0 - fold_window_frac)
+    folds_anywhere = bool(fold_ok_mask.any())
+    best_idx = int(np.argmax(fold_fracs))
+    n_transitions = int(np.sum(np.diff(fold_ok_mask.astype(int)) != 0))
+
+    return XiFoldScanResult(
+        xi_values_j_mol=xi_values, fold_fracs=fold_fracs, folds_anywhere=folds_anywhere,
+        best_xi_j_mol=float(xi_values[best_idx]), best_fold_frac=float(fold_fracs[best_idx]),
+        n_transitions=n_transitions,
+    )
+
+
 def _file_sha256(path) -> str:
     h = hashlib.sha256()
     with open(path, "rb") as fh:
