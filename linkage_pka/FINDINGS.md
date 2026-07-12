@@ -2330,3 +2330,90 @@ the GPR68 active-state question) before drawing further conclusions.
 Not yet done. The honest state of the evolutionary-cooperativity
 question remains: one usable node, now confirmed via six real
 data points spanning the tree, not four.
+
+## The real-structure control ran -- and it substantially walks back
+## the "5 of 6 ancestral nodes fail" conclusion, not confirms it
+
+User supplied the full node_148 AlphaFold job package (previously only
+had its `model_0.cif`). Its bundled template hits are real PDB
+structures used by AlphaFold as structural templates -- and template
+hit 0 is **4XNV**, which is not just any real GPCR structure: it is
+literally one of the paper's own 45 reference receptors
+(`gpcr14i` in the bundled `.mat` data, real reported ene=-46.6 J/mol,
+Tm=333K). This is exactly the control proposed in the previous entry --
+a real, experimentally solved, paper-calibrated structure from a
+closely related lineage, run through this exact pipeline -- and it
+surfaced something more important than a pass/fail verdict.
+
+**4XNV folds excellently at the same default xi used throughout every
+ancestral-node test** (-48.2 J/mol, rhodopsin's value): 97.4% (76/78
+blocks). This is real evidence the pipeline itself is not fundamentally
+broken for this receptor family -- a real, solved structure behaves
+exactly as a well-folding structure should under the identical
+untouched parameterization that failed for 5 of 6 ancestral nodes.
+
+**But at the paper's own real calibrated xi for this exact structure
+(-46.6 J/mol), the same real structure collapses to 5.1% (4/78).** A
+fine xi sweep shows this is not a gradual, sensitive-but-continuous
+relationship -- it is a genuinely sharp, near-discontinuous switch:
+
+| xi (J/mol) | fold fraction |
+|---|---|
+| -58 to -48.2 | 97.4% (stable) |
+| -47.5 to -44 | 3.8-5.1% (collapsed) |
+
+The entire transition happens somewhere in a window smaller than 0.7
+J/mol, between -48.2 and -47.5. **The paper's own reported calibrated
+value for this receptor (-46.6) sits on the collapsed side of that
+transition under this port's current (DSSP-based) blocking and
+energetics** -- meaning this port does not precisely reproduce the
+original MATLAB pipeline's fold behavior for this real receptor at its
+own reported xi, a residual discrepancy beyond the already-characterized
+~17% STRIDE-vs-DSSP boundary disagreement. Tm-mode calibration for
+4XNV was also checked directly and **fails with the identical
+CalibrationError as node_148, Node2, and Node19** ("no Cp(T) peak found
+at all" at one bracket edge) -- the same failure mode, on a real,
+solved, paper-validated structure, not just ancestral reconstructions.
+
+**Why this matters more than a single control pass/fail:** it shows
+this WSME implementation, post-DSSP-blocking, exhibits sharp,
+near-discontinuous xi-dependent fold transitions for GPCR-scale block
+counts -- a real, general property, not something specific to ancestral
+sequences. A single fixed reference xi (this investigation used -48.2
+throughout, since Tm-calibration systematically fails to resolve an
+alternative) is therefore not a reliable, structure-independent test of
+"does this fold" for *any* structure, real or ancestral -- whether a
+given structure lands on the folded or collapsed side of -48.2 may
+depend on exactly where its own sharp transition point happens to sit,
+which this pipeline currently has no reliable way to locate (Tm-mode
+calibration, the tool built for exactly this, fails broadly under DSSP
+blocking, now confirmed on a real reference structure too, not just an
+ancestral-node edge case).
+
+**This substantially qualifies, without fully overturning, the "5 of 6
+ancestral nodes fail" finding from the previous two entries.** The six
+fold_ok results themselves are real, reproducible pipeline outputs, not
+retracted. But the *interpretation* -- that this reflects something
+about ancestral reconstruction quality or a GPR4-clade-specific pipeline
+problem -- is now on much shakier ground. It may instead be substantially
+explained by this more general, structure-independent phenomenon: many
+GPCR-scale structures (real and ancestral alike) apparently sit close to
+a sharp fold/collapse transition, and testing at one arbitrary fixed
+point (because the tool meant to locate each structure's own transition
+doesn't work reliably post-DSSP) will misclassify some fraction of
+genuinely foldable structures as failures, essentially by chance of
+which side of the switch -48.2 happens to land on for them.
+
+**Concrete methodological fix identified, not yet implemented**: replace
+single-point xi testing (`fold_ok` at xi=-48.2 alone) with a small
+xi-window sweep -- e.g. across the paper's real inter-receptor spread
+(-48.9+/-2.76 J/mol, or the wider bracket already used elsewhere in this
+codebase) -- and classify a structure as capable of folding if it folds
+*anywhere* physically plausible, not only at one fixed reference point.
+This would need re-running all six already-evaluated ancestral nodes
+(and ideally 4XNV/gpcr14i and a couple more real reference receptors as
+controls) before the trustworthiness table can be treated as settled.
+Not done in this entry -- flagging it as the necessary next step before
+drawing further conclusions from the six-node table, rather than
+quietly leaving that table standing as more authoritative than it now
+deserves to be treated.
