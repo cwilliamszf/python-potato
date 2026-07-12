@@ -2088,3 +2088,77 @@ use -- this sensitivity check is cheap (no new folding needed) and
 directly separates "real signal" (node_148) from "sequence-uncertainty
 artifact" (node_20) in a way the fold-fraction number and the average
 posterior confidence number both individually missed.
+
+## Promoted the sensitivity check to reusable library code: `wsme_gpcr/asr.py`
+
+Moved the scratchpad script into a real, tested module rather than
+leaving it as a one-off. New public API (exported from `wsme_gpcr`):
+
+- `parse_iqtree_state_file(path) -> dict[str, NodePosteriors]` -- pure-
+  Python TSV parsing of an IQ-TREE2 `.state` file (no pandas dependency
+  added; the file is small and simply structured). Also computes each
+  site's second-most-likely state/posterior, needed for a real future
+  AltAll build even though this module doesn't refold.
+- `ambiguous_core_resnums(node_posteriors, structure, posterior_threshold=0.8) -> list[int]`
+  -- maps alignment sites to a structure's own `author_resnum` (via
+  `site_to_resnum`'s cumulative-non-gap-count convention) and returns
+  the mutable (non-ALA/GLY/PRO), in-structure, low-confidence positions.
+- `run_asr_sensitivity_check(structure, block_model, ss_mask, params, ambiguous_resnums, delta_tolerance_frac=0.10) -> AsrSensitivityResult`
+  -- the core computation: truncate the given positions to alanine
+  simultaneously, compare WSME fold fraction to baseline. Reusable with
+  any resnum list, not tied to ASR (e.g. usable for any "how sensitive
+  is this fold to these specific positions" question).
+- `evaluate_node_trustworthiness(pdb_path, node_posteriors, params=None, use_dssp=True, ...) -> AsrSensitivityResult`
+  -- single-call convenience wrapper (load, fold, identify ambiguous
+  sites, run the check) for evaluating one node end to end.
+- `AsrSensitivityResult.trustworthy` (bool) = `fold_ok AND sensitivity_ok`,
+  plus `.reason()` for a one-line human-readable classification.
+
+10 new tests (`tests/test_asr.py`): `.state` parsing (including sorting
+by site and a missing-header error), the resnum-mapping convention
+(explicitly covers the case a structure's own numbering doesn't start
+at 1 -- CI2 starts at resnum 19, which the first draft of this test
+initially got wrong before being caught and fixed), threshold behavior,
+the trivial-when-no-ambiguous-positions case, real CI2 plumbing, and the
+three `.reason()` message variants. Full suite: 269 passed (259 before +
+10 new).
+
+**Validated the promotion is faithful, not just "looks similar"**: reran
+all four real nodes through `evaluate_node_trustworthiness` and diffed
+against the original scratchpad script's numbers directly, position-set
+included, not just the final percentages -- exact match (WT/mutant fold
+fractions, deltas, and the full ambiguous-resnum sets are identical; an
+apparent small count discrepancy noticed in one node during this check
+turned out to be noise from an earlier, less careful scratch comparison,
+not a real difference, confirmed by a direct side-by-side rerun of both
+code paths against the same inputs).
+
+## Final trustworthiness list for the four available ancestral nodes
+
+Using the now-reusable `evaluate_node_trustworthiness` (real DSSP
+blocking, default xi=-48.2 J/mol, posterior_threshold=0.8,
+delta_tolerance_frac=0.10):
+
+| Node | fold_ok | sensitivity_ok | **trustworthy** | Reason |
+|---|---|---|---|---|
+| **node_148** | yes (90.4%) | yes (0.0pp / 44 positions) | **YES** | Folds properly and is robust to its own ASR ambiguity. The only node whose fc (13.70%, computed earlier) should be treated as real signal. |
+| node_20 | no (59.2%, below the 85% bar) | no (-43.7pp / 16 positions) | NO | Fails to fold outright, and the failure is substantially attributable to a handful of specific ASR-ambiguous positions -- likely a reconstruction-uncertainty artifact rather than a stable property of the ancestral protein. Would need a real AltAll refold (unavailable in this sandbox) before this node could be used at all. |
+| node_80 | no (16.9%) | yes (-4.2pp / 64 positions, i.e. its collapse is NOT concentrated in the ambiguous sites) | NO (fails the fold gate regardless) | Fails to fold; unlike node_20, the failure is not explained by its ambiguous positions specifically -- it looks like a more diffuse/structural problem, not primarily an ASR artifact. Still carries the lowest-tier average reconstruction confidence of the four (0.829 mean posterior), so real biology vs. reconstruction quality remains open. |
+| node_34 | no (10.0%) | yes (-5.7pp / 70 positions) | NO (fails the fold gate regardless) | Same profile as node_80: diffuse collapse, not concentrated in ambiguous sites, lowest average confidence of the four (0.821). |
+
+**One node out of four (node_148) is currently usable.** This is the
+honest deliverable of the whole investigation this session: not a
+cooperativity comparison across ancestral nodes (which needs at least
+two trustworthy nodes and this 4-node example set provides one), but a
+validated, reusable, two-gate method for determining *which* nodes in a
+larger tree would be usable, with a concrete, real demonstration that
+the naive fold-fraction number alone is not sufficient (node_20 shows
+why) and that average ASR confidence alone is not sufficient either
+(node_20 again -- highest confidence, still an artifact-driven failure).
+Running this against the full 162-node tree the `.state` file covers,
+not just these four example structures, is the direct next step toward
+an actual evolutionary-cooperativity comparison, and would need
+AlphaFold structures for whichever additional nodes are worth folding
+(prioritized by this same two-gate method once a first-pass triage is
+possible, e.g. from sequence-level ASR confidence alone before spending
+compute on structure prediction).
