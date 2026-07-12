@@ -2993,3 +2993,125 @@ plausible but not strongly evidenced trends. Raw results in
 `ph_scan/results_fixed_xi.json`. Not yet plotted; no further analysis
 (e.g. investigating what specifically differs about Node148's or
 Node24's titratable network) done in this entry.
+
+## Three-part mechanistic audit of the Node148 signal (user-directed):
+## (1) raw coupling grows smoothly, not a Z-score artifact; (2) the pH
+## 8-5 window titrates histidine, not the acidic core, so "acid-driven
+## cooperativity" here is really histidine-network chemistry; (3) the
+## cross-node histidine-count regression is null -- Node148 is not an
+## outlier in raw His count, so the effect isn't explained away by a
+## simple count confound either
+
+User pushed back hard, correctly, on pairing the Node148 signal with
+the E4.53->Q loss narrative without first checking whether the titrated
+group driving it was actually the acidic core at all, and asked for
+three specific checks.
+
+**(1) Is the raw coupling matrix growing smoothly, or is fc's rise a
+Z-score-denominator artifact?** Recomputed `compute_coupling` at
+Node148's fixed xi across the full pH sweep and pulled the raw
+quantities `fc` is built from, not just the summary metric: mean|cfe|
+(all block pairs) rises smoothly and monotonically, 3.70 -> 3.70 -> 3.70
+-> 3.91 -> 5.51 -> 7.19 -> 11.06 kJ/mol (pH 8->5) -- flat until pH 6.5,
+then rising steeply, tracking a sigmoidal shape. The Z-score denominator
+(sigma, the std of per-block row-mean coupling) does NOT collapse -- it
+grows too, 3.00 -> 3.00 -> 3.00 -> 3.21 -> 5.19 -> 5.30 -> 5.10 kJ/mol --
+and the numerator (n blocks with Z>1) rises in step with raw coupling
+(6 -> 6 -> 6 -> 7 -> 9 -> 11 -> 12 of 73 blocks). **Verdict: real, not
+an artifact.** A 3-panel diagnostic plot (raw coupling, sigma, n_strong
+vs pH) was generated and sent to the user
+(`ph_scan/plots/node148_coupling_diagnostic.png`).
+
+**(2) Which titratable residues actually change protonation state across
+pH 8-5, and is the acidic core among them?** Checked the charge model
+directly (`structure.py`'s `DEFAULT_PKA`: ASP 3.9, GLU 4.1, HIS 6.0) via
+Henderson-Hasselbalch at both ends of the sweep: ASP goes from 99.99%
+charged (pH 8) to 92.6% (pH 5) -- a 7.4pp swing; GLU 99.99% -> 88.8%, an
+11.2pp swing; HIS (basic, charged when protonated) goes from 1.0% (pH 8)
+to 90.9% (pH 5) -- an 89.9pp swing, roughly 8-12x larger than either
+acidic residue's change. **This is a model-level fact independent of
+node identity**: the pH 8-5 window tested throughout this investigation
+sits almost exactly on histidine's titration midpoint and far above
+Asp/Glu's, so essentially all of the pH-driven electrostatic change in
+every node tested (not just Node148) is mechanistically attributable to
+histidine protonation, not to the D2.50/E4.53/D7.49 acidic core, which
+barely moves in this window regardless of whether E4.53 itself is
+present.
+
+Checked Node148's specific residue inventory: 9 HIS, 9 ASP, 5 GLU in its
+270-residue folded core. Mapped the manuscript's own BW sites onto this
+node's real structure resnums via `site_to_resnum` (confirmed a
+near-1:1 site->resnum correspondence for this node, i.e. few/no gaps
+before position ~277): H2.67 = resnum 79 (state H), H45.47 = resnum 164
+(state H), H7.36 = resnum 264 (state K, already substituted away from
+histidine at this node, consistent with the GPR65-lineage basic-residue
+retuning documented earlier). So only 2 of Node148's 9 histidines (79,
+164) are the manuscript's canonical shell positions -- the other 7 (87,
+97, 120, 126, 184, 189, 240) are elsewhere in the sequence, unconnected
+to the canonical architecture. **Verdict: the signal is histidine-driven,
+but not specifically canonical-shell-driven, and the acidic core (D2.50/
+D7.49 retained, E4.53 already lost as Q) is essentially electrostatically
+inert across this pH window.** Framing this result as "E4.53 loss
+compensated by acid-driven cooperativity" would overstate a connection
+the data doesn't establish; the more defensible statement is "broad
+histidine-network protonation drives a real coupling increase at this
+node, for reasons not yet localized to specific residues."
+
+**(3) Cross-node regression: does Delta-fc(pH8->pH5) track total
+histidine count in the folded core, and is Node148 an outlier?** Counted
+HIS/ASP/GLU/LYS/ARG in all 13 nodes' folded cores (all 270 residues post-
+truncation) and regressed against the fixed-xi scan's Delta-fc and
+Delta-mean|coupling| (pH8->pH5):
+
+| Node | HIS | Delta fc (pp) | Delta mean\|cpl\| (kJ/mol) |
+|---|---|---|---|
+| node_2 | 11 | +0.00 | +0.17 |
+| node_21 | 10 | -7.04 | -1.55 |
+| node_20 | 10 | -4.81 | +0.21 |
+| node_19 | 10 | -3.70 | -0.79 |
+| node_80 | 9 | +0.37 | -4.20 |
+| **node_148** | **9** | **+8.52** | **+7.36** |
+| node_119 | 9 | -4.44 | -3.57 |
+| node_22 | 8 | -0.74 | +3.32 |
+| node_32 | 7 | +0.37 | +3.75 |
+| node_70 | 6 | +1.85 | -5.09 |
+| node_24 | 6 | +0.00 | -0.04 |
+| node_34 | 4 | -0.37 | -0.06 |
+| node_30 | 4 | -1.48 | +0.71 |
+
+Regression of Delta-fc on HIS count across all 13: slope=-0.373, R=-0.23,
+R^2=0.052, p=0.456 -- not significant, and the sign is even in the wrong
+direction (more histidines, if anything, associated with slightly less
+fc increase). Delta-mean|coupling| on HIS count: R^2=0.000, p=0.994 --
+no relationship at all. Refitting with Node148 excluded doesn't recover
+significance either (fc: R^2=0.245, p=0.102; coupling: R^2=0.015,
+p=0.704). **Node148 ranks 5th of 13 in raw histidine count (tied with
+Node80 and Node119, both of which show the opposite, decreasing, trend)
+-- it is not a histidine-count outlier.** This is the single cheapest,
+most diagnostic check requested, and its null result is informative on
+its own: the cross-node trend table does not reduce to a simple
+"more histidines = bigger pH response" count effect. Something more
+specific than raw count -- most plausibly which particular histidines
+are load-bearing in the coupling network, their local burial/environment,
+or their placement relative to strongly-coupled block pairs -- would be
+needed to explain why Node148, Node80, and Node119 (three nodes with
+statistically identical His counts) respond so differently in both
+magnitude and direction. Not investigated further in this entry.
+
+**Overall verdict on the Node148 finding, revised**: the raw signal
+is real (check 1) and mechanistically it is histidine-driven rather than
+acidic-core-driven, as a model-level fact true for every node in this
+pH window (check 2) -- so the original writeup's implicit pairing with
+the E4.53->Q loss narrative should be retracted as unsupported dressing,
+not because the underlying coupling-increase measurement is wrong, but
+because the *explanation offered for it* was not checked against the
+actual titrating chemistry before being written down. The count
+regression (check 3) rules out the simplest alternative confound
+(Node148 just has more histidines) without providing a replacement
+mechanism. The correct, more modest statement: Node148 shows a real,
+large, statistically robust pH-dependent coupling increase in this
+model; it is very likely histidine-driven given the charge-model
+titration midpoints; which specific histidines or structural features
+make Node148 (and not the similarly-His-rich Node80/Node119, which move
+in the opposite direction) behave this way is an open question this
+entry does not answer.
