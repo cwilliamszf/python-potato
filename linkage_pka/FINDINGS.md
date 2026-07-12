@@ -1943,3 +1943,80 @@ further direction:**
    node's coupling matrix as informative -- if most ancestral
    reconstructions fail this bar, that ratio is itself a finding worth
    reporting, not just a nuisance to filter past.
+
+## Real IQ-TREE2 ASR posterior data checked against the fold-quality
+## pattern -- partially consistent, but does not cleanly explain it
+
+User supplied the real IQ-TREE2 outputs: `alignment_iqtree_asr.state`
+(per-site posterior probabilities, all 20 amino acids, for every one of
+162 internal nodes -- confirms Node20/148/80/34 naming matches this
+session's node_20/148/80/34 directly) and `alignment_iqtree_asr.iqtree`
+(164 sequences, 323 sites, model Q.PLANT+R7). This is exactly the data
+the previous section's caveat asked for.
+
+**Per-node MAP-posterior confidence (mean over all 323 sites):**
+
+| Node | mean MAP posterior | frac sites <0.8 | frac sites <0.5 | fold outcome (DSSP) |
+|---|---|---|---|---|
+| node_20 | **0.942** (highest) | 10.5% | 2.2% | **collapsed** (59.2%) |
+| node_148 | 0.865 | 24.1% | 11.5% | **folded** (90.4%) |
+| node_80 | 0.829 | 33.4% | 14.6% | collapsed (16.9%) |
+| node_34 | 0.821 (lowest) | 34.4% | 13.3% | collapsed (10.0%) |
+
+**Partially consistent, but not a clean explanation.** node_80 and
+node_34 -- the two most severely collapsed nodes -- do have the lowest
+reconstruction confidence, consistent with the "low-confidence chimeric
+sequence" hypothesis. But node_20 breaks the pattern outright: it has
+the *highest* confidence of all four (94.2% mean posterior, fewest
+ambiguous sites) yet is the node whose fold quality moved the most
+between blocking methods (92-94% under the geometric heuristic -> 59.2%
+under real DSSP). If reconstruction uncertainty alone explained the
+fold-quality pattern, node_20 should have been the most robust, not a
+collapse case. It isn't.
+
+**Follow-up check: do ambiguous sites concentrate at structurally
+important (high-contact) positions?** Cross-referenced each node's
+per-site MAP posterior against its own folded structure's per-residue
+contact density (DSSP-blocked core, res 16-285). No clear enrichment:
+ambiguous-site (posterior <0.8) mean contact count is essentially the
+same as confident-site mean contact count for every node (e.g. node_20:
+273.3 vs 273.1; node_148: 232.9 vs 269.6, if anything slightly lower for
+ambiguous sites, the opposite of "ambiguity concentrated at critical
+packing positions"). This check does not support a simple "uncertain
+sites happen to sit at structurally critical spots" story either.
+
+**Honest interpretation**: ASR uncertainty is a real, partial
+contributor (it's consistent with node_80/34's collapse) but is not,
+by itself, a sufficient explanation for the full pattern -- node_20's
+behavior looks more like genuine sensitivity of that specific sequence's
+folding cooperativity to the exact block-partition choice than an
+artifact of a chimeric reconstruction. These are not mutually exclusive:
+a real ancestral protein can still be genuinely more marginal/boundary-
+sensitive in its cooperativity than others, same as real extant
+proteins are.
+
+**What would actually settle this -- and a real tool limitation**: the
+standard, decisive test is an "AltAll" reconstruction (swap ambiguous
+sites to their second-most-likely residue, re-fold, re-run WSME; if the
+collapse persists under AltAll too, that's evidence toward real
+biology, not reconstruction artifact). **This cannot be completed in
+this sandbox**: building an AltAll sequence from the `.state` file is
+straightforward, but there is no local AlphaFold/ColabFold access here
+to actually fold it into a new structure -- the four structures in hand
+were generated externally by the user, not by this session. Stating
+this plainly rather than approximating around it: any true AltAll test
+needs external folding.
+
+**A real, achievable partial substitute, not yet built**: an in-silico
+point-mutation-on-fixed-backbone sensitivity test at the ambiguous
+sites, reusing/generalizing the existing `alanine_scan.py` machinery
+(already built for exactly this kind of "mutate a residue, keep the
+backbone, recompute the contact map/WSME landscape" analysis, just
+currently hardcoded to alanine substitutions). This would not capture a
+genuine backbone conformational response to the alternate sequence (a
+real limitation relative to true AltAll refolding), but would directly
+test whether swapping in the second-most-likely residue at node_20's 18
+core-region ambiguous sites (or node_80/34's 71/75) measurably shifts
+the WSME fold outcome -- a real, if partial, robustness signal,
+achievable with tools already in this repo. Not built yet, pending
+direction.
