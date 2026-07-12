@@ -2556,3 +2556,105 @@ between these four nodes (reconstruction depth, real sequence/structure
 differences, alignment artifacts in the smaller node_148 clade, etc.)
 has not been investigated. Flagging as the natural next question, not
 answering it here without further direction.
+
+## Correction: node_2/19/20 "clade rank" claim was based on the tree's
+## arbitrary print-rooting, not the manuscript's real S1PR1 rooting --
+## and the six ASR nodes tested this session turn out to BE the psGPCR
+## manuscript's own named focal nodes, not a separate analysis
+
+User shared a draft manuscript (`psGPCR Manuscript -- MBE-Ready Draft`,
+Williams, target journal MBE) built on ASR + DIVERGE + quantitative ECL
+composition across a 164-sequence, 162-internal-node vertebrate
+phylogeny of the GPR4/GPR65/GPR68/GPR132/GPR184 family. Cross-checking
+its named focal nodes (Node20, Node21, Node22, Node27, Node30, Node32,
+Node34, Node70, Node80, Node119, Node148) against the real
+`alignment_iqtree_asr.iqtree`/`.state` files supplied earlier this
+session revealed that **the six ancestral nodes analyzed throughout this
+session's xi_fold_scan/sensitivity work (node_2, node_19, node_20,
+node_34, node_80, node_148) are the manuscript's own real tree**, not an
+independent reconstruction. This was verified directly, not assumed:
+the raw `.iqtree` newick was re-rooted on the real S1PR1 outgroup
+sequences (`outGPCR_S1PR1_HUMAN/Mouse/Zebrafish`) using Bio.Phylo, and
+clade membership was re-derived from the rerooted tree.
+
+**This surfaced a real error in this session's own earlier work**: the
+"node_2/19/20 are the three most load-bearing nodes in the entire
+161-node tree" claim (used to frame the earlier trustworthiness table
+and the fc/coupling comparison) was computed against the tree's
+default/arbitrary print-rooting (IQ-TREE happens to draw the unrooted
+ML tree rooted near one GPR4 leaf, not at S1PR1), not the manuscript's
+real biological rooting. Under the correct S1PR1 rooting:
+
+| Session node | Verified true identity | n descendant leaves |
+|---|---|---|
+| `node_20` | **Node20 = the GPR4 paralog stem** (Fig 4 focal node) | 28, all GPR4 |
+| `node_19` | Node19, a GPR4 subclade nested inside Node20 | 27, all GPR4 |
+| `node_2` | Node2, a GPR4 subclade nested inside Node19 | 19, all GPR4 |
+| `node_80` | **Node80 = the GPR68 paralog stem** (the manuscript's "complete acidic-core/histidine-shell module" headline node) | 40, pure GPR68 |
+| `node_34` | **Node34 = the GPR132 paralog stem** | 37, mostly GPR132 |
+| `node_148` | **Node148 = the anuran GPR65 node** (E4.53->Q, C6.47->S retuning) | 2 -- exactly *Lepidobatrachus laevis* + *Xenopus tropicalis* GPR65, matching the manuscript's DIVERGE comparison (Node148, 2 anuran vs 36 non-anuran) exactly |
+
+`node_2/19/20` are a single nested GPR4 stem-to-tip series, not three
+independent basal nodes -- the "most load-bearing" framing should be
+retracted. But `node_80`, `node_34`, and `node_148` are three of the
+manuscript's five actual named paralog-stem/retuning focal nodes, and
+`node_20` is a fourth (the GPR4 stem). This session's xi_fold_scan +
+ASR-sensitivity work is therefore a real, already-computed, independent
+biophysical robustness check on four of this manuscript's own headline
+ancestral-reconstruction claims, not a tangential side analysis.
+
+## The manuscript's two paralog-stem claims with the largest ASR-
+## sensitivity shifts (GPR68's Node80, GPR132's Node34) were checked
+## against the manuscript's own cited focal residues -- Node80's acidic-
+## core/histidine-shell calls are not implicated, Node34's are borderline
+
+Re-examined which specific alignment sites drive Node80 and Node34's
+large transition shifts (-8.55 and -3.25 J/mol respectively, the two
+nodes that failed the corrected sensitivity gate). Queried the real
+`.state` file directly at the 19 BW-anchored trim-alignment column
+indices the manuscript's own Methods section publishes (D2.50=62,
+H2.67=79, E4.53=144, H45.47=164, H7.36=264, D7.49=277, etc.) for all six
+nodes:
+
+- **Node80 (GPR68 stem)**: every one of the 19 focal BW positions is
+  called at PP 0.98-1.00 -- including H45.47 (0.98) and all of
+  D2.50/E4.53/D7.49/H2.67/H7.36 at PP 1.00. The large structural
+  sensitivity is therefore driven by ambiguity elsewhere among Node80's
+  ~64 lower-confidence positions, not by the specific acidic-core/
+  histidine-shell residues the manuscript's "GPR68 entered its radiation
+  with the complete module" claim rests on. This is a caveat about the
+  AlphaFold-model-of-an-ASR-sequence step (already self-flagged in the
+  manuscript's own Limitations: "AlphaFold confidence varies with
+  sequence ambiguity"), not a challenge to the specific residue-identity
+  claim.
+- **Node34 (GPR132 stem)**: several focal residues sit in a genuinely
+  lower-confidence band than the trustworthy nodes -- H2.67 (N, PP 0.94),
+  W4.50 (C, PP 0.92), H45.47 (Q, PP 0.94), H7.36 (T, PP 0.85), D7.49 (D,
+  PP 0.82) -- versus Node20/Node148's near-uniform 0.98-1.00 at the same
+  positions. None cross the manuscript's own 0.8 "ambiguous" cutoff, but
+  the pattern is consistent with (not just an artifact of) real
+  biological reconstruction uncertainty specifically at this node, which
+  is plausible given GPR132's documented "coordinated set of
+  substitutions in conserved class A activation features" at this exact
+  node (main text, GPR132 section).
+- **Node148 (anuran GPR65)**: one focal residue, H45.47, sits at PP 0.75
+  -- below the manuscript's own ambiguity threshold -- despite Node148
+  passing the corrected biophysical sensitivity gate overall (shift only
+  -2.15 J/mol). Worth a cross-reference note if this subsection is added
+  to the manuscript, since it is the one case where a focal residue is
+  genuinely ambiguous by the paper's own criterion at a node our
+  independent check otherwise calls robust.
+
+**Bottom line for the manuscript**: an independent, methodologically
+orthogonal biophysical robustness check (bWSME xi_fold_scan +
+ASR-ambiguity-truncation sensitivity, not ASR posteriors or DIVERGE)
+corroborates the Node20 (GPR4 stem) and Node148 (anuran GPR65 retuning)
+reconstructions, and identifies the Node80 (GPR68 stem) and Node34
+(GPR132 stem) reconstructions as comparatively sensitive to their own
+ASR uncertainty -- for Node80 specifically not at the cited acidic-core/
+histidine-shell positions themselves, for Node34 with a plausible (if
+sub-threshold) signal at several of them. This is a legitimate third
+line of evidence alongside the manuscript's existing ASR/DIVERGE
+triangulation, not yet written into the manuscript draft. User has asked
+for a supplementary-subsection write-up next; not yet done in this
+entry.
