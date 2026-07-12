@@ -3115,3 +3115,137 @@ titration midpoints; which specific histidines or structural features
 make Node148 (and not the similarly-His-rich Node80/Node119, which move
 in the opposite direction) behave this way is an open question this
 entry does not answer.
+
+## Root cause of the Rowe & Isom discrepancy identified and fixed: our
+## flat, free-solution DEFAULT_PKA model cannot reproduce a buried,
+## Na+-pocket-adjacent acidic triad protonating near physiological pH;
+## a real PROPKA3 integration was built, tested, and validated
+
+User asked directly: Rowe & Isom (2021, JBC), using their pHinder
+platform, identified the buried acidic triad (D2.50/E4.53/D7.49 -- their
+"DyaD" [D2.50+D7.49] + "apEx" [E4.53] sites) as the primary GPR4/65/68
+proton sensor, i.e. it protonates near physiological pH. Our model,
+using the same triad, doesn't -- what's the discrepancy, and can it be
+fixed?
+
+**Diagnosis.** `structure.py`'s `DEFAULT_PKA` assigns every Asp/Glu the
+same free-amino-acid solution pKa (3.9/4.1) regardless of structural
+context. Real buried carboxylates -- especially ones adjacent to a bound
+cation site, like the class A GPCR sodium pocket D2.50 sits in -- can
+have pKa shifted by several units from that baseline; this is
+well-documented structural biochemistry, not a novel claim, and is
+exactly the phenomenon Rowe & Isom's approach is designed to detect.
+Confirmed directly: web search located the real paper (Rowe et al. 2021,
+JBC, PMID 33478938; full-text fetch blocked by the same sandbox network
+restriction encountered earlier this session, but search snippets
+returned real content) -- confirms the triad naming (DyaD=D2.50+D7.49,
+apEx=E4.53) and that "Na+ synergistically regulates pH sensing by tuning
+the pKa values of triad residues within the physiological pH range,"
+i.e. their own account explicitly requires an environment/cation-shifted
+pKa, not the free-solution value.
+
+**Quantified the gap with a real, independent structure-based predictor.**
+PROPKA3 (Jensen lab; already installed in this sandbox) was run directly
+on the real GPR68 structure (`gpr68_prep/inactive_prepped.pdb`) and on
+the AlphaFold Node80 (GPR68 stem) model, both already in use elsewhere
+this session. Mapped BW positions to real resnums via the manuscript's
+own residue table (GPR68: D2.50=Asp67, E4.53=Glu149, D7.49=Asp282) and
+via `site_to_resnum` for Node80 (D2.50=Asp62, E4.53=Glu144, D7.49=Asp277).
+PROPKA's predictions, both structures:
+
+| Residue | Real GPR68 (Asp/Glu num) | PROPKA pKa | Node80 (AlphaFold) | PROPKA pKa | Default pKa | Burial |
+|---|---|---|---|---|---|---|
+| D2.50 | Asp67 | 7.00 | Asp62 | 6.73 | 3.9 | 100% |
+| E4.53 | Glu149 | 5.59 | Glu144 | 5.10 | 4.1 | 65-81% |
+| D7.49 | Asp282 | 8.21 | Asp277 | 8.77 | 3.9 | 100% |
+
+Both structures -- one real, one an independent AlphaFold model --
+predict the same qualitative and roughly quantitative picture: D2.50 and
+D7.49 are 100% buried and pKa-upshifted by 3-5 units; E4.53 by ~1-1.5
+units. Recomputing the Henderson-Hasselbalch titration curves with these
+real predicted pKa values instead of the flat defaults shows the triad
+now titrates substantially across the pH 8-5 window used throughout this
+session's pH-scan work -- D2.50 swings from 95% to 2% charged, D7.49
+from 15% to ~0% (already mostly protonated even at pH 8), E4.53 from
+100% to 44% -- a dramatic reversal from the flat-pKa model, where the
+same three residues stayed >88% charged throughout and were essentially
+electrostatically inert (the exact finding the previous entry's Node148
+audit reported). **This is the real discrepancy**: with the flat default
+model, this session's entire pH-scan/coupling analysis correctly found
+histidine, not the acidic triad, to be the dominant titrating group in
+the 5-8 window -- but that conclusion was an artifact of the charge
+model, not a disagreement with Rowe & Isom about the underlying biology.
+With real, structure-aware pKa values, the triad titrates at least as
+strongly as histidine does, in the same window, matching their account.
+
+**The fix, built and tested.** New module `wsme_gpcr/pka_predictor.py`:
+`predict_pka_propka(pdb_or_cif_path, chain=None) -> dict[int, float]`
+runs PROPKA3 (via its Python API, not a subprocess/file-scraping
+wrapper) on a structure and returns `{author_resnum: predicted_pKa}` for
+every Asp/Glu/His/Lys/Arg group, directly usable as the existing
+`pka_overrides` parameter already threaded through `load_structure`.
+Transparently converts mmCIF input to a temporary PDB (PROPKA only reads
+PDB) via Biopython, cleans up the temp file, and raises
+`PropkaNotAvailableError` rather than silently falling back if `propka`
+isn't installed -- same non-silent-fallback discipline used for
+`DsspNotAvailableError` elsewhere in this codebase. Wired into
+`run_pipeline`/`run_pipeline_multi_ph` as a new `use_propka_pka: bool`
+parameter (mirroring `use_dssp`); explicit `pka_overrides` entries still
+win over PROPKA-derived ones for the same resnum. In the multi-pH
+version, PROPKA is resolved once, not once per pH -- unlike DSSP,
+PROPKA's prediction depends only on the pH-independent heavy-atom
+geometry, so recomputing per pH would be pure waste. Confirmed end to
+end that overriding a resnum's pKa changes its actual assigned atomic
+charge (Asp62 at pH 7: -0.999 charge under the default pKa 3.9 vs -0.651
+under the PROPKA-predicted 6.73 -- a real, physically correct
+difference, not just a stored-but-unused number). 6 new tests added
+(`tests/test_pka_predictor.py`): return-type/structure validation, a
+real-structure check that PROPKA deviates >1 pH unit from flat defaults
+for at least one residue (on gpcr9i), the mmCIF-to-temp-PDB conversion
+path, confirmation that `use_propka_pka=True` changes `run_pipeline`'s
+resulting charges, confirmation explicit `pka_overrides` still wins, and
+confirmation of the non-silent-failure behavior when `propka` isn't
+importable. Full suite: 278 passed (272 previously + 6 new), no
+regressions.
+
+**Validated against 1STN** (staphylococcal nuclease, a real, extensively
+studied globular protein already in `examples/data/`; a wild-type,
+ligand-free, OpenMM-minimized structure), per direct user request before
+running any further GPCR-specific analysis. PROPKA's predictions on this
+real, independent, non-GPCR test structure are physically sensible:
+every Asp/Glu sits within ~0.5-1.5 pH units of the flat default (2.35-
+5.91 vs 3.8/4.5 model values), every Lys/His stays close to its default
+(9.98-11.29 vs 10.5; 6.03-6.34 vs 6.5) -- no runaway or nonsensical
+values, and the largest single carboxylate deviation (Glu43, pKa 5.91,
++1.41 units) lands on the residue independently documented in the real
+literature as catalytically important with a distinctive electrostatic
+environment (search-confirmed: "the gamma-carboxylate group of Glu-43 is
+directly involved in catalysis as a general base"). Separately,
+web search independently confirms this exact protein scaffold is a real
+literature benchmark for large buried-residue pKa shifts: "pKa values
+measured previously for the internal Lys-66, Asp-66, and Glu-66 in
+variants of a highly stable form of staphylococcal nuclease are shifted
+by as many as 5 pKa units relative to normal pKa values in water" (a
+different, engineered-substitution series at position 66, not directly
+comparable number-for-number to the WT residues PROPKA scored here, but
+confirming shifts of this general magnitude are real and precedented in
+this exact system, not a modeling artifact). Ran the full
+`run_pipeline`/`run_pipeline_multi_ph` integration on 1STN with
+`use_propka_pka=True`: completes cleanly, same block count as the
+default-pKa run (39 blocks), and produces appropriately small charge
+perturbations for this well-behaved WT structure (max per-atom charge
+difference 0.044, vs the much larger differences seen on the GPR68
+triad) -- exactly the proportionate, context-sensitive behavior expected
+(large corrections only where structurally justified, not a systematic
+inflation).
+
+**Status**: the fix is built, tested, and validated on both the real
+GPR68 structure and an independent non-GPCR benchmark protein. Not yet
+applied to redo any of this session's GPCR pH-scan/coupling analyses
+(the Node148 mechanistic-audit conclusion, the 13-node pH scans, etc.
+all still reflect the flat default-pKa model) -- that is a substantial
+follow-on re-analysis (new PROPKA predictions per node, likely a
+different, richer pH-response picture given the triad would now titrate
+alongside histidine, and a rewrite of several already-committed
+conclusions), explicitly not undertaken in this entry pending direction
+on scope.

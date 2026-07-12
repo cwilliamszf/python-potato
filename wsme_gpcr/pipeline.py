@@ -22,6 +22,7 @@ from .blocking import BlockModel, build_blocks
 from .contacts import ContactMap, compute_contact_map
 from .coupling import CouplingResult, compute_coupling
 from .dsc import DSCResult, compute_dsc
+from .pka_predictor import predict_pka_propka
 from .secondary_structure import (
     assign_secondary_structure,
     secondary_structure_from_codes,
@@ -51,6 +52,7 @@ def run_pipeline(
     model: int = 0,
     ph: float = 7.0,
     pka_overrides: dict = None,
+    use_propka_pka: bool = False,
     ss_codes: str = None,
     use_dssp: bool = False,
     block_size: int = 4,
@@ -65,6 +67,16 @@ def run_pipeline(
     ``structure.load_structure``), for probing a specific residue proposed
     to have an environment-shifted pKa (e.g. a candidate pH sensor).
 
+    ``use_propka_pka=True`` computes that override dict automatically by
+    running real PROPKA3 on ``pdb_path`` (see ``pka_predictor.predict_pka_propka``)
+    instead of the default fixed free-amino-acid-solution pKa for every
+    Asp/Glu/His/Lys/Arg -- structurally buried titratable residues (e.g. a
+    sodium-pocket-adjacent acidic triad) can have pKa shifted by several
+    units from that flat default, which the fixed model cannot capture.
+    Any explicit ``pka_overrides`` entries win over the PROPKA-derived
+    ones for the same resnum. Raises ``PropkaNotAvailableError`` if
+    ``propka`` isn't installed, rather than silently falling back.
+
     Secondary structure comes from one of three sources, in priority
     order: explicit ``ss_codes`` if given; real DSSP if ``use_dssp=True``
     (requires ``mkdssp`` on PATH -- raises rather than silently falling
@@ -77,10 +89,16 @@ def run_pipeline(
     if params is None:
         params = WSMEParams()
 
+    effective_pka_overrides = pka_overrides
+    if use_propka_pka:
+        effective_pka_overrides = predict_pka_propka(pdb_path, chain=chain)
+        if pka_overrides:
+            effective_pka_overrides.update(pka_overrides)
+
     caught_warnings = []
     with warnings.catch_warnings(record=True) as caught:
         warnings.simplefilter("always")
-        structure = load_structure(pdb_path, chain=chain, model=model, ph=ph, pka_overrides=pka_overrides)
+        structure = load_structure(pdb_path, chain=chain, model=model, ph=ph, pka_overrides=effective_pka_overrides)
         caught_warnings = [str(w.message) for w in caught]
 
     if ss_codes is not None:
@@ -128,6 +146,7 @@ def run_pipeline_multi_ph(
     chain: str = None,
     model: int = 0,
     pka_overrides: dict = None,
+    use_propka_pka: bool = False,
     ss_codes: str = None,
     use_dssp: bool = False,
     block_size: int = 4,
@@ -149,7 +168,19 @@ def run_pipeline_multi_ph(
     redundant work, not a correctness issue; block partitions come out
     identical across pH unless a pH-dependent chain-break/gap changes what
     DSSP can resolve.
+
+    ``use_propka_pka`` (see ``run_pipeline``) is resolved to a concrete
+    override dict *once*, here, rather than re-run at every pH -- unlike
+    secondary structure, PROPKA's pKa predictions depend only on the
+    (pH-independent) heavy-atom geometry, so recomputing per pH would be
+    pure waste, not just redundant.
     """
+    effective_pka_overrides = pka_overrides
+    if use_propka_pka:
+        effective_pka_overrides = predict_pka_propka(pdb_path, chain=chain)
+        if pka_overrides:
+            effective_pka_overrides.update(pka_overrides)
+
     results = {}
     total = len(ph_values)
     for i, ph in enumerate(ph_values):
@@ -160,7 +191,7 @@ def run_pipeline_multi_ph(
             chain=chain,
             model=model,
             ph=ph,
-            pka_overrides=pka_overrides,
+            pka_overrides=effective_pka_overrides,
             ss_codes=ss_codes,
             use_dssp=use_dssp,
             block_size=block_size,
