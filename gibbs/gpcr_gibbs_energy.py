@@ -255,12 +255,17 @@ def clone_system_nonbonded_only(system, zero="none"):
     xml = mm.XmlSerializer.serialize(system)
     clone = mm.XmlSerializer.deserialize(xml)
 
+    # Remove every force except NonbondedForce, by index and in reverse order,
+    # so indices of not-yet-processed forces stay valid as forces are removed.
+    for i in reversed(range(clone.getNumForces())):
+        if clone.getForce(i).__class__.__name__ != "NonbondedForce":
+            clone.removeForce(i)
+
     nb_force = None
-    for force in list(clone.getForces()):
-        if force.__class__.__name__ != "NonbondedForce":
-            clone.removeForce(clone.getForces().index(force))
-        else:
-            nb_force = force
+    for i in range(clone.getNumForces()):
+        if clone.getForce(i).__class__.__name__ == "NonbondedForce":
+            nb_force = clone.getForce(i)
+            break
     if nb_force is None:
         raise RuntimeError("System has no NonbondedForce to decompose.")
 
