@@ -11,6 +11,13 @@ statistical-thermodynamics treatment for entropy.
    converts nonstandard residues (e.g. MSE -> MET), strips heteroatoms
    (waters/ligands/lipids/ions) by default, completes truncated/disordered
    side chains and short missing loops, and adds hydrogens for the chosen pH.
+   **Disulfide bonds (cystine crosslinks) are detected automatically** from
+   SG-SG proximity (< 3 Å) and added as explicit covalent S-S bonds -- the
+   force field then treats them as a real bond (~2.04 Å, ~332 kcal/mol/Å² in
+   `HarmonicBondForce`, part of the "Bond stretching" total) rather than a
+   noncovalent contact, with the corresponding nonbonded exclusion so the
+   two sulfurs aren't also double-counted as a Coulomb/vdW pair. The script
+   prints which cysteine pairs it found.
 2. **Force field**: AMBER `ff14SB` (bonds, angles, torsions, van der Waals,
    electrostatics) + `GBn2` implicit solvent (polar + nonpolar solvation),
    via OpenMM. This is what "accounting for all intramolecular forces" means

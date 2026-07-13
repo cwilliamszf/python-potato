@@ -200,12 +200,36 @@ def prepare_modeller(pdb_text, ph, keep_hetero=False):
         print(f"  NOTE: completing {n_missing_atoms} missing heavy atom(s) and "
               f"{n_missing_terminals} missing terminal atom(s) (truncated/disordered "
               "side chains in the deposited structure).")
-    fixer.addMissingAtoms()
+    fixer.addMissingAtoms()  # also auto-detects and adds S-S bonds for cystines (Topology.createDisulfideBonds)
+    report_disulfide_bonds(fixer.topology, fixer.positions)
     fixer.addMissingHydrogens(ph)
 
     forcefield = build_forcefield()
     modeller = app.Modeller(fixer.topology, fixer.positions)
     return modeller, forcefield
+
+
+def report_disulfide_bonds(topology, positions):
+    """PDBFixer.addMissingAtoms() calls Topology.createDisulfideBonds(), which
+    detects cystine crosslinks purely from SG-SG proximity (< 3 A) and adds an
+    explicit covalent bond -- the force field then parameterizes it as a real
+    S-S bond (HarmonicBondForce, ~2.04 A / 332 kcal/mol/A^2) with the correct
+    1-2 nonbonded exclusion, rather than as a noncovalent contact. This just
+    surfaces what was found so it isn't silent.
+    """
+    positions_ang = np.array(positions.value_in_unit(unit.angstrom))
+    bonds = [
+        (a1, a2) for a1, a2 in topology.bonds()
+        if a1.name == "SG" and a2.name == "SG"
+    ]
+    if not bonds:
+        return
+    print(f"  NOTE: {len(bonds)} disulfide bond(s) (cystine crosslink) detected from SG-SG "
+          "proximity and modeled as explicit covalent S-S bonds:")
+    for a1, a2 in bonds:
+        d = np.linalg.norm(positions_ang[a1.index] - positions_ang[a2.index])
+        print(f"      {describe_residue(a1.residue):<14s} -- {describe_residue(a2.residue):<14s}  "
+              f"S-S = {d:.2f} Å")
 
 
 def create_system(modeller, forcefield, nonbonded_cutoff_nm=1.6):
@@ -806,6 +830,9 @@ def run(args):
         system.getParticleMass(i).value_in_unit(unit.dalton) for i in range(n_atoms)
     ])
     total_mass = masses_amu.sum()
+    n_disulfide_bonds = sum(
+        1 for a1, a2 in modeller.topology.bonds() if a1.name == "SG" and a2.name == "SG"
+    )
     print(f"Prepared structure: {n_atoms} atoms (with hydrogens), total mass {total_mass:.1f} Da")
 
     context, state = minimize(
@@ -842,6 +869,7 @@ def run(args):
 
     result = {
         "n_atoms": n_atoms,
+        "n_disulfide_bonds": n_disulfide_bonds,
         "bonded_kcal": bonded_total,
         "nonbonded_kcal": nb_total,
         "vdw_kcal": lj_coul["vdW (Lennard-Jones)"],
