@@ -29,6 +29,19 @@ statistical-thermodynamics treatment for entropy.
      for small systems via `--entropy-method full-hessian`.
 5. **G = H - T·S**, with `H = U_MM + E_thermal + ZPE + RT` (ideal-gas PV term)
    and `S = S_trans + S_rot + S_vib`, at the chosen temperature.
+6. **Hydrogen-bond breakdown** (optional, on by default): ff14SB has no
+   explicit hydrogen-bond term -- H-bonds are already fully present in the
+   Coulomb/vdW totals above, emerging from the partial charges and LJ
+   parameters on the donor/acceptor atoms. This step geometrically detects
+   donor-H...acceptor contacts (Baker-Hubbard-style: H...acceptor <= 2.5 Å,
+   angle >= 120°), classifies each by whether the two residues sit in the
+   same backbone-helical segment, in two different ones (e.g. bridging two
+   different transmembrane helices), or a loop, and reports the full
+   residue-residue Coulomb+LJ interaction energy for each contact. This does
+   not add anything to `G` -- it's a breakdown of energy already counted
+   elsewhere, aimed at answering "how much of the electrostatics is
+   hydrogen bonding, and is it holding different parts of the protein
+   together." Disable with `--no-hbond-analysis`.
 
 ## Usage
 
@@ -99,6 +112,12 @@ GPCR specifically:
   charges for a small-molecule ligand -- the script will raise a clear error
   from OpenMM's `ForceField.createSystem` if you pass `--keep-hetero` without
   extending the force field yourself).
+- **Helix segments are a Ramachandran-box heuristic, not DSSP.** Residues are
+  labeled "helical" from backbone phi/psi falling in a fixed alpha-helix box,
+  then grouped into contiguous runs -- good enough to tell "same helix" from
+  "different helix" for the H-bond breakdown, but it will occasionally
+  mislabel a residue at a helix boundary or a 3-10/pi-helix turn that DSSP
+  would call differently.
 
 In short: this is a legitimate, physically grounded MM-GBSA/RRHO estimate of
 Gibbs free energy for a static structure, useful for sanity checks and
