@@ -3615,3 +3615,132 @@ probability / coupling matrix, one column per pH) built with the
 existing `plotting.plot_comparison_grid` -- reused directly, not
 reimplemented. GPR4/GPR65/GPR132 remain outstanding, blocked on
 structure availability (GPCRdb unreachable; awaiting direct upload).
+
+## GPR4, GPR65, GPR132 real active/inactive GPCRdb structures uploaded
+## directly; full-length fold behavior differs from GPR68's, but the
+## same 7TM-core truncation makes all six states fold cleanly; complete
+## fixed-xi pH scan run across all four receptors (8 states total)
+
+User uploaded real GPCRdb active/inactive structures for GPR4 and GPR65
+directly (network access to `gpcrdb.org` remained blocked, so this
+resolved the outstanding item from the previous entry the same way
+every other real structure was supplied this session), then GPR132,
+completing the four-receptor set (GPR4, GPR65, GPR68, GPR132) x 2
+states = 8 structures total.
+
+**Full-length fold behavior was tested before assuming GPR68's
+truncation fix would generalize** (`xi_fold_scan`, step 0.5, range -70
+to -38, on all 4 untruncated uploads): the pattern was *not* uniform
+across receptors. GPR4-active failed to fold at all full-length (capped
+at 83.0%, no transition found), matching GPR68's behavior exactly. But
+GPR4-inactive (86.2%, one clean sharp transition) and both GPR65 states
+(active 87.8%, inactive 86.2%, both clean single transitions) folded
+acceptably even without truncation -- a real, reported difference from
+GPR68, where *both* states failed full-length. This was reported to the
+user plainly rather than silently truncating everything on the GPR68
+precedent alone. Per the user's explicit instruction ("apply the same
+truncation to all of them for consistency with GPR68"), the identical
+16-285 author-resnum truncation used for GPR68 (and every AlphaFold
+ancestral node this session) was applied to all remaining states (GPR4
+active/inactive, GPR65 active/inactive, GPR132 active/inactive) for
+methodological consistency, even where full-length folding had
+technically been acceptable -- avoids conflating "receptor identity"
+effects with "how much disordered terminus/loop each construct happens
+to carry" effects in the cross-receptor comparison below.
+
+Each truncated core's own pH-7 fold/unfold transition was located via a
+fine `xi_fold_scan`, and the fixed xi used for that state's full pH scan
+is (transition - 3.0 J/mol), the same matched-stability convention used
+for every fixed-xi run this session:
+
+| State | transition (pH7, J/mol) | fixed xi used (J/mol) | nblocks |
+|---|---|---|---|
+| GPR4 active | -50.5 | -53.5 | 70 |
+| GPR4 inactive | -50.7 | -53.7 | 71 |
+| GPR65 active | -46.3 | -49.3 | 73 |
+| GPR65 inactive | -54.1 | -57.1 | 71 |
+| GPR132 active | -55.1 | -58.1 | 70 |
+| GPR132 inactive | -65.7 | -68.7 | 70 |
+
+Full pH scan (8.0 -> 5.0, 0.5 steps) run on all 6 remaining states with
+`compute_coupling` and DSSP blocking, using the existing pipeline
+(`run_pipeline(..., with_coupling=True)`) and `compute_fc`:
+
+| State | fold_frac (all pH) | fc: pH8 -> pH5 | mean\|coupling\|: pH8 -> pH5 (kJ/mol) |
+|---|---|---|---|
+| GPR4 active | 94.3% (flat) | 13.3 -> 11.9 -> 14.8 -> 18.5 -> 15.2 -> 10.7 -> 10.7 | 7.27 -> 7.19 -> 7.03 -> 6.73 -> 6.40 -> 5.60 -> 5.92 |
+| GPR4 inactive | 95.8% (flat) | 11.9 -> 11.9 -> 11.9 -> 13.3 -> 13.3 -> 13.3 -> 13.3 | 3.68 -> 3.66 -> 3.64 -> 3.67 -> 3.71 -> 3.81 -> 3.90 |
+| GPR65 active | 95.9% (flat) | 15.6 -> 17.0 -> 17.0 -> 17.0 -> 17.0 -> 17.0 -> 17.8 | 7.12 -> 7.10 -> 7.06 -> 6.91 -> 6.79 -> 6.77 -> 6.57 |
+| GPR65 inactive | 94.4% (flat) | 15.6 -> 13.7 -> 13.7 -> 16.7 -> 12.2 -> 13.7 -> 15.6 | 10.23 -> 10.18 -> 10.14 -> 10.05 -> 10.02 -> 10.26 -> 11.12 |
+| GPR132 active | 90.0% (flat) | 20.7 -> 17.4 -> 17.4 -> 17.8 -> 12.2 -> 17.4 -> 15.9 | 8.63 -> 8.66 -> 8.72 -> 8.86 -> 9.68 -> 10.29 -> 9.51 |
+| GPR132 inactive | 85.7% (flat) | 7.4 -> 7.4 -> 7.4 -> 7.4 -> 8.9 -> 17.4 -> 19.3 | 2.64 -> 2.63 -> 2.65 -> 2.65 -> 2.80 -> 3.08 -> 3.11 |
+
+(GPR68's already-reported values from the previous entry, for reference
+on the same scale: active 89.9% flat, fc 21.9%->4.4%, mean\|coupling\|
+10.54->10.18; inactive 97.1% flat, fc 17.8%->14.8%, mean\|coupling\|
+6.09->4.76.)
+
+`fold_frac` is flat across the whole pH range for every one of the 8
+states -- by construction, since xi is fixed at each structure's own
+matched-stability point and pH only reweights charged-residue
+protonation, not the overall two-state balance at this coarse a
+resolution. The pH-dependence of interest is therefore entirely in `fc`
+and mean coupling, not fold fraction.
+
+**Real, reported cross-receptor patterns (not adjusted to fit any prior
+hypothesis):**
+
+- **Active vs. inactive coupling magnitude is receptor-specific in
+  sign, not uniformly "active > inactive" or vice versa.** GPR68 and
+  GPR4 both show active > inactive coupling (GPR68: ~10.2-10.7 vs
+  4.8-6.2; GPR4: ~5.6-7.3 vs 3.6-3.9). GPR132 shows the same direction,
+  more starkly (active ~8.6-10.3 vs inactive ~2.6-3.1, roughly a 3x
+  gap). GPR65 is the outlier: inactive coupling (~10.0-11.1) is
+  *higher* than active (~6.6-7.1) across the entire pH range -- the
+  opposite direction from the other three receptors. This is a genuine,
+  receptor-specific difference, not noise: it holds at every single pH
+  point tested for GPR65, with no crossover.
+- **GPR65-inactive's mean coupling rises toward acid rather than
+  falling** (10.23 -> 11.12 kJ/mol, pH8->pH5), the only one of the 8
+  states where mean\|coupling\| increases monotonically-ish toward low
+  pH rather than declining or staying flat. Every other state's mean
+  coupling either declines toward acid (GPR68 active/inactive, GPR4
+  active, GPR65 active, roughly monotonic) or is non-monotonic/flat
+  (GPR4 inactive, GPR132 active/inactive).
+  Also worth flagging: GPR132-active's mean coupling *rises* toward
+  acid too (8.63 -> 10.29 kJ/mol at pH5.5, then dips slightly at pH5.0)
+  -- a second state, on a different receptor, also showing this
+  "coupling strengthens toward acid" pattern, in contrast to GPR68's
+  sharp fc *collapse* toward acid reported in the previous entry.
+  These three patterns (GPR68: fc collapses toward acid; GPR65-inactive
+  and GPR132-active: coupling *rises* toward acid) are not unified by
+  any single rule identified so far -- reported as-is, not smoothed
+  into a single narrative.
+- **GPR4-inactive is the flattest state in the whole dataset** by a
+  wide margin: fc barely moves (11.9%->13.3%) and mean coupling changes
+  by only ~0.26 kJ/mol across the full 3-unit pH range, versus
+  GPR4-active's larger swings over the same range (fc 13.3%->10.7% with
+  a non-monotonic peak at pH6.5=18.5%; coupling drops by ~1.35 kJ/mol).
+  This mirrors, in direction if not magnitude, GPR68's own
+  active-more-pH-responsive-than-inactive pattern.
+- No attempt has been made to map any of these coupling values onto BW
+  positions, acidic triads, or the psGPCR ancestral-node coupling
+  results from earlier entries -- that cross-referencing (real GPCRdb
+  paralog structures vs. reconstructed ancestral nodes) is a natural
+  next step but is explicitly out of scope for this entry, which is
+  reporting the raw real-structure pH-scan results only.
+
+Six comparison-grid figures sent to the user
+(`gpr4_active_comparison_grid.png`, `gpr4_inactive_comparison_grid.png`,
+`gpr65_active_comparison_grid.png`, `gpr65_inactive_comparison_grid.png`,
+`gpr132_active_comparison_grid.png`, `gpr132_inactive_comparison_grid.png`),
+each built with the same `plotting.plot_comparison_grid` reused from the
+GPR68 run -- no new plotting code. This completes the user's requested
+"whole dataset": GPR4, GPR65, GPR68, GPR132, active and inactive, all
+real GPCRdb structures, all under the same fixed-xi/DSSP/truncation
+methodology.
+
+Script (`run_all_ph_scans.py`) and full numeric results
+(`all_ph_scan_summary.json`) copied into the repo at
+`linkage_pka/gpr4_gpr65_gpr132_ph_scan_run/`, alongside the earlier
+`linkage_pka/gpr68_ph_scan_run/` precedent.
