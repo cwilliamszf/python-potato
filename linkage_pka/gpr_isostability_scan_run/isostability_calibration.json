@@ -1,0 +1,30 @@
+{
+  "gpr4": {
+    "xi_active_j_mol": -53.5,
+    "xi_inactive_j_mol_OLD_adhoc": null,
+    "xi_inactive_j_mol_isostability": -51.52226500532981,
+    "delta_g_fold_common_kj_mol": -47.16583122057099,
+    "warning": "ISO-STABILITY MODE: xi_other was solved to force delta_g_fold(other) == delta_g_fold(reference) exactly. The relative stability of the two conformational states is IMPOSED by this calibration, not predicted -- it must never be read as a result."
+  },
+  "gpr65": {
+    "xi_active_j_mol": -49.3,
+    "xi_inactive_j_mol_OLD_adhoc": null,
+    "xi_inactive_j_mol_isostability": -58.02982633930582,
+    "delta_g_fold_common_kj_mol": -62.55916050693934,
+    "warning": "ISO-STABILITY MODE: xi_other was solved to force delta_g_fold(other) == delta_g_fold(reference) exactly. The relative stability of the two conformational states is IMPOSED by this calibration, not predicted -- it must never be read as a result."
+  },
+  "gpr68": {
+    "xi_active_j_mol": -58.1,
+    "xi_inactive_j_mol_OLD_adhoc": null,
+    "xi_inactive_j_mol_isostability": -53.53313871668057,
+    "delta_g_fold_common_kj_mol": -58.991823168582314,
+    "warning": "ISO-STABILITY MODE: xi_other was solved to force delta_g_fold(other) == delta_g_fold(reference) exactly. The relative stability of the two conformational states is IMPOSED by this calibration, not predicted -- it must never be read as a result."
+  },
+  "gpr132": {
+    "xi_active_j_mol": -58.1,
+    "xi_inactive_j_mol_OLD_adhoc": null,
+    "xi_inactive_j_mol_isostability": -61.51989395811225,
+    "delta_g_fold_common_kj_mol": -89.23212117578998,
+    "warning": "ISO-STABILITY MODE: xi_other was solved to force delta_g_fold(other) == delta_g_fold(reference) exactly. The relative stability of the two conformational states is IMPOSED by this calibration, not predicted -- it must never be read as a result."
+  }
+}

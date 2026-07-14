@@ -3744,3 +3744,122 @@ Script (`run_all_ph_scans.py`) and full numeric results
 (`all_ph_scan_summary.json`) copied into the repo at
 `linkage_pka/gpr4_gpr65_gpr132_ph_scan_run/`, alongside the earlier
 `linkage_pka/gpr68_ph_scan_run/` precedent.
+
+## Iso-stability recalibration: the previous fixed-xi convention was NOT
+## stability-matched across active/inactive; redone with the codebase's
+## existing `calibrate_xi_isostability_mode` -- most cross-receptor
+## patterns survive, one (GPR132-inactive's low-pH fc surge) does not
+
+User asked to redo the 4-receptor pH scan with "iso-stability
+calibration, holding xi properly equalized for each protein." The
+previous run's fixed-xi convention (each state's own pH-7
+`xi_fold_scan` transition minus a flat 3.0 J/mol) was never actually
+stability-matched: a fixed *offset in xi* does not imply a fixed
+*DeltaG_fold*, since different structures have different block counts
+and contact topology, so the same 3.0 J/mol offset can correspond to
+very different folded-vs-unfolded free-energy gaps in different
+structures. This means every previous active-vs-inactive coupling
+comparison was potentially confounded by an unequal, uncontrolled
+stability difference between the two states being compared, not just
+by genuine cooperativity differences.
+
+The codebase already has the right tool for this, unused until now:
+`calibration.calibrate_xi_isostability_mode`, which root-finds (Brent's
+method, `compute_delta_g_fold` as the objective, bracket -80 to -20
+J/mol per the paper's own xi range) a "other" structure's xi so its
+folded-minus-unfolded free energy at 310 K matches a reference
+structure's *exactly*. Per receptor, the active state's previous fixed
+xi was kept as the reference (unmodified, so active's own pH-scan
+numbers are identical to the prior run -- a useful internal consistency
+check), and the inactive state's xi was solved to match:
+
+| Receptor | xi active (J/mol, ref, unchanged) | xi inactive: old ad hoc | xi inactive: iso-stability | common DeltaG_fold (kJ/mol, 310K) |
+|---|---|---|---|---|
+| GPR4 | -53.5 | -53.7 | -51.52 | -47.17 |
+| GPR65 | -49.3 | -57.1 | -58.03 | -62.56 |
+| GPR68 | -58.1 | -54.3 | -53.53 | -58.99 |
+| GPR132 | -58.1 | -68.7 | -61.52 | -89.23 |
+
+Per `IsoStabilityResult`'s own mandatory warning, reproduced here
+verbatim since this mode's output must never be reported without it:
+*"ISO-STABILITY MODE: xi_other was solved to force delta_g_fold(other)
+== delta_g_fold(reference) exactly. The relative stability of the two
+conformational states is IMPOSED by this calibration, not predicted --
+it must never be read as a result."* Note also this equalizes stability
+*within* each receptor's active/inactive pair, not *across* the four
+receptors (GPR4's common DeltaG_fold of -47.2 kJ/mol is not the same
+target as GPR132's -89.2 kJ/mol) -- "for each protein" was read as
+per-receptor pairing, matching how the module itself is written
+("solves for a companion structure's ... xi", i.e. one paired state
+relative to the other) and how the paper uses this mode. Cross-receptor
+absolute-coupling magnitude comparisons remain just as unequalized as
+they were in the previous run; only the active/inactive comparison
+*within* a receptor gained the stability control.
+
+Re-ran the full pH scan (8.0-5.0) at these iso-stability xi values for
+all 8 states, same DSSP/coupling pipeline as before:
+
+| State | fold_frac (all pH) | fc: pH8 -> pH5 | mean\|coupling\|: pH8 -> pH5 (kJ/mol) |
+|---|---|---|---|
+| GPR4 active (unchanged) | 94.3% | 13.3 -> 11.9 -> 14.8 -> 18.5 -> 15.2 -> 10.7 -> 10.7 | 7.27 -> 7.19 -> 7.03 -> 6.73 -> 6.40 -> 5.60 -> 5.92 |
+| GPR4 inactive (iso-stability) | 95.8% | 11.9 -> 10.4 -> 13.3 -> 14.8 -> 17.8 -> 18.5 -> 19.6 | 5.00 -> 4.99 -> 4.94 -> 4.92 -> 4.88 -> 5.00 -> 5.03 |
+| GPR65 active (unchanged) | 95.9% | 15.6 -> 17.0 -> 17.0 -> 17.0 -> 17.0 -> 17.0 -> 17.8 | 7.12 -> 7.10 -> 7.06 -> 6.91 -> 6.79 -> 6.77 -> 6.57 |
+| GPR65 inactive (iso-stability) | 94.4% | 18.5 -> 18.5 -> 18.5 -> 18.5 -> 18.5 -> 17.0 -> 16.7 | 7.81 -> 7.79 -> 7.80 -> 7.86 -> 7.97 -> 8.37 -> 8.97 |
+| GPR68 active (unchanged) | 89.9% | 21.9 -> 20.7 -> 19.3 -> 17.8 -> 17.8 -> 7.4 -> 4.4 | 10.54 -> 10.54 -> 10.58 -> 10.67 -> 10.43 -> 10.18 -> 10.18 |
+| GPR68 inactive (iso-stability) | 97.1% | 20.7 -> 17.8 -> 19.3 -> 19.3 -> 17.8 -> 16.3 -> 17.8 | 6.34 -> 6.39 -> 6.48 -> 6.55 -> 6.22 -> 5.34 -> 4.94 |
+| GPR132 active (unchanged) | 90.0% | 20.7 -> 17.4 -> 17.4 -> 17.8 -> 12.2 -> 17.4 -> 15.9 | 8.63 -> 8.66 -> 8.72 -> 8.86 -> 9.68 -> 10.29 -> 9.51 |
+| GPR132 inactive (iso-stability) | 84.3% | 14.4 -> 13.0 -> 13.0 -> 13.0 -> 13.0 -> 10.0 -> 13.3 | 3.80 -> 3.80 -> 3.82 -> 3.88 -> 3.99 -> 3.96 -> 3.95 |
+
+**What survives iso-stability recalibration (robust, not a stability
+artifact):**
+- **The active/inactive coupling-magnitude ordering per receptor is
+  unchanged in direction for all four receptors.** GPR4, GPR68, GPR132
+  still show active > inactive coupling; GPR65 is still the sole
+  reversal, inactive > active, at every pH point. Since this ordering
+  now holds *even after* forcing the two states to share identical
+  folding stability, it is not explained by one state simply being
+  picked at a more/less stable xi than the other -- it reflects a real
+  difference in this model's predicted cooperativity pattern between
+  the two conformational states, independent of overall stability.
+- **GPR65-inactive's mean coupling still rises toward acid**
+  (7.81 -> 8.97 kJ/mol, pH8->pH5), the same qualitative pattern as the
+  ad hoc run (10.23 -> 11.12 there), just at a different absolute scale.
+  This qualitative signal survives recalibration.
+- **GPR68's sharp fc collapse toward acid in the active state
+  persists unchanged** (it was the reference state, so this is
+  identical to before by construction: 21.9% -> 4.4%).
+
+**What does NOT survive (an artifact of the old ad hoc xi, not a real
+finding):**
+- **GPR132-inactive's previously-reported late-onset fc surge toward
+  acid (7.4% -> 19.3%, a >2.5x rise concentrated at pH 5.5-5.0) is gone
+  under iso-stability calibration** -- the recalibrated inactive state's
+  fc is much flatter across the whole range (14.4% -> 10.0% -> 13.3%,
+  no sharp late rise). This was flagged as a real pattern in the
+  previous entry without the benefit of stability control; it turns out
+  to depend on the specific (uncontrolled) stability the ad hoc xi
+  convention happened to assign to GPR132-inactive, not on genuine
+  pH-driven cooperativity. Reported here as a corrected finding, not
+  quietly dropped.
+- **Absolute inactive-state coupling magnitudes shifted materially**
+  under recalibration: GPR4-inactive rose from ~3.7 to ~4.9-5.0 kJ/mol
+  (+35%), GPR65-inactive fell from ~10.0-11.1 to ~7.8-9.0 kJ/mol
+  (-20%), GPR132-inactive rose from ~2.6-3.1 to ~3.8-4.0 kJ/mol (+45%);
+  GPR68-inactive was roughly comparable both ways (~4.8-6.6 vs
+  ~4.9-6.6). Only the active states are numerically identical to the
+  previous run (unchanged by construction, since they were kept as the
+  reference).
+
+Net effect: iso-stability calibration was a genuine, worthwhile check,
+not a formality -- it confirmed the headline cross-receptor pattern
+(GPR65's reversed active/inactive ordering; the other three receptors'
+consistent active>inactive ordering) is not a stability-confound
+artifact, while correctly discarding one specific claim (GPR132-inactive's
+acid-triggered fc surge) that was.
+
+Eight new comparison-grid figures sent to the user
+(`{tag}_isostability_comparison_grid.png` for all 8 states). Script
+(`run_isostability_scan.py`), calibration results
+(`isostability_calibration.json`), and full pH-scan results
+(`isostability_ph_scan_summary.json`) copied into the repo at
+`linkage_pka/gpr_isostability_scan_run/`.
