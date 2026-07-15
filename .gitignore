@@ -5,6 +5,7 @@ examples/output/*
 !examples/output/real_demo/
 !examples/output/gpr68_demo/
 !examples/output/gpr68_string_demo/
+!examples/output/gpr132_string_demo/
 gibbs/run_output.log
 gibbs/__pycache__/
 *.egg-info/

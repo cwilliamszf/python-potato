@@ -1,0 +1,24 @@
+{
+  "7.4": {
+    "endpoint_active_G": -13104.04589508778,
+    "endpoint_inactive_G": -13066.575629860285,
+    "peak_structure": "path_05_f0.50",
+    "peak_f": 0.5,
+    "peak_G": -12757.095071180736,
+    "trough_structure": "path_00_f0.00",
+    "trough_f": 0.0,
+    "trough_G": -13104.04589508778,
+    "barrier_vs_lower_endpoint_kcal_mol": 346.95082390704374
+  },
+  "6.0": {
+    "endpoint_active_G": -12985.60062861544,
+    "endpoint_inactive_G": -12925.9904083095,
+    "peak_structure": "path_05_f0.50",
+    "peak_f": 0.5,
+    "peak_G": -12648.322542234377,
+    "trough_structure": "path_00_f0.00",
+    "trough_f": 0.0,
+    "trough_G": -12985.60062861544,
+    "barrier_vs_lower_endpoint_kcal_mol": 337.278086381064
+  }
+}

@@ -125,6 +125,21 @@ landscape estimator collapses onto a single point when per-image energy
 differences vastly exceed RT). Results:
 [`examples/output/gpr68_string_demo/`](examples/output/gpr68_string_demo/README.md).
 
+`examples/gpcr_pipeline_gpr132_string_demo.py` /
+`examples/gpcr_pipeline_gpr132_string_ph6_demo.py` run the same
+interpolated-path method on real **GPR132 (G2A)**, another proton-sensing
+class-A GPCR, reusing GPR68's receptor-agnostic pipeline code directly.
+GPR132's raw input data needed two real data-quality fixes first (trimming
+disordered N/C-terminal tails that differed by up to 72 Angstrom between
+independently-modeled endpoints, and rigid-body superposing the two
+endpoint structures which -- unlike GPR68's -- were not already in the same
+reference frame), both diagnosed and documented rather than silently
+patched. The result is a genuinely different pH-response signature from
+GPR68: a much larger absolute barrier (~347 vs. ~132 kcal/mol) whose
+*shape* is essentially pH-independent, in contrast to GPR68's barrier,
+which flattened by ~46% at low pH. Results:
+[`examples/output/gpr132_string_demo/`](examples/output/gpr132_string_demo/README.md).
+
 An earlier run on a stand-in structure (before the real GPR68 structure was
 available) is preserved at
 [`examples/output/real_demo/`](examples/output/real_demo/README.md).
