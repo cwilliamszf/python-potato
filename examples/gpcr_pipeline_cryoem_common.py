@@ -65,26 +65,41 @@ def build_structure_from_residues(structure_id, chain_id, residues, resnum_map=N
     return builder.get_structure()
 
 
-def excise_fusion_by_marker(residues, marker=BRIL_MARKER, context=15):
-    """Find `marker` in the residue sequence and drop every residue from
-    the start of that match through the point where the sequence resumes
-    matching a plausible receptor context (heuristically: `context`
-    residues after the marker's own end, since the exact fusion/receptor
-    splice point can be off by a few residues at each junction and this
-    module's caller re-aligns properly against a reference afterward
-    anyway -- this step only needs to remove the bulk of the ~90-100
-    residue fusion domain, not find the exact splice residue)."""
+def excise_fusion_by_marker(residues, marker=BRIL_MARKER):
+    """Find `marker` in the residue sequence and drop exactly the matched
+    marker residues (nothing more).
+
+    An earlier version of this function also cut a large fixed-size
+    "context" window (marker_start+130 residues by list index) past the
+    marker on the theory that this would conservatively cover "the whole
+    ~90-106 residue BRIL domain plus flanking linkers." That was wrong in
+    a way that silently corrupted downstream results: verified against
+    GPR4's 9JFU, the true splice back into native receptor sequence was
+    only ~99 residues past marker start (matching real, receptor-specific
+    context immediately after "...NAYIQKYL", not a hardcoded distance),
+    while the fixed 130-residue window cut 31 residues too far -- deleting
+    the first third of real TM6 and leaving it silently absent from the
+    "cleaned" structure with no error raised.
+
+    The fix: excise ONLY the exact marker match (whose length and
+    position are known with certainty), and leave any remaining
+    non-marker fusion-domain residues on either side in place. The
+    caller's `align_and_map_resnums` step (affine-gap global alignment
+    against a reference) is relied on to correctly gap around whatever
+    fusion-domain residues remain -- a large gap is cheap under its
+    scoring scheme (open=-10, extend=-0.5) relative to the essentially
+    certain run of mismatches an ~50-100 residue non-receptor insertion
+    would produce if forced to align 1:1, so it reliably resolves to one
+    contiguous gap rather than accidentally consuming real receptor
+    residues. This makes no assumption about the fusion domain's total
+    length or the marker's position within it, unlike the fixed window."""
     seq = "".join(seq1(r.get_resname()) for r in residues)
     start = seq.find(marker)
     if start == -1:
         return residues, None  # no fusion detected
-    # BRIL is ~106 residues; scan forward from marker end for a generous
-    # window and cut at marker_start .. marker_start+130 (covers the full
-    # BRIL domain plus its own short flanking linker residues on both
-    # sides); the caller's alignment step cleans up any residual mismatch.
-    end = min(start + 130, len(residues))
+    end = start + len(marker)
     kept = residues[:start] + residues[end:]
-    return kept, (residues[start].id[1], residues[end - 1].id[1] if end > 0 else None)
+    return kept, (residues[start].id[1], residues[end - 1].id[1])
 
 
 def align_and_map_resnums(query_residues, reference_seq_by_resnum):

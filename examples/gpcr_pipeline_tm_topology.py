@@ -145,6 +145,52 @@ def _merge_runs_split_by_anchor(runs, anchor_resnum):
     return runs
 
 
+def _merge_runs_across_anchor_span(raw_runs, anchor_lo, anchor_hi, max_gap=10, min_len=MIN_HELIX_RUN):
+    """Generalization of `_merge_runs_split_by_anchor` for anchors whose
+    own motif span is itself fragmented by DSSP, or sits inside a run
+    that's too short to pass MIN_HELIX_RUN by itself (observed in GPR4's
+    TM7: the NPxxY kink breaks the helix into 259-275 / 278-286 / 291-298
+    fragments of 17/9/8 residues -- the 9-residue piece 278-286 already
+    contains the whole motif, so the simpler gap-only merge above finds
+    nothing to bridge; it just needs to be grown into its neighbor(s)).
+
+    Operates on `raw_runs` -- ALL structured runs regardless of length
+    (call `detect_structured_runs(..., min_run=1)` to get these). Starts
+    from the run(s) containing/nearest `anchor_lo`/`anchor_hi` and grows
+    the span outward (alternating backward/forward, preferring whichever
+    side has a short bridgeable gap) until it reaches `min_len` residues
+    or runs out of short (<= max_gap) gaps to bridge. A real inter-TM
+    loop (ICL/ECL) is essentially never this short, so a short gap right
+    at a conserved motif's own position is treated as a kink internal to
+    one helix, not a loop. If growth stalls before `min_len` is reached,
+    the caller's normal length filter and consistency check will surface
+    that honestly rather than this function silently over-merging.
+    """
+    i0 = _run_containing_or_nearest(raw_runs, anchor_lo)
+    i1 = _run_containing_or_nearest(raw_runs, anchor_hi)
+    i0, i1 = min(i0, i1), max(i0, i1)
+    lo, hi = raw_runs[i0][0], raw_runs[i1][1]
+
+    while (hi - lo + 1) < min_len:
+        extended = False
+        if i0 > 0 and (lo - raw_runs[i0 - 1][1] - 1) <= max_gap:
+            i0 -= 1
+            lo = raw_runs[i0][0]
+            extended = True
+        if (hi - lo + 1) >= min_len:
+            break
+        if i1 < len(raw_runs) - 1 and (raw_runs[i1 + 1][0] - hi - 1) <= max_gap:
+            i1 += 1
+            hi = raw_runs[i1][1]
+            extended = True
+        if not extended:
+            break
+
+    if i0 == i1:
+        return raw_runs
+    return raw_runs[:i0] + [(lo, hi)] + raw_runs[i1 + 1 :]
+
+
 def _run_containing_or_nearest(runs, resnum):
     for lo, hi in runs:
         if lo <= resnum <= hi:
@@ -167,6 +213,24 @@ def identify_tm_helices(pdb_path, chain_id="A"):
     runs = detect_structured_runs(pdb_path, chain_id)
     runs = _merge_runs_split_by_anchor(runs, dry["3.50"])
     runs = _merge_runs_split_by_anchor(runs, npxxy["7.53"])
+
+    def _anchor_fully_covered(runs, lo, hi):
+        return any(r_lo <= lo and hi <= r_hi for r_lo, r_hi in runs)
+
+    # If the motif's own span is itself DSSP-fragmented into pieces too
+    # short to individually survive MIN_HELIX_RUN (the simpler merge above
+    # only bridges a gap BETWEEN two already-qualifying runs), fall back to
+    # the more general raw-run merge anchored on the motif's full span.
+    # Triggered whenever either anchor's full span isn't contained in a
+    # single detected run -- not just when the run count is short, since a
+    # truncated/misassigned run can still leave the count at exactly 7.
+    if not (_anchor_fully_covered(runs, dry["3.49"], dry["3.51"])
+            and _anchor_fully_covered(runs, npxxy["7.49"], npxxy["7.53"])):
+        raw_runs = detect_structured_runs(pdb_path, chain_id, min_run=1)
+        raw_runs = _merge_runs_across_anchor_span(raw_runs, dry["3.49"], dry["3.51"])
+        raw_runs = _merge_runs_across_anchor_span(raw_runs, npxxy["7.49"], npxxy["7.53"])
+        runs = [r for r in raw_runs if r[1] - r[0] + 1 >= MIN_HELIX_RUN]
+
     if len(runs) < N_TM_HELICES:
         raise TopologyError(
             f"Only {len(runs)} structured run(s) >= {MIN_HELIX_RUN} residues found; "
