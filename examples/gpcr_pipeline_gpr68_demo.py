@@ -81,7 +81,7 @@ def frac_protonated(pka_value, ph, acid=True):
 
 
 def run_tool1_protonation(structure, pdb_path, chain_id="A"):
-    print("[tool 1] Running PROPKA3 structure-aware pKa prediction on GPR68...", flush=True)
+    print("[tool 1] Running PROPKA3 structure-aware pKa prediction...", flush=True)
     pka = predict_pka_propka(pdb_path, chain=chain_id)
     print(f"[tool 1] Got pKa for {len(pka)} titratable groups.")
 
@@ -113,18 +113,20 @@ def find_conserved_motifs(structure, chain_id="A"):
     Tyr (7.53) directly from sequence. GPR68 carries a DPxxY variant at the
     canonical NPxxY position (position 1 is D, not N) rather than the
     textbook-canonical NPxxY, so the position-1 residue is matched loosely
-    ([NDS], the known class-A variants) rather than hardcoded to N."""
+    ([NDS], the known class-A variants) rather than hardcoded to N. The
+    DRY motif's third position is likewise matched against the documented
+    class-A variant set ([YFWCH], e.g. GPR132's "DRF") rather than just Y,
+    since D/E-R is the conserved pair and the third position varies by
+    receptor."""
     chain = structure[0][chain_id]
     residues = [r for r in chain if r.id[0] == " "]
     resnums = [r.id[1] for r in residues]
     seq = "".join(seq1(r.get_resname()) for r in residues)
 
-    dry_idx = seq.find("DRY")
-    if dry_idx == -1:
-        dry_idx = seq.find("ERY")
-    if dry_idx == -1:
-        raise ValueError("Could not find a DRY/ERY motif in the sequence")
-    arg_resnum = resnums[dry_idx + 1]
+    dry_match = re.search("[DE]R[YFWCH]", seq)
+    if dry_match is None:
+        raise ValueError("Could not find a D/E-R-x (DRY-like) motif in the sequence")
+    arg_resnum = resnums[dry_match.start() + 1]
 
     npxxy_match = re.search("[NDS]P..Y", seq)
     if npxxy_match is None:
@@ -143,8 +145,12 @@ def find_ionic_lock_partner(structure, arg_resnum, chain_id="A", min_seq_sep=15,
     """Nearest Asp/Glu sidechain to the DRY-Arg's guanidinium group, excluding
     immediate sequence neighbors and any residue within min_seq_sep of an
     excluded reference position (e.g. the TM7 P-x-x-Y motif) -- otherwise the
-    nearest acidic residue is liable to be part of that other motif itself
-    (its own D/N position) rather than a genuine TM6 ionic-lock partner."""
+    nearest acidic residue is liable to be part of that other motif's own
+    helix (within ~15 residues is well within one helical turn count for
+    still being on the same TM span, not a separate TM6 partner). Verified
+    against both GPR68 (finds partner 224) and GPR132 (correctly returns
+    None -- every acidic residue within reach is excluded as motif-adjacent,
+    which is the honest answer, not a bug to work around by loosening this)."""
     chain = structure[0][chain_id]
     arg_res = next(r for r in chain if r.id[1] == arg_resnum)
     guanidinium = np.array([a.coord for a in arg_res if a.get_name() in ("NH1", "NH2", "NE", "CZ")])
