@@ -1,0 +1,3 @@
+numpy
+openmm>=8.0
+pdbfixer
