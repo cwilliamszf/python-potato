@@ -1,0 +1,64 @@
+
+======================================================================
+GPR68 DIAGNOSTICS
+======================================================================
+  TM ranges: {'TM1': [36, 51], 'TM2': [56, 82], 'TM3': [91, 124], 'TM4': [135, 157], 'TM5': [196, 213], 'TM6': [217, 253], 'TM7': [258, 310]}
+  Raw whole-chain CA RMSD (no superposition): 9.42 A
+  Invariant-core (TM1,2,3,4,5,7) superposition RMS: 0.844 A
+    TM1 RMSD post-superposition: 0.48 A
+    TM2 RMSD post-superposition: 0.42 A
+    TM3 RMSD post-superposition: 0.44 A
+    TM4 RMSD post-superposition: 0.83 A
+    TM5 RMSD post-superposition: 0.37 A
+    TM6 RMSD post-superposition: 0.83 A
+    TM7 RMSD post-superposition: 1.29 A
+  TM6 cytoplasmic-tip displacement: 1.18 A (FAILS the 4.0 A genuine-activation-pair gate)
+  Outlier-rejection cross-check (cutoff=3.0 A): kept 316/365, rms=0.893 A, 99.4% overlap with BW-defined invariant core
+
+  Interpolation core span (TM1 start .. TM7 end): 36-310
+  Core (TM1-TM7 span) endpoint CA RMSD after invariant-core superposition: 0.84 A
+
+  Building 11-image linear interpolation path...
+
+  Running real Gibbs free-energy calculations for GPR68 at pH 7.4 (11 images, ~40-90s each)...
+==============================================================================
+Chains found in input structure:
+  chain 'A': 275 standard residues
+==============================================================================
+  NOTE: completing 0 missing heavy atom(s) and 1 missing terminal atom(s) (truncated/disordered side chains in the deposited structure).
+  NOTE: 1 disulfide bond(s) (cystine crosslink) detected from SG-SG proximity and modeled as explicit covalent S-S bonds:
+      CYS172/A       -- CYS94/A         S-S = 2.03 Å
+Prepared structure: 4483 atoms (with hydrogens), total mass 31819.4 Da
+
+Potential-energy decomposition (minimized structure):
+  Bond stretching                                   151.16 kcal/mol
+  Angle bending                                     570.91 kcal/mol
+  Torsions (proper + improper)                     3097.83 kcal/mol
+  Nonbonded (van der Waals + electrostatics, raw sum)   -5992.84 kcal/mol
+      - vdW (Lennard-Jones)                         -1502.17 kcal/mol
+      - Electrostatics (Coulomb)                    -4490.67 kcal/mol
+      - (LJ + Coulomb) - raw nonbonded residual     -0.0003 kcal/mol  (sanity check, should be ~0)
+  Implicit solvation (GB polar + nonpolar SA)     -7952.17 kcal/mol
+
+  TOTAL potential energy U_MM (0 K, includes solvation)  -10125.11 kcal/mol
+
+RRHO thermochemistry at T = 310.15 K:
+  Vibrational modes from: Cα anisotropic network model (ANM), cutoff=15.0 Å, γ=1.0 kcal/mol/Å²
+  819 vibrational modes retained (after removing 6 trans/rot modes)
+  S_trans =   238.87 J/mol/K   S_rot =   248.82 J/mol/K   S_vib = 19075.19 J/mol/K
+  S_total = 19562.88 J/mol/K  (4675.6402 cal/mol/K)
+  Zero-point energy            44.67 kcal/mol
+  Thermal energy (T,R,V)      463.40 kcal/mol
+  H = U_MM + E_thermal + ZPE + PV          -9616.43 kcal/mol
+  T*S_total                                 1450.15 kcal/mol
+
+  G = H - T*S                             -11066.58 kcal/mol
+    [1/11] path_00_f0.00 (f=0.00): G = -11066.58 kcal/mol, RMSD-to-active=0.00 A, RMSD-to-inactive=0.84 A (elapsed 64s)
+==============================================================================
+Chains found in input structure:
+  chain 'A': 275 standard residues
+==============================================================================
+  NOTE: completing 0 missing heavy atom(s) and 1 missing terminal atom(s) (truncated/disordered side chains in the deposited structure).
+  NOTE: 1 disulfide bond(s) (cystine crosslink) detected from SG-SG proximity and modeled as explicit covalent S-S bonds:
+      CYS172/A       -- CYS94/A         S-S = 2.02 Å
+Prepared structure: 4483 atoms (with hydrogens), total mass 31819.4 Da
