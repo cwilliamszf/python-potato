@@ -63,3 +63,36 @@ Chains found in input structure:
       CYS172/A       -- CYS94/A         S-S = 2.04 Å
       CYS258/A       -- CYS13/A         S-S = 1.90 Å
 Prepared structure: 5770 atoms (with hydrogens), total mass 41074.8 Da
+
+Potential-energy decomposition (minimized structure):
+  Bond stretching                                   209.42 kcal/mol
+  Angle bending                                     806.88 kcal/mol
+  Torsions (proper + improper)                     4221.10 kcal/mol
+  Nonbonded (van der Waals + electrostatics, raw sum)   -7022.30 kcal/mol
+      - vdW (Lennard-Jones)                         -1661.45 kcal/mol
+      - Electrostatics (Coulomb)                    -5360.84 kcal/mol
+      - (LJ + Coulomb) - raw nonbonded residual     -0.0003 kcal/mol  (sanity check, should be ~0)
+  Implicit solvation (GB polar + nonpolar SA)    -10725.41 kcal/mol
+
+  TOTAL potential energy U_MM (0 K, includes solvation)  -12510.32 kcal/mol
+
+RRHO thermochemistry at T = 310.15 K:
+  Vibrational modes from: Cα anisotropic network model (ANM), cutoff=15.0 Å, γ=1.0 kcal/mol/Å²
+  1089 vibrational modes retained (after removing 6 trans/rot modes)
+  S_trans =   242.05 J/mol/K   S_rot =   259.17 J/mol/K   S_vib = 27347.92 J/mol/K
+  S_total = 27849.14 J/mol/K  (6656.1037 cal/mol/K)
+  Zero-point energy            54.45 kcal/mol
+  Thermal energy (T,R,V)      620.32 kcal/mol
+  H = U_MM + E_thermal + ZPE + PV         -11834.94 kcal/mol
+  T*S_total                                 2064.39 kcal/mol
+
+  G = H - T*S                             -13899.33 kcal/mol
+  [2/20] active_01 (active): G = -13899.33 kcal/mol (elapsed 137s)
+==============================================================================
+Chains found in input structure:
+  chain 'A': 365 standard residues
+==============================================================================
+  NOTE: 2 disulfide bond(s) (cystine crosslink) detected from SG-SG proximity and modeled as explicit covalent S-S bonds:
+      CYS172/A       -- CYS94/A         S-S = 2.00 Å
+      CYS258/A       -- CYS13/A         S-S = 2.09 Å
+Prepared structure: 5770 atoms (with hydrogens), total mass 41074.8 Da
