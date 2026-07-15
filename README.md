@@ -101,14 +101,19 @@ two estimation modes depending on what tool 3 actually outputs:
 Both a smooth (Gaussian KDE, better for sparse AlphaFold-style ensembles) and
 a raw weighted-histogram estimator are available.
 
-### Real end-to-end run (tools 1, 3, 4 real; tool 2 substituted)
+### Real end-to-end runs (tools 1, 3, 4 real; tool 2 substituted)
 
-`examples/gpcr_pipeline_real_demo.py` runs the actual tool 1 (PROPKA3
-pKa prediction) and tool 3 (AMBER ff14SB + GBn2 + RRHO Gibbs energy via
-OpenMM/PDBFixer) code against a real structure, with a lightweight
-Calpha-ANM ensemble standing in for tool 2 (GPU-bound ColabFold folding
-isn't available in this environment). Results, plots, and a full writeup
-of what's real vs. substituted are committed under
+`examples/gpcr_pipeline_gpr68_demo.py` runs the actual tool 1 (PROPKA3 pKa
+prediction) and tool 3 (AMBER ff14SB + GBn2 + RRHO Gibbs energy via
+OpenMM/PDBFixer) code against the **real GPR68 (OGR1)** active-state
+structure (`examples/data/gpr68_structures/`, GPCRdb AFMS), with a
+10-conformer Calpha-ANM ensemble standing in for tool 2 (GPU-bound
+ColabFold folding isn't available in this environment). Results, real
+pKa/Gibbs numbers, and a full writeup of what's real vs. substituted
+(including landscape-shape caveats) are committed under
+[`examples/output/gpr68_demo/`](examples/output/gpr68_demo/README.md).
+An earlier run on a stand-in structure (before the real GPR68 structure was
+available) is preserved at
 [`examples/output/real_demo/`](examples/output/real_demo/README.md).
 
 ### Setup

@@ -3,6 +3,7 @@ __pycache__/
 .pytest_cache/
 examples/output/*
 !examples/output/real_demo/
+!examples/output/gpr68_demo/
 gibbs/run_output.log
 gibbs/__pycache__/
 *.egg-info/
