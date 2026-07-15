@@ -1,23 +1,33 @@
 # python-potato
 
-## gpcr_energy_landscapes
+Four tools for GPCR conformational free-energy landscapes, each built in a
+separate session and merged here:
 
-Tool 4 of a 4-tool GPCR pipeline: turns a protonated, diverse conformational
+| # | Tool | Location | Docs |
+|---|------|----------|------|
+| 1 | Protonation from pKa + pH (WSME model, pH-linkage) | `linkage_pka/`, `wsme_gpcr/` | [README_wsme_gpcr.md](README_wsme_gpcr.md) |
+| 2 | Diverse conformational ensemble from AlphaFold/ColabFold | `gpcr_ensemble/` | [README_gpcr_ensemble.md](README_gpcr_ensemble.md) |
+| 3 | Gibbs free energy per structure | `gibbs/` | [gibbs/README.md](gibbs/README.md) |
+| 4 | Energy conformational landscapes from ensemble + Gibbs energies | `gpcr_energy_landscapes/` | below |
+
+Note: tool 1's branch (`wsme_gpcr`/`linkage_pka`) also independently computes
+its own multi-basin free-energy landscapes directly from a structure via a
+statistical-mechanical (WSME) model with built-in pH-dependence -- it doesn't
+require tools 2/3 to produce a landscape on its own. Tool 4 below takes the
+complementary approach described in Fleetwood et al. 2021: landscapes
+projected from an explicit conformational *ensemble* (tool 2) with
+per-structure Gibbs energies (tool 3), along key distances or in PCA/MDS/t-SNE
+space.
+
+## gpcr_energy_landscapes (tool 4)
+
+Tool 4 of the GPCR pipeline: turns a protonated, diverse conformational
 ensemble and per-structure Gibbs free energies into the free-energy
 conformational landscapes described in Fleetwood, Carlsson & Delemotte,
 *"Identification of ligand-specific GPCR states and prediction of downstream
 efficacy via data-driven modeling"*, eLife 2021;10:e60715 -- 1D/2D landscapes
 along key microswitch distances, and PCA/MDS/t-SNE embeddings colored by
 free energy.
-
-Pipeline it plugs into:
-
-1. **Protonation** -- assigns protonation states from residue pKa + pH.
-2. **Ensemble generation** -- samples a diverse set of conformations from an
-   AlphaFold model.
-3. **Gibbs free energy** -- computes a free energy value per conformer.
-4. **This tool** -- projects the ensemble + energies into an energy
-   landscape, either along chosen key distances or in PCA/MDS/t-SNE space.
 
 ### Interface contract with tools 1-3
 

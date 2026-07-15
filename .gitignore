@@ -4,3 +4,9 @@ __pycache__/
 examples/output/
 gibbs/run_output.log
 gibbs/__pycache__/
+*.egg-info/
+build/
+dist/
+wsme_output/
+.venv/
+io.mc

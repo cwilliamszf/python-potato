@@ -1,0 +1,676 @@
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node22 M|xi-3.0|pH8.0] triad_mean=3.918598099205738, triad_pct=0.04997501249375312, shell_mean=7.410868336263674, shell_pct=99.65017491254373, fc=14.4%, absence=['E4.53 absent (state=V)', 'H7.36 absent (state=R)'], t=2.4s (cum=2.4s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node22 M|xi-3.0|pH7.5] triad_mean=3.891418101600387, triad_pct=0.04997501249375312, shell_mean=7.249942518785127, shell_pct=99.55022488755623, fc=14.4%, absence=['E4.53 absent (state=V)', 'H7.36 absent (state=R)'], t=2.4s (cum=4.7s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node22 M|xi-3.0|pH7.0] triad_mean=3.8414635853497856, triad_pct=0.04997501249375312, shell_mean=6.930556639889071, shell_pct=98.00099950024988, fc=15.9%, absence=['E4.53 absent (state=V)', 'H7.36 absent (state=R)'], t=2.6s (cum=7.3s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node22 M|xi-3.0|pH6.5] triad_mean=3.916988764240198, triad_pct=0.04997501249375312, shell_mean=6.285144531225382, shell_pct=67.46626686656671, fc=11.5%, absence=['E4.53 absent (state=V)', 'H7.36 absent (state=R)'], t=2.3s (cum=9.6s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node22 M|xi-3.0|pH6.0] triad_mean=4.648864029769458, triad_pct=0.04997501249375312, shell_mean=7.396882473789761, shell_pct=53.77311344327836, fc=14.4%, absence=['E4.53 absent (state=V)', 'H7.36 absent (state=R)'], t=2.2s (cum=11.8s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node22 M|xi-3.0|pH5.5] triad_mean=5.585725266521533, triad_pct=0.04997501249375312, shell_mean=10.31666456019921, shell_pct=89.65517241379311, fc=13.0%, absence=['E4.53 absent (state=V)', 'H7.36 absent (state=R)'], t=2.3s (cum=14.1s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node22 M|xi-3.0|pH5.0] triad_mean=6.148863890096336, triad_pct=0.04997501249375312, shell_mean=12.757178040192427, shell_pct=99.80009995002499, fc=13.7%, absence=['E4.53 absent (state=V)', 'H7.36 absent (state=R)'], t=2.3s (cum=16.4s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node22 M|xi-5.0|pH8.0] triad_mean=2.9055425533424923, triad_pct=0.04997501249375312, shell_mean=4.0170473137224425, shell_pct=98.70064967516242, fc=13.7%, absence=['E4.53 absent (state=V)', 'H7.36 absent (state=R)'], t=2.3s (cum=18.7s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node22 M|xi-5.0|pH7.5] triad_mean=2.8522884813649583, triad_pct=0.04997501249375312, shell_mean=3.995964893496889, shell_pct=98.35082458770614, fc=13.7%, absence=['E4.53 absent (state=V)', 'H7.36 absent (state=R)'], t=2.4s (cum=21.1s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node22 M|xi-5.0|pH7.0] triad_mean=2.842912285971098, triad_pct=0.04997501249375312, shell_mean=3.4287898716633634, shell_pct=95.05247376311844, fc=13.7%, absence=['E4.53 absent (state=V)', 'H7.36 absent (state=R)'], t=2.4s (cum=23.5s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node22 M|xi-5.0|pH6.5] triad_mean=2.950106169192638, triad_pct=0.04997501249375312, shell_mean=2.746399110418357, shell_pct=62.16891554222889, fc=11.9%, absence=['E4.53 absent (state=V)', 'H7.36 absent (state=R)'], t=2.3s (cum=25.8s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node22 M|xi-5.0|pH6.0] triad_mean=3.7598576613559, triad_pct=0.09995002498750624, shell_mean=2.5587835084225117, shell_pct=48.22588705647176, fc=16.3%, absence=['E4.53 absent (state=V)', 'H7.36 absent (state=R)'], t=2.2s (cum=28.0s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node22 M|xi-5.0|pH5.5] triad_mean=4.684088864237658, triad_pct=0.04997501249375312, shell_mean=3.6997540024206774, shell_pct=63.56821589205397, fc=12.2%, absence=['E4.53 absent (state=V)', 'H7.36 absent (state=R)'], t=2.4s (cum=30.4s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node22 M|xi-5.0|pH5.0] triad_mean=5.770182832389542, triad_pct=1.249375312343828, shell_mean=3.736654223534333, shell_pct=70.71464267866067, fc=12.2%, absence=['E4.53 absent (state=V)', 'H7.36 absent (state=R)'], t=2.3s (cum=32.7s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node22 P|xi-3.0|pH8.0] triad_mean=4.840294152845296, triad_pct=10.644677661169416, shell_mean=3.232616778302395, shell_pct=88.85557221389305, fc=16.3%, absence=['E4.53 absent (state=V)', 'H7.36 absent (state=R)'], t=2.7s (cum=35.4s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node22 P|xi-3.0|pH7.5] triad_mean=4.36951613087456, triad_pct=4.997501249375312, shell_mean=3.2037440816027614, shell_pct=87.90604697651175, fc=16.7%, absence=['E4.53 absent (state=V)', 'H7.36 absent (state=R)'], t=2.7s (cum=38.1s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node22 P|xi-3.0|pH7.0] triad_mean=4.174044677713509, triad_pct=2.7486256871564216, shell_mean=2.719508062047384, shell_pct=67.61619190404798, fc=14.8%, absence=['E4.53 absent (state=V)', 'H7.36 absent (state=R)'], t=2.7s (cum=40.7s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node22 P|xi-3.0|pH6.5] triad_mean=4.00116550702583, triad_pct=1.199400299850075, shell_mean=2.556845476188449, shell_pct=55.42228885557221, fc=16.7%, absence=['E4.53 absent (state=V)', 'H7.36 absent (state=R)'], t=2.8s (cum=43.5s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node22 P|xi-3.0|pH6.0] triad_mean=5.416361610727163, triad_pct=15.392303848075962, shell_mean=3.2432837844213123, shell_pct=69.5152423788106, fc=15.9%, absence=['E4.53 absent (state=V)', 'H7.36 absent (state=R)'], t=2.7s (cum=46.3s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node22 P|xi-3.0|pH5.5] triad_mean=7.205782529721217, triad_pct=11.544227886056971, shell_mean=9.310608644194772, shell_pct=97.75112443778112, fc=11.5%, absence=['E4.53 absent (state=V)', 'H7.36 absent (state=R)'], t=2.7s (cum=49.0s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node22 P|xi-3.0|pH5.0] triad_mean=6.354359788615017, triad_pct=0.7996001999000499, shell_mean=12.58641835964946, shell_pct=99.70014992503748, fc=11.1%, absence=['E4.53 absent (state=V)', 'H7.36 absent (state=R)'], t=2.8s (cum=51.7s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node22 P|xi-5.0|pH8.0] triad_mean=2.612877517491362, triad_pct=0.04997501249375312, shell_mean=3.8650979868056736, shell_pct=96.60169915042479, fc=13.0%, absence=['E4.53 absent (state=V)', 'H7.36 absent (state=R)'], t=2.8s (cum=54.5s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node22 P|xi-5.0|pH7.5] triad_mean=2.426623238837893, triad_pct=0.04997501249375312, shell_mean=3.473259443704887, shell_pct=94.40279860069965, fc=14.4%, absence=['E4.53 absent (state=V)', 'H7.36 absent (state=R)'], t=3.0s (cum=57.5s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node22 P|xi-5.0|pH7.0] triad_mean=2.3042824173736474, triad_pct=0.04997501249375312, shell_mean=3.5471786656982194, shell_pct=97.65117441279361, fc=15.9%, absence=['E4.53 absent (state=V)', 'H7.36 absent (state=R)'], t=2.7s (cum=60.2s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node22 P|xi-5.0|pH6.5] triad_mean=2.468422081622951, triad_pct=0.04997501249375312, shell_mean=2.859240237205362, shell_pct=67.56621689155422, fc=19.3%, absence=['E4.53 absent (state=V)', 'H7.36 absent (state=R)'], t=2.8s (cum=63.0s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node22 P|xi-5.0|pH6.0] triad_mean=2.873839222354984, triad_pct=0.09995002498750624, shell_mean=3.304291151384313, shell_pct=75.81209395302349, fc=15.9%, absence=['E4.53 absent (state=V)', 'H7.36 absent (state=R)'], t=2.7s (cum=65.7s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node22 P|xi-5.0|pH5.5] triad_mean=4.132597202326714, triad_pct=0.5497251374312844, shell_mean=4.2068782957276705, shell_pct=66.61669165417291, fc=7.0%, absence=['E4.53 absent (state=V)', 'H7.36 absent (state=R)'], t=2.8s (cum=68.5s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node22 P|xi-5.0|pH5.0] triad_mean=4.866402733271771, triad_pct=9.145427286356822, shell_mean=7.930356588057326, shell_pct=97.25137431284358, fc=10.0%, absence=['E4.53 absent (state=V)', 'H7.36 absent (state=R)'], t=2.7s (cum=71.2s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node21 M|xi-3.0|pH8.0] triad_mean=6.491378503104367, triad_pct=0.04997501249375312, shell_mean=6.099028945282054, shell_pct=0.09995002498750624, fc=21.9%, absence=[], t=2.3s (cum=73.5s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node21 M|xi-3.0|pH7.5] triad_mean=6.4568584808748835, triad_pct=0.04997501249375312, shell_mean=6.183340408278898, shell_pct=0.04997501249375312, fc=23.3%, absence=[], t=2.3s (cum=75.7s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node21 M|xi-3.0|pH7.0] triad_mean=6.321012797224454, triad_pct=0.04997501249375312, shell_mean=6.367912711808279, shell_pct=0.09995002498750624, fc=23.3%, absence=[], t=2.3s (cum=78.0s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node21 M|xi-3.0|pH6.5] triad_mean=6.179347738383543, triad_pct=0.04997501249375312, shell_mean=6.792946389270794, shell_pct=2.2988505747126435, fc=20.4%, absence=[], t=2.3s (cum=80.3s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node21 M|xi-3.0|pH6.0] triad_mean=5.698265039904127, triad_pct=0.04997501249375312, shell_mean=7.105356831167668, shell_pct=31.2343828085957, fc=18.9%, absence=[], t=2.3s (cum=82.6s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node21 M|xi-3.0|pH5.5] triad_mean=5.252051908819984, triad_pct=0.04997501249375312, shell_mean=7.009199653972813, shell_pct=59.52023988005997, fc=14.8%, absence=[], t=2.3s (cum=84.9s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node21 M|xi-3.0|pH5.0] triad_mean=5.161824207020706, triad_pct=0.09995002498750624, shell_mean=7.613961358851909, shell_pct=88.30584707646177, fc=14.8%, absence=[], t=2.3s (cum=87.2s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node21 M|xi-5.0|pH8.0] triad_mean=4.013020149771451, triad_pct=0.04997501249375312, shell_mean=4.839177067431564, shell_pct=18.4407796101949, fc=15.2%, absence=[], t=2.3s (cum=89.5s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node21 M|xi-5.0|pH7.5] triad_mean=3.9965732398462124, triad_pct=0.04997501249375312, shell_mean=4.864912682759832, shell_pct=19.1904047976012, fc=15.2%, absence=[], t=2.3s (cum=91.7s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node21 M|xi-5.0|pH7.0] triad_mean=3.981156229056089, triad_pct=0.09995002498750624, shell_mean=4.997265728163049, shell_pct=28.735632183908045, fc=12.2%, absence=[], t=2.3s (cum=94.0s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node21 M|xi-5.0|pH6.5] triad_mean=2.350749061425617, triad_pct=0.04997501249375312, shell_mean=5.6139408218605595, shell_pct=68.56571714142929, fc=10.7%, absence=[], t=2.3s (cum=96.4s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node21 M|xi-5.0|pH6.0] triad_mean=2.123917531129955, triad_pct=0.04997501249375312, shell_mean=6.267604635218029, shell_pct=92.15392303848076, fc=10.7%, absence=[], t=2.3s (cum=98.6s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node21 M|xi-5.0|pH5.5] triad_mean=2.109169221923287, triad_pct=0.04997501249375312, shell_mean=5.058370353362248, shell_pct=84.55772113943029, fc=13.7%, absence=[], t=2.3s (cum=100.9s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node21 M|xi-5.0|pH5.0] triad_mean=1.5751844675265962, triad_pct=0.04997501249375312, shell_mean=1.9616532517918757, shell_pct=11.84407796101949, fc=12.2%, absence=[], t=2.4s (cum=103.3s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node21 P|xi-3.0|pH8.0] triad_mean=5.4403012114539475, triad_pct=4.047976011994003, shell_mean=5.6005076279965245, shell_pct=37.031484257871064, fc=10.7%, absence=[], t=2.7s (cum=106.0s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node21 P|xi-3.0|pH7.5] triad_mean=3.0167861838514876, triad_pct=0.04997501249375312, shell_mean=6.334537151825804, shell_pct=93.25337331334333, fc=12.2%, absence=[], t=2.6s (cum=108.6s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node21 P|xi-3.0|pH7.0] triad_mean=2.8000304920946415, triad_pct=1.6991504247876061, shell_mean=2.5135422877902425, shell_pct=32.68365817091454, fc=15.2%, absence=[], t=2.7s (cum=111.3s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node21 P|xi-3.0|pH6.5] triad_mean=2.778132958051351, triad_pct=1.1494252873563218, shell_mean=1.9681970923202776, shell_pct=11.894052973513244, fc=10.4%, absence=[], t=2.6s (cum=114.0s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node21 P|xi-3.0|pH6.0] triad_mean=2.878761014802834, triad_pct=1.3493253373313343, shell_mean=2.1365782309091776, shell_pct=16.891554222888555, fc=16.7%, absence=[], t=2.9s (cum=116.8s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node21 P|xi-3.0|pH5.5] triad_mean=2.933251166141289, triad_pct=2.6986506746626686, shell_mean=2.0422070515322464, shell_pct=12.993503248375813, fc=13.7%, absence=[], t=2.6s (cum=119.4s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node21 P|xi-3.0|pH5.0] triad_mean=2.9341638080369647, triad_pct=0.04997501249375312, shell_mean=6.457220897824619, shell_pct=90.45477261369315, fc=12.2%, absence=[], t=2.7s (cum=122.1s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node21 P|xi-5.0|pH8.0] triad_mean=2.691012495934687, triad_pct=1.3493253373313343, shell_mean=3.609663155028355, shell_pct=86.65667166416792, fc=10.4%, absence=[], t=2.6s (cum=124.7s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node21 P|xi-5.0|pH7.5] triad_mean=2.7955204411354817, triad_pct=1.7991004497751124, shell_mean=2.808153904622558, shell_pct=50.67466266866567, fc=14.4%, absence=[], t=2.6s (cum=127.3s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node21 P|xi-5.0|pH7.0] triad_mean=2.9148428184647672, triad_pct=1.7991004497751124, shell_mean=2.820621679130319, shell_pct=56.8215892053973, fc=16.3%, absence=[], t=2.6s (cum=129.9s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node21 P|xi-5.0|pH6.5] triad_mean=2.9780471368930765, triad_pct=1.4992503748125936, shell_mean=2.3230260361646224, shell_pct=22.988505747126435, fc=13.3%, absence=[], t=2.7s (cum=132.6s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node21 P|xi-5.0|pH6.0] triad_mean=3.0141669396654467, triad_pct=2.098950524737631, shell_mean=2.3258076192769104, shell_pct=23.83808095952024, fc=11.9%, absence=[], t=2.6s (cum=135.2s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node21 P|xi-5.0|pH5.5] triad_mean=2.8354782924927315, triad_pct=1.1494252873563218, shell_mean=2.142848736187172, shell_pct=21.039480259870064, fc=11.9%, absence=[], t=2.6s (cum=137.8s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node21 P|xi-5.0|pH5.0] triad_mean=2.847225161560921, triad_pct=2.048975512243878, shell_mean=2.532868226684659, shell_pct=53.973013493253376, fc=11.9%, absence=[], t=2.7s (cum=140.4s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node20 M|xi-3.0|pH8.0] triad_mean=4.326074748025087, triad_pct=0.04997501249375312, shell_mean=5.0203599956780165, shell_pct=8.695652173913043, fc=20.0%, absence=[], t=2.4s (cum=142.8s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node20 M|xi-3.0|pH7.5] triad_mean=4.263320924283714, triad_pct=0.09995002498750624, shell_mean=5.089125103136311, shell_pct=11.594202898550725, fc=20.0%, absence=[], t=2.4s (cum=145.2s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node20 M|xi-3.0|pH7.0] triad_mean=4.153634149998652, triad_pct=0.04997501249375312, shell_mean=5.3123013287900855, shell_pct=22.288855572213894, fc=20.0%, absence=[], t=2.4s (cum=147.6s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node20 M|xi-3.0|pH6.5] triad_mean=4.058047765588758, triad_pct=0.04997501249375312, shell_mean=6.2225974000563555, shell_pct=67.56621689155422, fc=18.1%, absence=[], t=2.5s (cum=150.1s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node20 M|xi-3.0|pH6.0] triad_mean=3.589576708923193, triad_pct=0.04997501249375312, shell_mean=8.617585229588393, shell_pct=99.95002498750625, fc=20.0%, absence=[], t=2.4s (cum=152.5s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node20 M|xi-3.0|pH5.5] triad_mean=3.452808015772133, triad_pct=0.04997501249375312, shell_mean=10.285698540344189, shell_pct=100.0, fc=15.2%, absence=[], t=2.4s (cum=154.9s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node20 M|xi-3.0|pH5.0] triad_mean=3.4270023642493075, triad_pct=0.04997501249375312, shell_mean=11.096826543613261, shell_pct=100.0, fc=15.2%, absence=[], t=2.6s (cum=157.5s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node20 M|xi-5.0|pH8.0] triad_mean=3.269233413791118, triad_pct=0.04997501249375312, shell_mean=6.569192101520885, shell_pct=78.41079460269864, fc=15.6%, absence=[], t=2.5s (cum=160.0s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node20 M|xi-5.0|pH7.5] triad_mean=3.247654079206978, triad_pct=0.04997501249375312, shell_mean=6.730670024336678, shell_pct=81.20939530234882, fc=15.6%, absence=[], t=2.4s (cum=162.4s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node20 M|xi-5.0|pH7.0] triad_mean=3.1830843713485586, triad_pct=0.04997501249375312, shell_mean=7.2961806544620185, shell_pct=99.2503748125937, fc=17.0%, absence=[], t=2.5s (cum=164.9s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node20 M|xi-5.0|pH6.5] triad_mean=3.141141667870104, triad_pct=0.04997501249375312, shell_mean=6.769371067992722, shell_pct=99.00049975012493, fc=15.6%, absence=[], t=2.4s (cum=167.3s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node20 M|xi-5.0|pH6.0] triad_mean=2.917953782175053, triad_pct=0.09995002498750624, shell_mean=7.685403816106061, shell_pct=100.0, fc=11.1%, absence=[], t=2.5s (cum=169.9s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node20 M|xi-5.0|pH5.5] triad_mean=2.885607416983226, triad_pct=0.24987506246876562, shell_mean=6.492350323802397, shell_pct=100.0, fc=12.2%, absence=[], t=2.5s (cum=172.4s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node20 M|xi-5.0|pH5.0] triad_mean=2.892931366600809, triad_pct=0.29985007496251875, shell_mean=6.859268927896214, shell_pct=100.0, fc=10.7%, absence=[], t=2.4s (cum=174.8s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node20 P|xi-3.0|pH8.0] triad_mean=5.168662827910336, triad_pct=0.04997501249375312, shell_mean=8.598631830531652, shell_pct=99.30034982508745, fc=18.1%, absence=[], t=2.8s (cum=177.6s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node20 P|xi-3.0|pH7.5] triad_mean=4.013532601459764, triad_pct=0.04997501249375312, shell_mean=9.23855384232333, shell_pct=100.0, fc=10.7%, absence=[], t=2.9s (cum=180.5s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node20 P|xi-3.0|pH7.0] triad_mean=3.283504516550651, triad_pct=0.04997501249375312, shell_mean=6.101728121499193, shell_pct=99.85007496251875, fc=12.2%, absence=[], t=2.8s (cum=183.3s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node20 P|xi-3.0|pH6.5] triad_mean=3.1335031546951235, triad_pct=0.09995002498750624, shell_mean=3.0208047364850077, shell_pct=45.877061469265364, fc=13.7%, absence=[], t=2.8s (cum=186.1s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node20 P|xi-3.0|pH6.0] triad_mean=3.350223827895708, triad_pct=0.3498250874562719, shell_mean=3.459351893843467, shell_pct=62.71864067966017, fc=15.6%, absence=[], t=2.8s (cum=188.9s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node20 P|xi-3.0|pH5.5] triad_mean=3.85674168678806, triad_pct=0.04997501249375312, shell_mean=13.491056780811897, shell_pct=100.0, fc=10.7%, absence=[], t=2.8s (cum=191.8s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node20 P|xi-3.0|pH5.0] triad_mean=5.166076025439683, triad_pct=0.04997501249375312, shell_mean=14.373558567710937, shell_pct=100.0, fc=15.2%, absence=[], t=2.8s (cum=194.5s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node20 P|xi-5.0|pH8.0] triad_mean=3.4648240066156517, triad_pct=0.3498250874562719, shell_mean=5.887794965888805, shell_pct=99.75012493753124, fc=15.6%, absence=[], t=2.8s (cum=197.3s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node20 P|xi-5.0|pH7.5] triad_mean=2.9986310695121925, triad_pct=0.19990004997501248, shell_mean=3.5177166580099923, shell_pct=83.25837081459271, fc=12.2%, absence=[], t=2.8s (cum=200.1s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node20 P|xi-5.0|pH7.0] triad_mean=3.130514161608016, triad_pct=0.6496751624187906, shell_mean=2.6525126609962215, shell_pct=41.67916041979011, fc=16.7%, absence=[], t=2.8s (cum=202.9s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node20 P|xi-5.0|pH6.5] triad_mean=3.2098059086810986, triad_pct=0.3498250874562719, shell_mean=3.1900405501548645, shell_pct=62.76861569215392, fc=13.7%, absence=[], t=2.8s (cum=205.7s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node20 P|xi-5.0|pH6.0] triad_mean=3.204071472105845, triad_pct=0.5997001499250375, shell_mean=3.60923573432638, shell_pct=80.75962018990505, fc=13.7%, absence=[], t=2.8s (cum=208.5s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node20 P|xi-5.0|pH5.5] triad_mean=3.3012834665994037, triad_pct=0.5997001499250375, shell_mean=4.202667400960076, shell_pct=95.40229885057471, fc=6.3%, absence=[], t=2.7s (cum=211.2s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node20 P|xi-5.0|pH5.0] triad_mean=3.2647422793997642, triad_pct=0.3498250874562719, shell_mean=3.3346594448982914, shell_pct=52.17391304347826, fc=10.7%, absence=[], t=2.8s (cum=214.0s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node80 M|xi-3.0|pH8.0] triad_mean=4.761749265938067, triad_pct=0.04997501249375312, shell_mean=5.70023325607559, shell_pct=0.5997001499250375, fc=17.4%, absence=[], t=2.4s (cum=216.4s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node80 M|xi-3.0|pH7.5] triad_mean=4.703369292085984, triad_pct=0.04997501249375312, shell_mean=5.679007551179914, shell_pct=0.6996501749125438, fc=17.4%, absence=[], t=2.4s (cum=218.8s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node80 M|xi-3.0|pH7.0] triad_mean=4.482103366252125, triad_pct=0.04997501249375312, shell_mean=5.42111240908602, shell_pct=0.8995502248875562, fc=15.9%, absence=[], t=2.4s (cum=221.2s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node80 M|xi-3.0|pH6.5] triad_mean=3.989743071341492, triad_pct=0.04997501249375312, shell_mean=4.9770153438219396, shell_pct=3.7981009495252374, fc=17.4%, absence=[], t=2.5s (cum=223.7s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node80 M|xi-3.0|pH6.0] triad_mean=3.3587583536540033, triad_pct=0.04997501249375312, shell_mean=4.608300373118056, shell_pct=58.77061469265367, fc=16.7%, absence=[], t=2.5s (cum=226.1s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node80 M|xi-3.0|pH5.5] triad_mean=3.1179155118370043, triad_pct=0.09995002498750624, shell_mean=2.974391107366756, shell_pct=53.32333833083458, fc=17.8%, absence=[], t=2.4s (cum=228.5s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node80 M|xi-3.0|pH5.0] triad_mean=2.9918795167643144, triad_pct=0.5497251374312844, shell_mean=3.1315585307213474, shell_pct=84.007996001999, fc=17.8%, absence=[], t=2.4s (cum=230.9s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node80 M|xi-5.0|pH8.0] triad_mean=2.3413838158358224, triad_pct=0.04997501249375312, shell_mean=4.725986285359935, shell_pct=16.8415792103948, fc=14.8%, absence=[], t=2.4s (cum=233.3s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node80 M|xi-5.0|pH7.5] triad_mean=2.3009333028348653, triad_pct=0.04997501249375312, shell_mean=4.78985042043036, shell_pct=32.733633183408294, fc=14.8%, absence=[], t=2.4s (cum=235.7s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node80 M|xi-5.0|pH7.0] triad_mean=2.1580178087021156, triad_pct=0.04997501249375312, shell_mean=5.021959439121527, shell_pct=61.169415292353825, fc=13.3%, absence=[], t=2.4s (cum=238.0s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node80 M|xi-5.0|pH6.5] triad_mean=1.951114583495411, triad_pct=0.04997501249375312, shell_mean=5.684598941659977, shell_pct=98.65067466266866, fc=10.7%, absence=[], t=2.5s (cum=240.5s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node80 M|xi-5.0|pH6.0] triad_mean=1.8146846254598368, triad_pct=0.04997501249375312, shell_mean=3.281992242056906, shell_pct=91.50424787606197, fc=15.9%, absence=[], t=2.4s (cum=242.9s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node80 M|xi-5.0|pH5.5] triad_mean=1.8155643309682488, triad_pct=0.04997501249375312, shell_mean=3.0701032691521237, shell_pct=90.65467266366817, fc=14.4%, absence=[], t=2.4s (cum=245.4s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node80 M|xi-5.0|pH5.0] triad_mean=1.8279581937545064, triad_pct=0.04997501249375312, shell_mean=3.0765145565342524, shell_pct=90.85457271364318, fc=14.4%, absence=[], t=2.4s (cum=247.8s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node80 P|xi-3.0|pH8.0] triad_mean=3.410498645050679, triad_pct=0.04997501249375312, shell_mean=4.808194008110259, shell_pct=8.395802098950524, fc=14.8%, absence=[], t=2.8s (cum=250.6s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node80 P|xi-3.0|pH7.5] triad_mean=2.8432655991930558, triad_pct=0.04997501249375312, shell_mean=6.062354882204909, shell_pct=99.45027486256872, fc=13.7%, absence=[], t=2.8s (cum=253.4s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node80 P|xi-3.0|pH7.0] triad_mean=2.5477010463768575, triad_pct=0.04997501249375312, shell_mean=3.266422497554377, shell_pct=67.96601699150425, fc=18.5%, absence=[], t=2.8s (cum=256.2s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node80 P|xi-3.0|pH6.5] triad_mean=2.5261043231213134, triad_pct=0.04997501249375312, shell_mean=3.2535271280004157, shell_pct=72.76361819090455, fc=15.2%, absence=[], t=2.9s (cum=259.0s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node80 P|xi-3.0|pH6.0] triad_mean=2.554957402723396, triad_pct=0.09995002498750624, shell_mean=3.230036601679118, shell_pct=66.4167916041979, fc=13.7%, absence=[], t=2.8s (cum=261.9s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node80 P|xi-3.0|pH5.5] triad_mean=2.624789160774854, triad_pct=0.04997501249375312, shell_mean=3.170415371475911, shell_pct=56.67166416791604, fc=13.7%, absence=[], t=2.9s (cum=264.8s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node80 P|xi-3.0|pH5.0] triad_mean=2.6932391298357876, triad_pct=0.04997501249375312, shell_mean=5.3806668095665975, shell_pct=98.60069965017492, fc=15.2%, absence=[], t=2.9s (cum=267.6s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node80 P|xi-5.0|pH8.0] triad_mean=2.268280200610478, triad_pct=3.248375812093953, shell_mean=3.7651225267458095, shell_pct=92.95352323838081, fc=16.7%, absence=[], t=2.8s (cum=270.5s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node80 P|xi-5.0|pH7.5] triad_mean=2.278504689920158, triad_pct=3.4482758620689653, shell_mean=3.6236584407788395, shell_pct=96.151924037981, fc=16.7%, absence=[], t=2.8s (cum=273.3s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node80 P|xi-5.0|pH7.0] triad_mean=2.181373153915669, triad_pct=2.998500749625187, shell_mean=3.6470293131268843, shell_pct=98.05097451274362, fc=17.8%, absence=[], t=2.9s (cum=276.2s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node80 P|xi-5.0|pH6.5] triad_mean=2.0838195051639694, triad_pct=1.2993503248375813, shell_mean=3.395178689563934, shell_pct=89.70514742628686, fc=11.5%, absence=[], t=2.9s (cum=279.0s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node80 P|xi-5.0|pH6.0] triad_mean=2.083920976810431, triad_pct=0.7496251874062968, shell_mean=3.3994836608729386, shell_pct=92.80359820089954, fc=11.5%, absence=[], t=2.9s (cum=281.9s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node80 P|xi-5.0|pH5.5] triad_mean=2.0823116366079204, triad_pct=0.9495252373813093, shell_mean=3.276125198868668, shell_pct=88.65567216391804, fc=17.8%, absence=[], t=2.7s (cum=284.6s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node80 P|xi-5.0|pH5.0] triad_mean=2.1340137013763525, triad_pct=1.2993503248375813, shell_mean=3.2417223249058367, shell_pct=86.85657171414293, fc=17.8%, absence=[], t=2.8s (cum=287.4s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node119 M|xi-3.0|pH8.0] triad_mean=6.658571343559059, triad_pct=0.5497251374312844, shell_mean=9.731966293098262, shell_pct=100.0, fc=18.1%, absence=['H7.36 absent (state=K)'], t=2.6s (cum=290.0s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node119 M|xi-3.0|pH7.5] triad_mean=6.170337110018903, triad_pct=0.3498250874562719, shell_mean=9.737839347930441, shell_pct=100.0, fc=18.1%, absence=['H7.36 absent (state=K)'], t=2.4s (cum=292.4s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node119 M|xi-3.0|pH7.0] triad_mean=5.617261278784546, triad_pct=1.0994502748625687, shell_mean=9.110205062039604, shell_pct=100.0, fc=15.2%, absence=['H7.36 absent (state=K)'], t=2.7s (cum=295.1s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node119 M|xi-3.0|pH6.5] triad_mean=4.076675553845178, triad_pct=1.199400299850075, shell_mean=7.903750623536484, shell_pct=100.0, fc=17.0%, absence=['H7.36 absent (state=K)'], t=2.4s (cum=297.5s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node119 M|xi-3.0|pH6.0] triad_mean=3.7299591218324943, triad_pct=3.648175912043978, shell_mean=6.373039134244091, shell_pct=100.0, fc=13.7%, absence=['H7.36 absent (state=K)'], t=2.4s (cum=299.9s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node119 M|xi-3.0|pH5.5] triad_mean=3.5644089673506727, triad_pct=4.3478260869565215, shell_mean=6.224197756234044, shell_pct=100.0, fc=13.7%, absence=['H7.36 absent (state=K)'], t=2.4s (cum=302.3s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node119 M|xi-3.0|pH5.0] triad_mean=3.3973818527225244, triad_pct=2.898550724637681, shell_mean=5.877176967289324, shell_pct=100.0, fc=13.7%, absence=['H7.36 absent (state=K)'], t=2.5s (cum=304.8s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node119 M|xi-5.0|pH8.0] triad_mean=3.6118774810148637, triad_pct=0.4497751124437781, shell_mean=4.023271591363607, shell_pct=99.9000499750125, fc=12.2%, absence=['H7.36 absent (state=K)'], t=2.4s (cum=307.2s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node119 M|xi-5.0|pH7.5] triad_mean=3.5808905944164966, triad_pct=0.19990004997501248, shell_mean=4.032237099483067, shell_pct=99.95002498750625, fc=12.2%, absence=['H7.36 absent (state=K)'], t=2.5s (cum=309.6s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node119 M|xi-5.0|pH7.0] triad_mean=3.5302841617374683, triad_pct=0.4497751124437781, shell_mean=4.054776377782401, shell_pct=100.0, fc=12.2%, absence=['H7.36 absent (state=K)'], t=2.5s (cum=312.1s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node119 M|xi-5.0|pH6.5] triad_mean=3.2943639769581523, triad_pct=0.4497751124437781, shell_mean=4.111821190851315, shell_pct=100.0, fc=12.2%, absence=['H7.36 absent (state=K)'], t=2.4s (cum=314.5s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node119 M|xi-5.0|pH6.0] triad_mean=2.963660491747831, triad_pct=0.24987506246876562, shell_mean=3.9786766400887092, shell_pct=100.0, fc=12.2%, absence=['H7.36 absent (state=K)'], t=2.4s (cum=316.9s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node119 M|xi-5.0|pH5.5] triad_mean=2.7619335182223494, triad_pct=0.24987506246876562, shell_mean=3.1696573892927065, shell_pct=99.95002498750625, fc=13.0%, absence=['H7.36 absent (state=K)'], t=2.5s (cum=319.4s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node119 M|xi-5.0|pH5.0] triad_mean=2.61119659008078, triad_pct=0.24987506246876562, shell_mean=3.211807615481637, shell_pct=100.0, fc=13.0%, absence=['H7.36 absent (state=K)'], t=2.4s (cum=321.8s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node119 P|xi-3.0|pH8.0] triad_mean=5.035689729712359, triad_pct=19.89005497251374, shell_mean=3.926479378962438, shell_pct=99.70014992503748, fc=16.3%, absence=['H7.36 absent (state=K)'], t=2.8s (cum=324.6s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node119 P|xi-3.0|pH7.5] triad_mean=4.923013931772344, triad_pct=17.341329335332333, shell_mean=3.9782539445979883, shell_pct=99.60019990004997, fc=16.3%, absence=['H7.36 absent (state=K)'], t=2.7s (cum=327.3s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node119 P|xi-3.0|pH7.0] triad_mean=4.5898932371472485, triad_pct=24.087956021989005, shell_mean=3.9892110771247955, shell_pct=100.0, fc=16.3%, absence=['H7.36 absent (state=K)'], t=2.8s (cum=330.1s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node119 P|xi-3.0|pH6.5] triad_mean=4.143555900319584, triad_pct=24.537731134432782, shell_mean=2.7620254164260425, shell_pct=98.80059970014993, fc=14.8%, absence=['H7.36 absent (state=K)'], t=2.7s (cum=332.8s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node119 P|xi-3.0|pH6.0] triad_mean=3.801406506482787, triad_pct=26.73663168415792, shell_mean=2.719310085885747, shell_pct=99.70014992503748, fc=13.7%, absence=['H7.36 absent (state=K)'], t=2.8s (cum=335.6s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node119 P|xi-3.0|pH5.5] triad_mean=3.6814069615977583, triad_pct=24.537731134432782, shell_mean=2.6591845423554, shell_pct=99.65017491254373, fc=11.5%, absence=['H7.36 absent (state=K)'], t=2.8s (cum=338.4s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node119 P|xi-3.0|pH5.0] triad_mean=3.8147632234361537, triad_pct=16.091954022988507, shell_mean=6.686932396481351, shell_pct=100.0, fc=6.7%, absence=['H7.36 absent (state=K)'], t=2.8s (cum=341.2s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node119 P|xi-5.0|pH8.0] triad_mean=3.1281439359469054, triad_pct=0.49975012493753124, shell_mean=3.6212948073674385, shell_pct=99.45027486256872, fc=16.3%, absence=['H7.36 absent (state=K)'], t=2.7s (cum=343.9s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node119 P|xi-5.0|pH7.5] triad_mean=3.0782802750358234, triad_pct=0.39980009995002497, shell_mean=3.6371511214556964, shell_pct=99.30034982508745, fc=14.8%, absence=['H7.36 absent (state=K)'], t=2.8s (cum=346.7s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node119 P|xi-5.0|pH7.0] triad_mean=2.90290971323946, triad_pct=1.0994502748625687, shell_mean=3.3148845900547563, shell_pct=99.65017491254373, fc=9.6%, absence=['H7.36 absent (state=K)'], t=2.7s (cum=349.4s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node119 P|xi-5.0|pH6.5] triad_mean=2.5177456451031164, triad_pct=0.09995002498750624, shell_mean=2.915653546871208, shell_pct=99.55022488755623, fc=15.6%, absence=['H7.36 absent (state=K)'], t=2.8s (cum=352.2s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node119 P|xi-5.0|pH6.0] triad_mean=2.760510136566271, triad_pct=1.0994502748625687, shell_mean=3.1634190908504136, shell_pct=99.9000499750125, fc=15.9%, absence=['H7.36 absent (state=K)'], t=2.7s (cum=355.0s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node119 P|xi-5.0|pH5.5] triad_mean=2.655223921721025, triad_pct=1.2993503248375813, shell_mean=3.2335251052882823, shell_pct=100.0, fc=17.4%, absence=['H7.36 absent (state=K)'], t=2.8s (cum=357.8s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node119 P|xi-5.0|pH5.0] triad_mean=2.6977457018075266, triad_pct=0.8495752123938031, shell_mean=3.5303819116172934, shell_pct=100.0, fc=15.2%, absence=['H7.36 absent (state=K)'], t=2.8s (cum=360.6s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node32 M|xi-3.0|pH8.0] triad_mean=3.022112775883424, triad_pct=0.04997501249375312, shell_mean=7.584039081086386, shell_pct=99.95002498750625, fc=15.9%, absence=['E4.53 absent (state=V)', 'H2.67 absent (state=N)', 'H7.36 absent (state=S)'], t=2.4s (cum=363.0s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node32 M|xi-3.0|pH7.5] triad_mean=3.0235667250402507, triad_pct=0.04997501249375312, shell_mean=7.722574289540984, shell_pct=100.0, fc=15.9%, absence=['E4.53 absent (state=V)', 'H2.67 absent (state=N)', 'H7.36 absent (state=S)'], t=2.4s (cum=365.4s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node32 M|xi-3.0|pH7.0] triad_mean=3.0254841084095445, triad_pct=0.04997501249375312, shell_mean=8.111754966593223, shell_pct=100.0, fc=17.4%, absence=['E4.53 absent (state=V)', 'H2.67 absent (state=N)', 'H7.36 absent (state=S)'], t=2.4s (cum=367.8s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node32 M|xi-3.0|pH6.5] triad_mean=2.9801712316009206, triad_pct=0.04997501249375312, shell_mean=9.12390834558233, shell_pct=100.0, fc=18.5%, absence=['E4.53 absent (state=V)', 'H2.67 absent (state=N)', 'H7.36 absent (state=S)'], t=2.4s (cum=370.2s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node32 M|xi-3.0|pH6.0] triad_mean=3.588016749584198, triad_pct=0.04997501249375312, shell_mean=10.47010261838528, shell_pct=100.0, fc=20.4%, absence=['E4.53 absent (state=V)', 'H2.67 absent (state=N)', 'H7.36 absent (state=S)'], t=2.4s (cum=372.6s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node32 M|xi-3.0|pH5.5] triad_mean=5.132972605768849, triad_pct=0.04997501249375312, shell_mean=11.803410995470697, shell_pct=100.0, fc=20.7%, absence=['E4.53 absent (state=V)', 'H2.67 absent (state=N)', 'H7.36 absent (state=S)'], t=2.4s (cum=375.0s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node32 M|xi-3.0|pH5.0] triad_mean=6.824540383134062, triad_pct=0.04997501249375312, shell_mean=12.622468682469895, shell_pct=100.0, fc=16.3%, absence=['E4.53 absent (state=V)', 'H2.67 absent (state=N)', 'H7.36 absent (state=S)'], t=2.4s (cum=377.4s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node32 M|xi-5.0|pH8.0] triad_mean=2.2076955486888252, triad_pct=0.04997501249375312, shell_mean=5.113211946363635, shell_pct=98.95052473763118, fc=13.0%, absence=['E4.53 absent (state=V)', 'H2.67 absent (state=N)', 'H7.36 absent (state=S)'], t=2.4s (cum=379.8s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node32 M|xi-5.0|pH7.5] triad_mean=2.2111031774087566, triad_pct=0.04997501249375312, shell_mean=5.050397069274672, shell_pct=98.3008495752124, fc=13.0%, absence=['E4.53 absent (state=V)', 'H2.67 absent (state=N)', 'H7.36 absent (state=S)'], t=2.5s (cum=382.3s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node32 M|xi-5.0|pH7.0] triad_mean=2.222487678891131, triad_pct=0.04997501249375312, shell_mean=5.346331590275273, shell_pct=99.35032483758121, fc=11.5%, absence=['E4.53 absent (state=V)', 'H2.67 absent (state=N)', 'H7.36 absent (state=S)'], t=2.4s (cum=384.7s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node32 M|xi-5.0|pH6.5] triad_mean=2.2755520256474866, triad_pct=0.04997501249375312, shell_mean=6.22818801463926, shell_pct=99.9000499750125, fc=11.5%, absence=['E4.53 absent (state=V)', 'H2.67 absent (state=N)', 'H7.36 absent (state=S)'], t=2.4s (cum=387.1s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node32 M|xi-5.0|pH6.0] triad_mean=2.730536850820814, triad_pct=0.04997501249375312, shell_mean=8.280928873979217, shell_pct=100.0, fc=15.9%, absence=['E4.53 absent (state=V)', 'H2.67 absent (state=N)', 'H7.36 absent (state=S)'], t=2.4s (cum=389.5s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node32 M|xi-5.0|pH5.5] triad_mean=3.3130933315468964, triad_pct=0.04997501249375312, shell_mean=10.848566899544904, shell_pct=100.0, fc=21.9%, absence=['E4.53 absent (state=V)', 'H2.67 absent (state=N)', 'H7.36 absent (state=S)'], t=2.4s (cum=391.8s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node32 M|xi-5.0|pH5.0] triad_mean=4.189407576373644, triad_pct=0.04997501249375312, shell_mean=12.649666526443319, shell_pct=100.0, fc=21.9%, absence=['E4.53 absent (state=V)', 'H2.67 absent (state=N)', 'H7.36 absent (state=S)'], t=2.3s (cum=394.2s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node32 P|xi-3.0|pH8.0] triad_mean=3.7900012991573973, triad_pct=9.095452273863069, shell_mean=4.252016053651532, shell_pct=77.31134432783608, fc=15.2%, absence=['E4.53 absent (state=V)', 'H2.67 absent (state=N)', 'H7.36 absent (state=S)'], t=2.7s (cum=396.9s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node32 P|xi-3.0|pH7.5] triad_mean=3.835458071204313, triad_pct=11.244377811094452, shell_mean=4.275387912654362, shell_pct=76.91154422788605, fc=15.2%, absence=['E4.53 absent (state=V)', 'H2.67 absent (state=N)', 'H7.36 absent (state=S)'], t=2.7s (cum=399.6s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node32 P|xi-3.0|pH7.0] triad_mean=3.9566763893518346, triad_pct=13.143428285857071, shell_mean=4.433222794442776, shell_pct=82.3088455772114, fc=15.2%, absence=['E4.53 absent (state=V)', 'H2.67 absent (state=N)', 'H7.36 absent (state=S)'], t=2.8s (cum=402.3s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node32 P|xi-3.0|pH6.5] triad_mean=4.295292319978344, triad_pct=16.191904047976013, shell_mean=5.126271481407371, shell_pct=95.8520739630185, fc=11.9%, absence=['E4.53 absent (state=V)', 'H2.67 absent (state=N)', 'H7.36 absent (state=S)'], t=2.7s (cum=405.0s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node32 P|xi-3.0|pH6.0] triad_mean=5.609837078386933, triad_pct=33.88305847076462, shell_mean=7.318712200942706, shell_pct=99.1504247876062, fc=14.8%, absence=['E4.53 absent (state=V)', 'H2.67 absent (state=N)', 'H7.36 absent (state=S)'], t=2.7s (cum=407.7s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node32 P|xi-3.0|pH5.5] triad_mean=9.171888956423599, triad_pct=98.3008495752124, shell_mean=10.46224072010753, shell_pct=100.0, fc=16.3%, absence=['E4.53 absent (state=V)', 'H2.67 absent (state=N)', 'H7.36 absent (state=S)'], t=2.7s (cum=410.4s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node32 P|xi-3.0|pH5.0] triad_mean=11.77335807702516, triad_pct=97.20139930034982, shell_mean=14.030553901236393, shell_pct=100.0, fc=16.3%, absence=['E4.53 absent (state=V)', 'H2.67 absent (state=N)', 'H7.36 absent (state=S)'], t=2.9s (cum=413.3s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node32 P|xi-5.0|pH8.0] triad_mean=2.132017126784605, triad_pct=0.29985007496251875, shell_mean=3.1194051279805386, shell_pct=64.56771614192904, fc=14.4%, absence=['E4.53 absent (state=V)', 'H2.67 absent (state=N)', 'H7.36 absent (state=S)'], t=2.8s (cum=416.1s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node32 P|xi-5.0|pH7.5] triad_mean=2.13624233500347, triad_pct=0.14992503748125938, shell_mean=3.134417539729745, shell_pct=65.11744127936032, fc=14.4%, absence=['E4.53 absent (state=V)', 'H2.67 absent (state=N)', 'H7.36 absent (state=S)'], t=2.7s (cum=418.8s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node32 P|xi-5.0|pH7.0] triad_mean=2.1011235783913804, triad_pct=0.04997501249375312, shell_mean=3.168552700180533, shell_pct=66.36681659170415, fc=14.4%, absence=['E4.53 absent (state=V)', 'H2.67 absent (state=N)', 'H7.36 absent (state=S)'], t=2.7s (cum=421.6s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node32 P|xi-5.0|pH6.5] triad_mean=2.1229444506465103, triad_pct=0.09995002498750624, shell_mean=3.371568048241352, shell_pct=72.063968015992, fc=14.4%, absence=['E4.53 absent (state=V)', 'H2.67 absent (state=N)', 'H7.36 absent (state=S)'], t=2.7s (cum=424.3s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node32 P|xi-5.0|pH6.0] triad_mean=2.2164913436350004, triad_pct=0.09995002498750624, shell_mean=5.369068960714798, shell_pct=93.85307346326836, fc=13.0%, absence=['E4.53 absent (state=V)', 'H2.67 absent (state=N)', 'H7.36 absent (state=S)'], t=2.7s (cum=427.0s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node32 P|xi-5.0|pH5.5] triad_mean=3.553823407855897, triad_pct=1.949025487256372, shell_mean=6.699185528859866, shell_pct=98.3008495752124, fc=10.4%, absence=['E4.53 absent (state=V)', 'H2.67 absent (state=N)', 'H7.36 absent (state=S)'], t=2.8s (cum=429.9s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node32 P|xi-5.0|pH5.0] triad_mean=4.507390642551727, triad_pct=0.19990004997501248, shell_mean=10.151407227239822, shell_pct=99.95002498750625, fc=10.0%, absence=['E4.53 absent (state=V)', 'H2.67 absent (state=N)', 'H7.36 absent (state=S)'], t=2.9s (cum=432.8s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node34 M|xi-3.0|pH8.0] triad_mean=4.209247998094524, triad_pct=0.04997501249375312, shell_mean=None, shell_pct=None, fc=18.5%, absence=['E4.53 absent (state=V)', 'H2.67 absent (state=N)', 'H45.47 absent (state=Q)', 'H7.36 absent (state=T)'], t=2.3s (cum=435.1s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node34 M|xi-3.0|pH7.5] triad_mean=4.207750101942607, triad_pct=0.04997501249375312, shell_mean=None, shell_pct=None, fc=18.5%, absence=['E4.53 absent (state=V)', 'H2.67 absent (state=N)', 'H45.47 absent (state=Q)', 'H7.36 absent (state=T)'], t=2.3s (cum=437.5s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node34 M|xi-3.0|pH7.0] triad_mean=4.19429892315427, triad_pct=0.04997501249375312, shell_mean=None, shell_pct=None, fc=18.5%, absence=['E4.53 absent (state=V)', 'H2.67 absent (state=N)', 'H45.47 absent (state=Q)', 'H7.36 absent (state=T)'], t=2.3s (cum=439.8s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node34 M|xi-3.0|pH6.5] triad_mean=4.175928923658729, triad_pct=0.04997501249375312, shell_mean=None, shell_pct=None, fc=18.5%, absence=['E4.53 absent (state=V)', 'H2.67 absent (state=N)', 'H45.47 absent (state=Q)', 'H7.36 absent (state=T)'], t=2.5s (cum=442.2s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node34 M|xi-3.0|pH6.0] triad_mean=4.177648752610379, triad_pct=0.04997501249375312, shell_mean=None, shell_pct=None, fc=18.5%, absence=['E4.53 absent (state=V)', 'H2.67 absent (state=N)', 'H45.47 absent (state=Q)', 'H7.36 absent (state=T)'], t=2.2s (cum=444.4s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node34 M|xi-3.0|pH5.5] triad_mean=4.070987702674841, triad_pct=0.04997501249375312, shell_mean=None, shell_pct=None, fc=16.7%, absence=['E4.53 absent (state=V)', 'H2.67 absent (state=N)', 'H45.47 absent (state=Q)', 'H7.36 absent (state=T)'], t=2.2s (cum=446.7s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node34 M|xi-3.0|pH5.0] triad_mean=4.344953248432635, triad_pct=0.04997501249375312, shell_mean=None, shell_pct=None, fc=18.1%, absence=['E4.53 absent (state=V)', 'H2.67 absent (state=N)', 'H45.47 absent (state=Q)', 'H7.36 absent (state=T)'], t=2.2s (cum=448.9s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node34 M|xi-5.0|pH8.0] triad_mean=3.9067281636004934, triad_pct=25.487256371814095, shell_mean=None, shell_pct=None, fc=12.2%, absence=['E4.53 absent (state=V)', 'H2.67 absent (state=N)', 'H45.47 absent (state=Q)', 'H7.36 absent (state=T)'], t=2.3s (cum=451.2s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node34 M|xi-5.0|pH7.5] triad_mean=3.91018374420891, triad_pct=26.686656671664167, shell_mean=None, shell_pct=None, fc=12.2%, absence=['E4.53 absent (state=V)', 'H2.67 absent (state=N)', 'H45.47 absent (state=Q)', 'H7.36 absent (state=T)'], t=2.3s (cum=453.5s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node34 M|xi-5.0|pH7.0] triad_mean=3.9054714538006263, triad_pct=28.385807096451774, shell_mean=None, shell_pct=None, fc=12.2%, absence=['E4.53 absent (state=V)', 'H2.67 absent (state=N)', 'H45.47 absent (state=Q)', 'H7.36 absent (state=T)'], t=2.2s (cum=455.7s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node34 M|xi-5.0|pH6.5] triad_mean=3.8839806793217346, triad_pct=36.48175912043978, shell_mean=None, shell_pct=None, fc=12.2%, absence=['E4.53 absent (state=V)', 'H2.67 absent (state=N)', 'H45.47 absent (state=Q)', 'H7.36 absent (state=T)'], t=2.3s (cum=458.0s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node34 M|xi-5.0|pH6.0] triad_mean=3.850762863501766, triad_pct=40.779610194902546, shell_mean=None, shell_pct=None, fc=12.2%, absence=['E4.53 absent (state=V)', 'H2.67 absent (state=N)', 'H45.47 absent (state=Q)', 'H7.36 absent (state=T)'], t=2.2s (cum=460.2s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node34 M|xi-5.0|pH5.5] triad_mean=3.7129978545835836, triad_pct=38.3808095952024, shell_mean=None, shell_pct=None, fc=12.2%, absence=['E4.53 absent (state=V)', 'H2.67 absent (state=N)', 'H45.47 absent (state=Q)', 'H7.36 absent (state=T)'], t=2.2s (cum=462.5s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node34 M|xi-5.0|pH5.0] triad_mean=3.546236515423342, triad_pct=31.03448275862069, shell_mean=None, shell_pct=None, fc=12.2%, absence=['E4.53 absent (state=V)', 'H2.67 absent (state=N)', 'H45.47 absent (state=Q)', 'H7.36 absent (state=T)'], t=2.3s (cum=464.8s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node34 P|xi-3.0|pH8.0] triad_mean=5.782035021333057, triad_pct=97.50124937531234, shell_mean=None, shell_pct=None, fc=10.7%, absence=['E4.53 absent (state=V)', 'H2.67 absent (state=N)', 'H45.47 absent (state=Q)', 'H7.36 absent (state=T)'], t=2.5s (cum=467.3s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node34 P|xi-3.0|pH7.5] triad_mean=5.920638980076968, triad_pct=98.3008495752124, shell_mean=None, shell_pct=None, fc=10.7%, absence=['E4.53 absent (state=V)', 'H2.67 absent (state=N)', 'H45.47 absent (state=Q)', 'H7.36 absent (state=T)'], t=2.6s (cum=470.0s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node34 P|xi-3.0|pH7.0] triad_mean=5.895724879256041, triad_pct=97.70114942528735, shell_mean=None, shell_pct=None, fc=12.2%, absence=['E4.53 absent (state=V)', 'H2.67 absent (state=N)', 'H45.47 absent (state=Q)', 'H7.36 absent (state=T)'], t=2.7s (cum=472.6s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node34 P|xi-3.0|pH6.5] triad_mean=5.871539050558799, triad_pct=98.4007996001999, shell_mean=None, shell_pct=None, fc=10.4%, absence=['E4.53 absent (state=V)', 'H2.67 absent (state=N)', 'H45.47 absent (state=Q)', 'H7.36 absent (state=T)'], t=2.7s (cum=475.3s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node34 P|xi-3.0|pH6.0] triad_mean=5.886298876179365, triad_pct=99.50024987506247, shell_mean=None, shell_pct=None, fc=10.4%, absence=['E4.53 absent (state=V)', 'H2.67 absent (state=N)', 'H45.47 absent (state=Q)', 'H7.36 absent (state=T)'], t=2.6s (cum=477.9s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node34 P|xi-3.0|pH5.5] triad_mean=6.238179691842702, triad_pct=99.40029985007496, shell_mean=None, shell_pct=None, fc=13.7%, absence=['E4.53 absent (state=V)', 'H2.67 absent (state=N)', 'H45.47 absent (state=Q)', 'H7.36 absent (state=T)'], t=2.6s (cum=480.5s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node34 P|xi-3.0|pH5.0] triad_mean=7.406073034635245, triad_pct=99.9000499750125, shell_mean=None, shell_pct=None, fc=15.2%, absence=['E4.53 absent (state=V)', 'H2.67 absent (state=N)', 'H45.47 absent (state=Q)', 'H7.36 absent (state=T)'], t=2.5s (cum=483.0s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node34 P|xi-5.0|pH8.0] triad_mean=4.535602263960346, triad_pct=99.95002498750625, shell_mean=None, shell_pct=None, fc=15.2%, absence=['E4.53 absent (state=V)', 'H2.67 absent (state=N)', 'H45.47 absent (state=Q)', 'H7.36 absent (state=T)'], t=2.6s (cum=485.6s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node34 P|xi-5.0|pH7.5] triad_mean=4.5803365262914495, triad_pct=99.9000499750125, shell_mean=None, shell_pct=None, fc=19.3%, absence=['E4.53 absent (state=V)', 'H2.67 absent (state=N)', 'H45.47 absent (state=Q)', 'H7.36 absent (state=T)'], t=2.5s (cum=488.1s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node34 P|xi-5.0|pH7.0] triad_mean=4.595002482585038, triad_pct=100.0, shell_mean=None, shell_pct=None, fc=19.3%, absence=['E4.53 absent (state=V)', 'H2.67 absent (state=N)', 'H45.47 absent (state=Q)', 'H7.36 absent (state=T)'], t=2.5s (cum=490.6s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node34 P|xi-5.0|pH6.5] triad_mean=4.595080962598564, triad_pct=100.0, shell_mean=None, shell_pct=None, fc=19.3%, absence=['E4.53 absent (state=V)', 'H2.67 absent (state=N)', 'H45.47 absent (state=Q)', 'H7.36 absent (state=T)'], t=2.5s (cum=493.2s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node34 P|xi-5.0|pH6.0] triad_mean=4.564870582351217, triad_pct=99.95002498750625, shell_mean=None, shell_pct=None, fc=20.7%, absence=['E4.53 absent (state=V)', 'H2.67 absent (state=N)', 'H45.47 absent (state=Q)', 'H7.36 absent (state=T)'], t=2.6s (cum=495.7s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node34 P|xi-5.0|pH5.5] triad_mean=4.442089743487164, triad_pct=99.85007496251875, shell_mean=None, shell_pct=None, fc=16.3%, absence=['E4.53 absent (state=V)', 'H2.67 absent (state=N)', 'H45.47 absent (state=Q)', 'H7.36 absent (state=T)'], t=2.5s (cum=498.2s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node34 P|xi-5.0|pH5.0] triad_mean=3.845730459052763, triad_pct=77.06146926536732, shell_mean=None, shell_pct=None, fc=13.3%, absence=['E4.53 absent (state=V)', 'H2.67 absent (state=N)', 'H45.47 absent (state=Q)', 'H7.36 absent (state=T)'], t=2.6s (cum=500.8s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node70 M|xi-3.0|pH8.0] triad_mean=11.657492308635621, triad_pct=72.46376811594203, shell_mean=5.884776965801166, shell_pct=0.39980009995002497, fc=12.2%, absence=['E4.53 absent (state=V)', 'H2.67 absent (state=N)', 'H7.36 absent (state=S)'], t=2.3s (cum=503.1s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node70 M|xi-3.0|pH7.5] triad_mean=11.184493841106663, triad_pct=63.968015992004, shell_mean=5.720409090903319, shell_pct=0.09995002498750624, fc=13.0%, absence=['E4.53 absent (state=V)', 'H2.67 absent (state=N)', 'H7.36 absent (state=S)'], t=2.2s (cum=505.4s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node70 M|xi-3.0|pH7.0] triad_mean=10.150617574306237, triad_pct=66.96651674162919, shell_mean=5.814671603837269, shell_pct=2.048975512243878, fc=10.7%, absence=['E4.53 absent (state=V)', 'H2.67 absent (state=N)', 'H7.36 absent (state=S)'], t=2.2s (cum=507.6s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node70 M|xi-3.0|pH6.5] triad_mean=7.740151715464513, triad_pct=68.81559220389805, shell_mean=6.31655924403017, shell_pct=44.62768615692154, fc=16.3%, absence=['E4.53 absent (state=V)', 'H2.67 absent (state=N)', 'H7.36 absent (state=S)'], t=2.3s (cum=509.9s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node70 M|xi-3.0|pH6.0] triad_mean=6.699829915488049, triad_pct=95.8520739630185, shell_mean=6.133623034558171, shell_pct=95.45227386306847, fc=14.8%, absence=['E4.53 absent (state=V)', 'H2.67 absent (state=N)', 'H7.36 absent (state=S)'], t=2.3s (cum=512.1s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node70 M|xi-3.0|pH5.5] triad_mean=6.956547499256931, triad_pct=99.65017491254373, shell_mean=5.203775152604691, shell_pct=88.50574712643679, fc=17.4%, absence=['E4.53 absent (state=V)', 'H2.67 absent (state=N)', 'H7.36 absent (state=S)'], t=2.3s (cum=514.4s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node70 M|xi-3.0|pH5.0] triad_mean=6.824379146022603, triad_pct=99.80009995002499, shell_mean=5.522157413861709, shell_pct=88.10594702648676, fc=14.1%, absence=['E4.53 absent (state=V)', 'H2.67 absent (state=N)', 'H7.36 absent (state=S)'], t=2.3s (cum=516.8s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node70 M|xi-5.0|pH8.0] triad_mean=10.82050024202349, triad_pct=76.7616191904048, shell_mean=7.054207800675875, shell_pct=33.63318340829585, fc=14.8%, absence=['E4.53 absent (state=V)', 'H2.67 absent (state=N)', 'H7.36 absent (state=S)'], t=2.3s (cum=519.0s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node70 M|xi-5.0|pH7.5] triad_mean=10.43169296213202, triad_pct=77.6111944027986, shell_mean=6.789488593414649, shell_pct=36.8815592203898, fc=14.8%, absence=['E4.53 absent (state=V)', 'H2.67 absent (state=N)', 'H7.36 absent (state=S)'], t=2.3s (cum=521.3s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node70 M|xi-5.0|pH7.0] triad_mean=9.096148694342766, triad_pct=72.063968015992, shell_mean=6.8950057506006415, shell_pct=65.6671664167916, fc=14.8%, absence=['E4.53 absent (state=V)', 'H2.67 absent (state=N)', 'H7.36 absent (state=S)'], t=2.3s (cum=523.6s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node70 M|xi-5.0|pH6.5] triad_mean=7.509513119800159, triad_pct=90.60469765117442, shell_mean=6.750452299871691, shell_pct=93.25337331334333, fc=13.3%, absence=['E4.53 absent (state=V)', 'H2.67 absent (state=N)', 'H7.36 absent (state=S)'], t=2.3s (cum=525.9s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node70 M|xi-5.0|pH6.0] triad_mean=5.953391371344823, triad_pct=89.20539730134932, shell_mean=6.265413189077971, shell_pct=93.05347326336832, fc=14.4%, absence=['E4.53 absent (state=V)', 'H2.67 absent (state=N)', 'H7.36 absent (state=S)'], t=2.3s (cum=528.2s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node70 M|xi-5.0|pH5.5] triad_mean=5.810957132067544, triad_pct=89.90504747626187, shell_mean=5.471606470549155, shell_pct=98.3008495752124, fc=13.7%, absence=['E4.53 absent (state=V)', 'H2.67 absent (state=N)', 'H7.36 absent (state=S)'], t=2.3s (cum=530.5s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node70 M|xi-5.0|pH5.0] triad_mean=5.813936385477151, triad_pct=91.20439780109945, shell_mean=5.54128542679395, shell_pct=98.65067466266866, fc=13.3%, absence=['E4.53 absent (state=V)', 'H2.67 absent (state=N)', 'H7.36 absent (state=S)'], t=2.3s (cum=532.8s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node70 P|xi-3.0|pH8.0] triad_mean=10.355937131821923, triad_pct=99.85007496251875, shell_mean=5.621184061979205, shell_pct=59.42028985507246, fc=16.7%, absence=['E4.53 absent (state=V)', 'H2.67 absent (state=N)', 'H7.36 absent (state=S)'], t=2.7s (cum=535.5s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node70 P|xi-3.0|pH7.5] triad_mean=3.0458443814012783, triad_pct=0.24987506246876562, shell_mean=7.867681433109319, shell_pct=95.60219890054972, fc=14.4%, absence=['E4.53 absent (state=V)', 'H2.67 absent (state=N)', 'H7.36 absent (state=S)'], t=2.7s (cum=538.2s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node70 P|xi-3.0|pH7.0] triad_mean=2.4668094675760672, triad_pct=0.3498250874562719, shell_mean=5.039654349334711, shell_pct=98.60069965017492, fc=18.5%, absence=['E4.53 absent (state=V)', 'H2.67 absent (state=N)', 'H7.36 absent (state=S)'], t=2.7s (cum=540.9s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node70 P|xi-3.0|pH6.5] triad_mean=4.578518369792068, triad_pct=72.21389305347326, shell_mean=5.168601905909907, shell_pct=99.20039980009994, fc=18.5%, absence=['E4.53 absent (state=V)', 'H2.67 absent (state=N)', 'H7.36 absent (state=S)'], t=2.6s (cum=543.4s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node70 P|xi-3.0|pH6.0] triad_mean=4.552660327483497, triad_pct=71.16441779110444, shell_mean=5.570779915612996, shell_pct=99.85007496251875, fc=18.5%, absence=['E4.53 absent (state=V)', 'H2.67 absent (state=N)', 'H7.36 absent (state=S)'], t=2.6s (cum=546.1s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node70 P|xi-3.0|pH5.5] triad_mean=4.539623247379442, triad_pct=71.9640179910045, shell_mean=5.631987775247388, shell_pct=99.65017491254373, fc=18.5%, absence=['E4.53 absent (state=V)', 'H2.67 absent (state=N)', 'H7.36 absent (state=S)'], t=2.7s (cum=548.7s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node70 P|xi-3.0|pH5.0] triad_mean=4.5397082362763586, triad_pct=72.26386806596702, shell_mean=5.543808095860928, shell_pct=99.9000499750125, fc=15.6%, absence=['E4.53 absent (state=V)', 'H2.67 absent (state=N)', 'H7.36 absent (state=S)'], t=2.7s (cum=551.4s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:90: RuntimeWarning: Mean of empty slice
+  observed_mean = float(np.nanmean(observed_vals))
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node70 P|xi-5.0|pH8.0] triad_mean=nan, triad_pct=0.04997501249375312, shell_mean=4.55030727089979, shell_pct=65.76711644177911, fc=15.9%, absence=['E4.53 absent (state=V)', 'H2.67 absent (state=N)', 'H7.36 absent (state=S)'], t=2.5s (cum=553.9s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node70 P|xi-5.0|pH7.5] triad_mean=6.087229274229984, triad_pct=89.05547226386807, shell_mean=4.986056169370724, shell_pct=85.65717141429285, fc=15.6%, absence=['E4.53 absent (state=V)', 'H2.67 absent (state=N)', 'H7.36 absent (state=S)'], t=2.7s (cum=556.6s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node70 P|xi-5.0|pH7.0] triad_mean=2.65547364356399, triad_pct=2.2988505747126435, shell_mean=5.566484711186739, shell_pct=97.90104947526237, fc=14.4%, absence=['E4.53 absent (state=V)', 'H2.67 absent (state=N)', 'H7.36 absent (state=S)'], t=2.6s (cum=559.2s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node70 P|xi-5.0|pH6.5] triad_mean=2.0985762059203115, triad_pct=0.04997501249375312, shell_mean=5.577501480569816, shell_pct=99.2503748125937, fc=12.6%, absence=['E4.53 absent (state=V)', 'H2.67 absent (state=N)', 'H7.36 absent (state=S)'], t=2.6s (cum=561.8s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node70 P|xi-5.0|pH6.0] triad_mean=2.086296207063489, triad_pct=0.04997501249375312, shell_mean=5.647063978790714, shell_pct=99.30034982508745, fc=12.6%, absence=['E4.53 absent (state=V)', 'H2.67 absent (state=N)', 'H7.36 absent (state=S)'], t=2.6s (cum=564.4s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node70 P|xi-5.0|pH5.5] triad_mean=2.0791162247583426, triad_pct=0.09995002498750624, shell_mean=5.586423641090338, shell_pct=99.40029985007496, fc=12.6%, absence=['E4.53 absent (state=V)', 'H2.67 absent (state=N)', 'H7.36 absent (state=S)'], t=2.6s (cum=567.0s)
+/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/triad_coupling/run_triad_coupling.py:151: RuntimeWarning: Mean of empty slice
+  row_mean = np.nanmean(cfe, axis=1)
+[Node70 P|xi-5.0|pH5.0] triad_mean=2.077675928562141, triad_pct=0.09995002498750624, shell_mean=5.603291779694151, shell_pct=99.20039980009994, fc=11.9%, absence=['E4.53 absent (state=V)', 'H2.67 absent (state=N)', 'H7.36 absent (state=S)'], t=2.6s (cum=569.7s)
+
+DONE, total 569.7s
