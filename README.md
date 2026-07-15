@@ -105,13 +105,26 @@ a raw weighted-histogram estimator are available.
 
 `examples/gpcr_pipeline_gpr68_demo.py` runs the actual tool 1 (PROPKA3 pKa
 prediction) and tool 3 (AMBER ff14SB + GBn2 + RRHO Gibbs energy via
-OpenMM/PDBFixer) code against the **real GPR68 (OGR1)** active-state
-structure (`examples/data/gpr68_structures/`, GPCRdb AFMS), with a
-10-conformer Calpha-ANM ensemble standing in for tool 2 (GPU-bound
-ColabFold folding isn't available in this environment). Results, real
-pKa/Gibbs numbers, and a full writeup of what's real vs. substituted
-(including landscape-shape caveats) are committed under
+OpenMM/PDBFixer) code against the **real GPR68 (OGR1)** active- and
+inactive-state structures (`examples/data/gpr68_structures/`, GPCRdb AFMS),
+sampling a 10-conformer Calpha-ANM ensemble around *each* endpoint (20
+total) as a tool-2 substitute (GPU-bound ColabFold folding isn't available
+in this environment). Results are committed under
 [`examples/output/gpr68_demo/`](examples/output/gpr68_demo/README.md).
+
+`examples/gpcr_pipeline_gpr68_string_demo.py` fills in the space *between*
+the two endpoints that the ANM approach above couldn't reach: a linear
+Cartesian interpolation path (11 images) between the real active and
+inactive structures, each locally relaxed and scored with the same real
+Gibbs energy pipeline -- a "linear-interpolation-with-relaxation" starting
+guess for a full string method, not a converged one (see its README for
+what that distinction means). It resolved a clean, real ~137 kcal/mol
+barrier peaking at the path's midpoint, and also documents a genuine
+tool-4 pitfall discovered while using it (the Boltzmann-weighted KDE
+landscape estimator collapses onto a single point when per-image energy
+differences vastly exceed RT). Results:
+[`examples/output/gpr68_string_demo/`](examples/output/gpr68_string_demo/README.md).
+
 An earlier run on a stand-in structure (before the real GPR68 structure was
 available) is preserved at
 [`examples/output/real_demo/`](examples/output/real_demo/README.md).
