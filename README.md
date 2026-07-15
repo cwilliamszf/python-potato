@@ -155,6 +155,34 @@ An earlier run on a stand-in structure (before the real GPR68 structure was
 available) is preserved at
 [`examples/output/real_demo/`](examples/output/real_demo/README.md).
 
+### GPR4: real experimental cryo-EM structures
+
+The user provided 11 real, experimentally solved cryo-EM structures
+(8 GPR4, 1 GPR65, 2 GPR68 -- network access to fetch these directly
+from RCSB/PDBe/GPCRdb is blocked in this environment). GPR4 uniquely
+has both a real antagonist-bound inactive structure (9JFU, with a
+BRIL fusion excised from ICL3 and alignment-renumbered onto the active
+structures' native numbering) and 7 real active/intermediate
+structures spanning pH 6.0-8.0, enabling two things not possible with
+the AlphaFold-based receptors above: (1) a fast, no-OpenMM real-structure
+pH-titration diagnostic across independently-solved active states, and
+(2) two pH-matched Gibbs paths using two *different* real active
+structures at their own deposition pH, rather than one active structure
+scored at two pH values.
+
+**Result: GPR4's real pair shows by far the clearest activation-associated
+TM6 movement of the three receptors (8.1-8.3 Å cytoplasmic displacement,
+vs. GPR132's marginal 4.87 Å and GPR68's failing 1.18 Å), and its
+barrier height is essentially pH-independent (+0.4%, vs. GPR68's -23.7%
+and GPR132's +2.5%)** -- though the two GPR4 paths' endpoint-energy
+comparison (unlike the barrier comparison) conflates real pH effects
+with real structural differences between the two active depositions,
+disclosed explicitly rather than presented as a clean pH effect. Full
+diagnostics, three-receptor comparison table, and provenance:
+[`examples/output/gpr4_symmetric_demo/README.md`](examples/output/gpr4_symmetric_demo/README.md).
+The active-only pH-titration diagnostic on its own:
+[`examples/output/gpr4_ph_titration/`](examples/output/gpr4_ph_titration/).
+
 ### Setup
 
 ```bash
