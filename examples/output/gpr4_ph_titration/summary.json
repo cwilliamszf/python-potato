@@ -1,0 +1,167 @@
+{
+  "reference": "8ZCF_pH7.5",
+  "tm_ranges": {
+    "1": [
+      19,
+      47
+    ],
+    "2": [
+      51,
+      78
+    ],
+    "3": [
+      100,
+      120
+    ],
+    "4": [
+      131,
+      149
+    ],
+    "5": [
+      192,
+      210
+    ],
+    "6": [
+      216,
+      253
+    ],
+    "7": [
+      259,
+      286
+    ]
+  },
+  "anchors": {
+    "dry": {
+      "3.49": 114,
+      "3.50": 115,
+      "3.51": 116
+    },
+    "npxxy": {
+      "7.49": 282,
+      "7.50": 283,
+      "7.53": 286
+    }
+  },
+  "invariant_core_atom_count": 144,
+  "results": [
+    {
+      "name": "9LGM",
+      "ph": 8.0,
+      "invariant_core_rmsd_angstrom": 0.8265,
+      "tm6_cytoplasmic_displacement_angstrom": 0.5181,
+      "per_helix_rmsd": {
+        "1": 0.3912,
+        "2": 1.3137,
+        "3": 0.2595,
+        "4": 0.4439,
+        "5": 0.4757,
+        "6": 1.1062,
+        "7": 1.1362
+      },
+      "outlier_rejecting_kept_fraction": 0.9066,
+      "outlier_rejecting_rms_angstrom": 0.8916
+    },
+    {
+      "name": "8ZCF",
+      "ph": 7.5,
+      "invariant_core_rmsd_angstrom": 0.0,
+      "tm6_cytoplasmic_displacement_angstrom": 0.0,
+      "per_helix_rmsd": {
+        "1": 0.0,
+        "2": 0.0,
+        "3": 0.0,
+        "4": 0.0,
+        "5": 0.0,
+        "6": 0.0,
+        "7": 0.0
+      },
+      "outlier_rejecting_kept_fraction": 1.0,
+      "outlier_rejecting_rms_angstrom": 0.0
+    },
+    {
+      "name": "9JFX",
+      "ph": 7.5,
+      "invariant_core_rmsd_angstrom": 0.7018,
+      "tm6_cytoplasmic_displacement_angstrom": 1.0441,
+      "per_helix_rmsd": {
+        "1": 0.5119,
+        "2": 0.7428,
+        "3": 0.3772,
+        "4": 0.5673,
+        "5": 0.6723,
+        "6": 0.8256,
+        "7": 1.0383
+      },
+      "outlier_rejecting_kept_fraction": 0.9829,
+      "outlier_rejecting_rms_angstrom": 0.8928
+    },
+    {
+      "name": "9JFZ_intermediate",
+      "ph": 7.5,
+      "invariant_core_rmsd_angstrom": 1.0068,
+      "tm6_cytoplasmic_displacement_angstrom": 0.6092,
+      "per_helix_rmsd": {
+        "1": 0.5227,
+        "2": 1.5217,
+        "3": 0.3381,
+        "4": 0.5416,
+        "5": 0.8218,
+        "6": 1.3106,
+        "7": 1.3679
+      },
+      "outlier_rejecting_kept_fraction": 0.9181,
+      "outlier_rejecting_rms_angstrom": 1.1781
+    },
+    {
+      "name": "9JFV",
+      "ph": 6.8,
+      "invariant_core_rmsd_angstrom": 0.6548,
+      "tm6_cytoplasmic_displacement_angstrom": 0.7315,
+      "per_helix_rmsd": {
+        "1": 0.8327,
+        "2": 0.5114,
+        "3": 0.5247,
+        "4": 0.5347,
+        "5": 0.6178,
+        "6": 0.8889,
+        "7": 0.7522
+      },
+      "outlier_rejecting_kept_fraction": 1.0,
+      "outlier_rejecting_rms_angstrom": 0.9065
+    },
+    {
+      "name": "8ZCE",
+      "ph": 6.0,
+      "invariant_core_rmsd_angstrom": 0.3995,
+      "tm6_cytoplasmic_displacement_angstrom": 0.2598,
+      "per_helix_rmsd": {
+        "1": 0.4049,
+        "2": 0.2365,
+        "3": 0.199,
+        "4": 0.2731,
+        "5": 0.2808,
+        "6": 0.3033,
+        "7": 0.6792
+      },
+      "outlier_rejecting_kept_fraction": 1.0,
+      "outlier_rejecting_rms_angstrom": 0.5085
+    },
+    {
+      "name": "9BIP",
+      "ph": null,
+      "invariant_core_rmsd_angstrom": 0.7742,
+      "tm6_cytoplasmic_displacement_angstrom": 0.78,
+      "per_helix_rmsd": {
+        "1": 0.6884,
+        "2": 0.7265,
+        "3": 0.3682,
+        "4": 0.4421,
+        "5": 1.004,
+        "6": 0.6089,
+        "7": 1.0702
+      },
+      "outlier_rejecting_kept_fraction": 0.9931,
+      "outlier_rejecting_rms_angstrom": 0.9109
+    }
+  ]
+}

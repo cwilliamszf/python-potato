@@ -1,0 +1,100 @@
+{
+  "active_reference_structure": "/home/user/python-potato/examples/data/gpr68_structures/active/ClassA_ogr1_human_Active_AFMS_2024-05-15_GPCRdb.pdb",
+  "inactive_reference_structure": "/home/user/python-potato/examples/data/gpr68_structures/inactive/ClassA_ogr1_human_Inactive_AFMS_2024-05-15_GPCRdb.pdb",
+  "n_images": 11,
+  "ph": 7.4,
+  "endpoint_rmsd_angstrom": 9.421221733093262,
+  "dry_arg_resnum": 119,
+  "pxxy_tyr_resnum": 286,
+  "ionic_lock_partner_resnum": 224,
+  "path_table": {
+    "path_00_f0.00": {
+      "interpolation_fraction": 0.0,
+      "ionic_lock_like": 11.9424753189,
+      "pxxy_dry_distance": 12.4155063629,
+      "rmsd_to_active": 0.0,
+      "rmsd_to_inactive": 9.4212217331,
+      "gibbs_kcal_mol": -13896.971699361
+    },
+    "path_01_f0.10": {
+      "interpolation_fraction": 0.1,
+      "ionic_lock_like": 11.8797235489,
+      "pxxy_dry_distance": 12.4939126968,
+      "rmsd_to_active": 0.9421261549,
+      "rmsd_to_inactive": 8.479095459,
+      "gibbs_kcal_mol": -13915.1027965497
+    },
+    "path_02_f0.20": {
+      "interpolation_fraction": 0.2,
+      "ionic_lock_like": 11.8252534866,
+      "pxxy_dry_distance": 12.5800065994,
+      "rmsd_to_active": 1.8842417002,
+      "rmsd_to_inactive": 7.5369801521,
+      "gibbs_kcal_mol": -13921.6392227592
+    },
+    "path_03_f0.30": {
+      "interpolation_fraction": 0.3,
+      "ionic_lock_like": 11.7789039612,
+      "pxxy_dry_distance": 12.6736183167,
+      "rmsd_to_active": 2.8263759613,
+      "rmsd_to_inactive": 6.5948462486,
+      "gibbs_kcal_mol": -13902.6380245217
+    },
+    "path_04_f0.40": {
+      "interpolation_fraction": 0.4,
+      "ionic_lock_like": 11.7421579361,
+      "pxxy_dry_distance": 12.775437355,
+      "rmsd_to_active": 3.7684881687,
+      "rmsd_to_inactive": 5.6527338028,
+      "gibbs_kcal_mol": -13857.4503509539
+    },
+    "path_05_f0.50": {
+      "interpolation_fraction": 0.5,
+      "ionic_lock_like": 11.7122983932,
+      "pxxy_dry_distance": 12.8834276199,
+      "rmsd_to_active": 4.7106113434,
+      "rmsd_to_inactive": 4.7106103897,
+      "gibbs_kcal_mol": -13784.7990042067
+    },
+    "path_06_f0.60": {
+      "interpolation_fraction": 0.6,
+      "ionic_lock_like": 11.6915216446,
+      "pxxy_dry_distance": 12.9992694855,
+      "rmsd_to_active": 5.652733326,
+      "rmsd_to_inactive": 3.7684884071,
+      "gibbs_kcal_mol": -13827.2083595975
+    },
+    "path_07_f0.70": {
+      "interpolation_fraction": 0.7,
+      "ionic_lock_like": 11.6807250977,
+      "pxxy_dry_distance": 13.1220836639,
+      "rmsd_to_active": 6.594830513,
+      "rmsd_to_inactive": 2.8263916969,
+      "gibbs_kcal_mol": -13878.9886856898
+    },
+    "path_08_f0.80": {
+      "interpolation_fraction": 0.8,
+      "ionic_lock_like": 11.677447319,
+      "pxxy_dry_distance": 13.2507143021,
+      "rmsd_to_active": 7.5369801521,
+      "rmsd_to_inactive": 1.884241581,
+      "gibbs_kcal_mol": -13903.6389334451
+    },
+    "path_09_f0.90": {
+      "interpolation_fraction": 0.9,
+      "ionic_lock_like": 11.6832094193,
+      "pxxy_dry_distance": 13.3857164383,
+      "rmsd_to_active": 8.4790754318,
+      "rmsd_to_inactive": 0.9421463013,
+      "gibbs_kcal_mol": -13890.9057344442
+    },
+    "path_10_f1.00": {
+      "interpolation_fraction": 1.0,
+      "ionic_lock_like": 11.6976804733,
+      "pxxy_dry_distance": 13.5270376205,
+      "rmsd_to_active": 9.4212217331,
+      "rmsd_to_inactive": 0.0,
+      "gibbs_kcal_mol": -13916.5036061424
+    }
+  }
+}

@@ -1,0 +1,70 @@
+{
+  "receptor": "GPR68",
+  "active_pdb": "/home/user/python-potato/examples/data/gpr68_structures/active/ClassA_ogr1_human_Active_AFMS_2024-05-15_GPCRdb.pdb",
+  "active_pdb_sha256_16": "04cd154ca4973436",
+  "inactive_pdb": "/home/user/python-potato/examples/data/gpr68_structures/inactive/ClassA_ogr1_human_Inactive_AFMS_2024-05-15_GPCRdb.pdb",
+  "inactive_pdb_sha256_16": "8ed2f47286db058d",
+  "tm_ranges": {
+    "TM1": [
+      36,
+      51
+    ],
+    "TM2": [
+      56,
+      82
+    ],
+    "TM3": [
+      91,
+      124
+    ],
+    "TM4": [
+      135,
+      157
+    ],
+    "TM5": [
+      196,
+      213
+    ],
+    "TM6": [
+      217,
+      253
+    ],
+    "TM7": [
+      258,
+      310
+    ]
+  },
+  "dry_anchor": {
+    "3.49": 118,
+    "3.50": 119,
+    "3.51": 120
+  },
+  "npxxy_anchor": {
+    "7.49": 282,
+    "7.50": 283,
+    "7.53": 286
+  },
+  "raw_whole_chain_rmsd_angstrom": 9.421221733093262,
+  "invariant_core_superposition_rms_angstrom": 0.8436197387459147,
+  "per_helix_rmsd_post_superposition": {
+    "TM1": 0.480254203081131,
+    "TM2": 0.418350487947464,
+    "TM3": 0.43969181180000305,
+    "TM4": 0.8284463286399841,
+    "TM5": 0.36613836884498596,
+    "TM6": 0.8317998051643372,
+    "TM7": 1.2923017740249634
+  },
+  "tm6_cytoplasmic_displacement_angstrom": 1.181929111480713,
+  "tm6_tip_resnums": [
+    217,
+    218,
+    219
+  ],
+  "tm6_gate_4A_passed": false,
+  "outlier_rejection_cutoff_angstrom": 3.0,
+  "outlier_rejection_kept_n": 316,
+  "outlier_rejection_total_n": 365,
+  "outlier_rejection_rms_angstrom": 0.8926711056695587,
+  "outlier_vs_bw_core_overlap_fraction": 0.9941520467836257
+}

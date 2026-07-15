@@ -1,0 +1,138 @@
+{
+  "active_reference_structure_raw": "/home/user/python-potato/examples/data/gpr132_structures/active/ClassA_gp132_human_Active_AF_2024-05-15_GPCRdb.pdb",
+  "inactive_reference_structure_raw": "/home/user/python-potato/examples/data/gpr132_structures/inactive/ClassA_gp132_human_Inactive_AFMS_2024-05-15_GPCRdb.pdb",
+  "core_residue_range": [
+    30,
+    355
+  ],
+  "n_images": 11,
+  "ph": 7.4,
+  "raw_untrimmed_rmsd_angstrom": 33.591495513916016,
+  "core_rmsd_original_frame_angstrom": 18.987199783325195,
+  "core_rmsd_best_fit_angstrom": 2.5965218824560465,
+  "dry_arg_resnum": 140,
+  "pxxy_tyr_resnum": 308,
+  "ionic_lock_partner_resnum": null,
+  "pka_sample": {
+    "31": 10.560189951211337,
+    "39": 4.40386762239369,
+    "40": 4.6514886670690245,
+    "42": 12.626608507669983,
+    "88": 5.9761417546293,
+    "103": 12.301348960824068,
+    "106": 5.049204610560277,
+    "107": 12.39109660684273,
+    "116": 11.166028435821389,
+    "139": 2.849265212574472,
+    "140": 11.967079408771601,
+    "149": 4.009164523702581,
+    "151": 12.423810224857464,
+    "153": 12.510676104782288,
+    "154": 13.140136025174076,
+    "155": 12.392714348438625,
+    "156": 12.19654805823999,
+    "157": 12.44593844766336,
+    "174": 4.175821237021246,
+    "181": 4.402396915004804,
+    "182": 2.8445189375510473,
+    "183": 10.637990299145471,
+    "184": 4.5629845892841345,
+    "188": 3.374828215029585,
+    "193": 3.0266210359761683,
+    "195": 12.585003532066036,
+    "203": 15.44038643884257,
+    "220": 6.0594736713095845,
+    "221": 12.435588852880539,
+    "224": 12.197313683571856
+  },
+  "path_table": {
+    "path_00_f0.00": {
+      "interpolation_fraction": 0.0,
+      "ionic_lock_like": null,
+      "pxxy_dry_distance": 12.626294136,
+      "rmsd_to_active": 0.0,
+      "rmsd_to_inactive": 2.5965218544,
+      "gibbs_kcal_mol": -13104.0458950878
+    },
+    "path_01_f0.10": {
+      "interpolation_fraction": 0.1,
+      "ionic_lock_like": null,
+      "pxxy_dry_distance": 12.8233766556,
+      "rmsd_to_active": 0.2596535683,
+      "rmsd_to_inactive": 2.3368690014,
+      "gibbs_kcal_mol": -13102.0604682026
+    },
+    "path_02_f0.20": {
+      "interpolation_fraction": 0.2,
+      "ionic_lock_like": null,
+      "pxxy_dry_distance": 13.029419899,
+      "rmsd_to_active": 0.5193040371,
+      "rmsd_to_inactive": 2.0772182941,
+      "gibbs_kcal_mol": -13086.4913379354
+    },
+    "path_03_f0.30": {
+      "interpolation_fraction": 0.3,
+      "ionic_lock_like": null,
+      "pxxy_dry_distance": 13.2448701859,
+      "rmsd_to_active": 0.7789482474,
+      "rmsd_to_inactive": 1.817573905,
+      "gibbs_kcal_mol": -13017.8466927653
+    },
+    "path_04_f0.40": {
+      "interpolation_fraction": 0.4,
+      "ionic_lock_like": null,
+      "pxxy_dry_distance": 13.4676828384,
+      "rmsd_to_active": 1.0386096239,
+      "rmsd_to_inactive": 1.5579124689,
+      "gibbs_kcal_mol": -12808.0245253744
+    },
+    "path_05_f0.50": {
+      "interpolation_fraction": 0.5,
+      "ionic_lock_like": null,
+      "pxxy_dry_distance": 13.698428154,
+      "rmsd_to_active": 1.2982901335,
+      "rmsd_to_inactive": 1.2982319593,
+      "gibbs_kcal_mol": -12757.0950711807
+    },
+    "path_06_f0.60": {
+      "interpolation_fraction": 0.6,
+      "ionic_lock_like": null,
+      "pxxy_dry_distance": 13.9368534088,
+      "rmsd_to_active": 1.5579235554,
+      "rmsd_to_inactive": 1.0385986567,
+      "gibbs_kcal_mol": -12911.7875963103
+    },
+    "path_07_f0.70": {
+      "interpolation_fraction": 0.7,
+      "ionic_lock_like": null,
+      "pxxy_dry_distance": 14.1816320419,
+      "rmsd_to_active": 1.8175660372,
+      "rmsd_to_inactive": 0.7789561152,
+      "gibbs_kcal_mol": -13021.6142798593
+    },
+    "path_08_f0.80": {
+      "interpolation_fraction": 0.8,
+      "ionic_lock_like": null,
+      "pxxy_dry_distance": 14.433757782,
+      "rmsd_to_active": 2.0772285461,
+      "rmsd_to_inactive": 0.5192936659,
+      "gibbs_kcal_mol": -13050.1586716241
+    },
+    "path_09_f0.90": {
+      "interpolation_fraction": 0.9,
+      "ionic_lock_like": null,
+      "pxxy_dry_distance": 14.6922082901,
+      "rmsd_to_active": 2.3368470669,
+      "rmsd_to_inactive": 0.259675324,
+      "gibbs_kcal_mol": -13064.5199128878
+    },
+    "path_10_f1.00": {
+      "interpolation_fraction": 1.0,
+      "ionic_lock_like": null,
+      "pxxy_dry_distance": 14.9566545486,
+      "rmsd_to_active": 2.5965185165,
+      "rmsd_to_inactive": 0.0004989952,
+      "gibbs_kcal_mol": -13066.5756298603
+    }
+  }
+}

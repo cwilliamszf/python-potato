@@ -1,0 +1,12 @@
+numpy>=1.24
+scipy>=1.10
+scikit-learn
+matplotlib
+biopython>=1.81
+pandas
+pytest
+
+# ColabFold itself is a separate, heavier install (JAX + AlphaFold2 weights + a GPU are
+# required to actually fold structures). gpcr_ensemble only orchestrates it. Follow:
+#   https://github.com/YoshitakaMo/localcolabfold  (local install), or
+#   https://github.com/sokrypton/ColabFold          (Colab notebooks / pip package)

@@ -1,0 +1,95 @@
+{
+  "pair": "path_b_ph6.0",
+  "active_label": "8ZCE (pH 6.0 deposition)",
+  "ph": 6.0,
+  "diagnostics": {
+    "pair": "path_b_ph6.0",
+    "active_pdb": "/home/user/python-potato/examples/data/gpr4_structures/clean_active/8ZCE_pH6.0.pdb",
+    "active_pdb_sha256_16": "0cbe47b9adf8bd19",
+    "inactive_pdb": "/home/user/python-potato/examples/data/gpr4_structures/clean_inactive/9JFU_clean.pdb",
+    "inactive_pdb_sha256_16": "3314e326978c945b",
+    "tm_ranges": {
+      "TM1": [
+        19,
+        47
+      ],
+      "TM2": [
+        51,
+        78
+      ],
+      "TM3": [
+        100,
+        120
+      ],
+      "TM4": [
+        131,
+        149
+      ],
+      "TM5": [
+        192,
+        210
+      ],
+      "TM6": [
+        216,
+        253
+      ],
+      "TM7": [
+        259,
+        286
+      ]
+    },
+    "dry_anchor": {
+      "3.49": 114,
+      "3.50": 115,
+      "3.51": 116
+    },
+    "npxxy_anchor": {
+      "7.49": 282,
+      "7.50": 283,
+      "7.53": 286
+    },
+    "raw_common_resnum_count": 272,
+    "raw_whole_chain_rmsd_angstrom": 33.64170837402344,
+    "invariant_core_common_resnum_count": 143,
+    "invariant_core_active_total_count": 144,
+    "invariant_core_coverage_fraction": 0.9930555555555556,
+    "invariant_core_superposition_rms_angstrom": 1.93654224189223,
+    "per_helix_rmsd_post_superposition": {
+      "TM1": 1.5280040502548218,
+      "TM2": 2.188948154449463,
+      "TM3": 0.8019768595695496,
+      "TM4": 0.7174123525619507,
+      "TM5": 2.639836072921753,
+      "TM6": 3.6033012866973877,
+      "TM7": 2.5600478649139404
+    },
+    "tm6_cytoplasmic_displacement_angstrom": 8.138086318969727,
+    "tm6_tip_resnums": [
+      216,
+      217,
+      218
+    ],
+    "tm6_gate_4A_passed": true,
+    "outlier_rejection_cutoff_angstrom": 3.0,
+    "outlier_rejection_kept_n": 205,
+    "outlier_rejection_total_n": 272,
+    "outlier_rejection_rms_angstrom": 1.6558532728797382,
+    "outlier_vs_bw_core_overlap_fraction": 0.8541666666666666
+  },
+  "core_span": [
+    19,
+    286
+  ],
+  "core_endpoint_rmsd_angstrom": 3.209578275680542,
+  "n_common_path_residues": 261,
+  "n_images": 11,
+  "minimize_iterations": 150,
+  "endpoint_active_G": -9278.810984568097,
+  "endpoint_inactive_G": -9269.054411250347,
+  "endpoint_shift_inactive_minus_active": 9.756573317750735,
+  "peak_f": 0.5,
+  "peak_G": -8674.11343435084,
+  "barrier_vs_lower_endpoint_kcal_mol": 604.6975502172572,
+  "config_hash": "6e1b31f3e520247c",
+  "git_commit": "312c206c5d3af9a6d2b71fdeef2f015d1897a806"
+}

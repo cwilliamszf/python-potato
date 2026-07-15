@@ -1,0 +1,106 @@
+{
+  "receptor": "GPR132",
+  "diagnostics": {
+    "receptor": "GPR132",
+    "active_pdb": "/home/user/python-potato/examples/data/gpr132_structures/active/ClassA_gp132_human_Active_AF_2024-05-15_GPCRdb.pdb",
+    "active_pdb_sha256_16": "a13251f7f63b3832",
+    "inactive_pdb": "/home/user/python-potato/examples/data/gpr132_structures/inactive/ClassA_gp132_human_Inactive_AFMS_2024-05-15_GPCRdb.pdb",
+    "inactive_pdb_sha256_16": "9ee9996fa84ff353",
+    "tm_ranges": {
+      "TM1": [
+        39,
+        72
+      ],
+      "TM2": [
+        76,
+        92
+      ],
+      "TM3": [
+        112,
+        145
+      ],
+      "TM4": [
+        156,
+        178
+      ],
+      "TM5": [
+        210,
+        228
+      ],
+      "TM6": [
+        234,
+        271
+      ],
+      "TM7": [
+        276,
+        347
+      ]
+    },
+    "dry_anchor": {
+      "3.49": 139,
+      "3.50": 140,
+      "3.51": 141
+    },
+    "npxxy_anchor": {
+      "7.49": 304,
+      "7.50": 305,
+      "7.53": 308
+    },
+    "raw_whole_chain_rmsd_angstrom": 33.591495513916016,
+    "invariant_core_superposition_rms_angstrom": 1.8216802291762613,
+    "per_helix_rmsd_post_superposition": {
+      "TM1": 0.8029894828796387,
+      "TM2": 0.9718311429023743,
+      "TM3": 1.523867130279541,
+      "TM4": 0.9192894101142883,
+      "TM5": 2.7078683376312256,
+      "TM6": 2.4226837158203125,
+      "TM7": 2.3114969730377197
+    },
+    "tm6_cytoplasmic_displacement_angstrom": 4.868453025817871,
+    "tm6_tip_resnums": [
+      234,
+      235,
+      236
+    ],
+    "tm6_gate_4A_passed": true,
+    "outlier_rejection_cutoff_angstrom": 3.0,
+    "outlier_rejection_kept_n": 258,
+    "outlier_rejection_total_n": 380,
+    "outlier_rejection_rms_angstrom": 1.2927110205409844,
+    "outlier_vs_bw_core_overlap_fraction": 0.8140703517587939
+  },
+  "core_span": [
+    39,
+    347
+  ],
+  "core_endpoint_rmsd_angstrom": 2.359875202178955,
+  "n_images": 11,
+  "ph_values": [
+    7.4,
+    6.0
+  ],
+  "minimize_iterations": 150,
+  "config_hash": "ab337b8bb6600b26",
+  "git_commit": "e0194db57e0aaaca70fdb38d9b2f7fa7bee0b4d1",
+  "per_ph": {
+    "7.4": {
+      "endpoint_active_G": -12648.439170420326,
+      "endpoint_inactive_G": -12619.962319210303,
+      "endpoint_shift_inactive_minus_active": 28.476851210023597,
+      "peak_f": 0.5,
+      "peak_G": -12303.896308737847,
+      "barrier_vs_lower_endpoint_kcal_mol": 344.54286168247927
+    },
+    "6.0": {
+      "endpoint_active_G": -12525.509672423954,
+      "endpoint_inactive_G": -12476.507142583285,
+      "endpoint_shift_inactive_minus_active": 49.00252984066901,
+      "peak_f": 0.5,
+      "peak_G": -12172.217061257921,
+      "barrier_vs_lower_endpoint_kcal_mol": 353.29261116603266
+    }
+  },
+  "uniform_ph_offset_active_kcal_mol": 122.92949799637245,
+  "barrier_change_ph74_to_ph60": 8.749749483553387
+}
