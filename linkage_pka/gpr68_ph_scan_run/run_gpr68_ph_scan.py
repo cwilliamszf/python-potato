@@ -1,18 +1,20 @@
 import sys, json, time
-sys.path.insert(0, "/home/user/python-potato")
+from pathlib import Path
+REPO_ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(REPO_ROOT))
 import numpy as np
 from wsme_gpcr.pipeline import run_pipeline
 from wsme_gpcr.wsme import WSMEParams
 from wsme_gpcr.calibration import compute_fc
 
-D = "/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/gpcrdb_downloads"
+D = str(Path(__file__).resolve().parent)
+STRUCT = f"{D}/structures"
 
 # fixed xi per state: own pH-7 transition minus 3.0 J/mol (same matched-stability
-# convention used throughout this session), filled in once the xi_fold_scan
-# background job (task b4nhv6xlj) completes
+# convention used throughout this session)
 STATES = {
-    "active":   (f"{D}/GPR68_active_core.pdb", None),
-    "inactive": (f"{D}/GPR68_inactive_core.pdb", None),
+    "active":   (f"{STRUCT}/GPR68_active_core.pdb", None),
+    "inactive": (f"{STRUCT}/GPR68_inactive_core.pdb", None),
 }
 
 PH_VALUES = [8.0, 7.5, 7.0, 6.5, 6.0, 5.5, 5.0]

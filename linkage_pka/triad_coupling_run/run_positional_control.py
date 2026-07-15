@@ -1,5 +1,7 @@
 import sys, json, time, traceback
-sys.path.insert(0, "/home/user/python-potato")
+from pathlib import Path
+REPO_ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(REPO_ROOT))
 import numpy as np
 from wsme_gpcr.pipeline import run_pipeline
 from wsme_gpcr.wsme import WSMEParams
@@ -9,20 +11,20 @@ from wsme_gpcr.pka_predictor import predict_pka_propka
 from wsme_gpcr.asr import parse_iqtree_state_file, site_to_resnum
 from wsme_gpcr.structure import CHARGED_RESIDUES, DEFAULT_PKA, fraction_charged
 
-S = "/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad"
-STATE_FILE = "/root/.claude/uploads/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/4288e92c-alignment_iqtree_asr_state.state"
+S = str(Path(__file__).resolve().parent / "structures")
+STATE_FILE = str(REPO_ROOT / "linkage_pka" / "asr_data" / "alignment_iqtree_asr_state.state")
 GPR68_PDB = f"{S}/gpr68_prep/inactive_prepped.pdb"
 
 # tag: (path, iqtree_node_or_None, xi_transition_pH7_j_mol, lineage)
 NODES = {
-    "Node22":  (f"{S}/node_more/node_22_core.cif",  "Node22",  -48.8999999999997,   "sensor"),
-    "Node21":  (f"{S}/node_more/node_21_core.cif",  "Node21",  -51.49999999999974,  "sensor"),
-    "Node20":  (f"{S}/asr_pilot/node_20_core.cif",  "Node20",  -49.49999999999971,  "sensor"),
-    "Node80":  (f"{S}/asr_pilot/node_80_core.cif",  "Node80",  -50.89999999999973,  "sensor"),
-    "Node119": (f"{S}/node_more/node_119_core.cif", "Node119", -47.099999999999675, "sensor"),
-    "Node32":  (f"{S}/node_more/node_32_core.cif",  "Node32",  -50.89999999999973,  "non_sensor"),
-    "Node34":  (f"{S}/asr_pilot/node_34_core.cif",  "Node34",  -55.29999999999979,  "non_sensor"),
-    "Node70":  (f"{S}/node_more/node_70_core.cif",  "Node70",  -54.49999999999978,  "non_sensor"),
+    "Node22":  (f"{S}/node_22_core.cif",  "Node22",  -48.8999999999997,   "sensor"),
+    "Node21":  (f"{S}/node_21_core.cif",  "Node21",  -51.49999999999974,  "sensor"),
+    "Node20":  (f"{S}/node_20_core.cif",  "Node20",  -49.49999999999971,  "sensor"),
+    "Node80":  (f"{S}/node_80_core.cif",  "Node80",  -50.89999999999973,  "sensor"),
+    "Node119": (f"{S}/node_119_core.cif", "Node119", -47.099999999999675, "sensor"),
+    "Node32":  (f"{S}/node_32_core.cif",  "Node32",  -50.89999999999973,  "non_sensor"),
+    "Node34":  (f"{S}/node_34_core.cif",  "Node34",  -55.29999999999979,  "non_sensor"),
+    "Node70":  (f"{S}/node_70_core.cif",  "Node70",  -54.49999999999978,  "non_sensor"),
 }
 
 # real GPR68: added separately below (best-effort; may fail to load given it was
@@ -252,7 +254,7 @@ def main():
                     print(f"[{tag} {key}] pos_mean={out['positional_mean_abs_cpl_kj_mol']}, "
                           f"pos_pct={out['positional_percentile_vs_null']}, shell_mean={out['shell_mean_abs_cpl_kj_mol']}, "
                           f"fc={out['fc_pct']:.1f}%, t={time.time()-t0:.1f}s (cum={time.time()-t_start:.1f}s)", flush=True)
-        with open(f"{S}/triad_coupling/positional_results.json", "w") as f:
+        with open(str(Path(__file__).resolve().parent / "positional_results.json"), "w") as f:
             json.dump(results, f, indent=2, default=str)
 
     print(f"\nDONE, total {time.time()-t_start:.1f}s", flush=True)

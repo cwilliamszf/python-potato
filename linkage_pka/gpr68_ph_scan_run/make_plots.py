@@ -1,5 +1,7 @@
 import sys
-sys.path.insert(0, "/home/user/python-potato")
+from pathlib import Path
+REPO_ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(REPO_ROOT))
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
@@ -7,10 +9,11 @@ from wsme_gpcr.pipeline import run_pipeline
 from wsme_gpcr.wsme import WSMEParams
 from wsme_gpcr.plotting import plot_comparison_grid, plot_coupling_matrix, plot_2d_landscape
 
-D = "/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/gpcrdb_downloads"
+D = str(Path(__file__).resolve().parent)
+STRUCT = f"{D}/structures"
 PH_VALUES = [8.0, 7.5, 7.0, 6.5, 6.0, 5.5, 5.0]
 FIXED_XI = {"active": -58.1, "inactive": -54.3}
-PATHS = {"active": f"{D}/GPR68_active_core.pdb", "inactive": f"{D}/GPR68_inactive_core.pdb"}
+PATHS = {"active": f"{STRUCT}/GPR68_active_core.pdb", "inactive": f"{STRUCT}/GPR68_inactive_core.pdb"}
 
 for tag in ["active", "inactive"]:
     params = WSMEParams(T=310.0, ene=FIXED_XI[tag] * 1e-3)

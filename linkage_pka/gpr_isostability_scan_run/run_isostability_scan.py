@@ -1,5 +1,7 @@
 import sys, json, time
-sys.path.insert(0, "/home/user/python-potato")
+from pathlib import Path
+REPO_ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(REPO_ROOT))
 import numpy as np
 import matplotlib
 matplotlib.use("Agg")
@@ -12,17 +14,18 @@ from wsme_gpcr.calibration import (
 from wsme_gpcr.calibration import compute_fc
 from wsme_gpcr.plotting import plot_comparison_grid
 
-D68 = "/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/gpcrdb_downloads"
-D = "/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/gpcrdb_downloads/gpr4_gpr65"
+D = str(Path(__file__).resolve().parent)
+D68_STRUCT = str(REPO_ROOT / "linkage_pka" / "gpr68_ph_scan_run" / "structures")
+D_STRUCT = str(REPO_ROOT / "linkage_pka" / "gpr4_gpr65_gpr132_ph_scan_run" / "structures")
 
 # (active_path, inactive_path, old fixed-xi for active [J/mol], used as the
 # iso-stability REFERENCE for that receptor's pair -- unchanged from the
 # previous ad hoc run)
 RECEPTORS = {
-    "gpr4":   (f"{D}/gpr4_active_core.pdb",   f"{D}/gpr4_inactive_core.pdb",   -53.5),
-    "gpr65":  (f"{D}/gpr65_active_core.pdb",  f"{D}/gpr65_inactive_core.pdb",  -49.3),
-    "gpr68":  (f"{D68}/GPR68_active_core.pdb", f"{D68}/GPR68_inactive_core.pdb", -58.1),
-    "gpr132": (f"{D}/gpr132_active_core.pdb", f"{D}/gpr132_inactive_core.pdb", -58.1),
+    "gpr4":   (f"{D_STRUCT}/gpr4_active_core.pdb",   f"{D_STRUCT}/gpr4_inactive_core.pdb",   -53.5),
+    "gpr65":  (f"{D_STRUCT}/gpr65_active_core.pdb",  f"{D_STRUCT}/gpr65_inactive_core.pdb",  -49.3),
+    "gpr68":  (f"{D68_STRUCT}/GPR68_active_core.pdb", f"{D68_STRUCT}/GPR68_inactive_core.pdb", -58.1),
+    "gpr132": (f"{D_STRUCT}/gpr132_active_core.pdb", f"{D_STRUCT}/gpr132_inactive_core.pdb", -58.1),
 }
 
 PH_VALUES = [8.0, 7.5, 7.0, 6.5, 6.0, 5.5, 5.0]

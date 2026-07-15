@@ -1,5 +1,7 @@
 import sys
-sys.path.insert(0, "/home/user/python-potato")
+from pathlib import Path
+REPO_ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(REPO_ROOT))
 import json, time
 import numpy as np
 import matplotlib
@@ -10,17 +12,18 @@ from wsme_gpcr.wsme import WSMEParams
 from wsme_gpcr.calibration import compute_fc
 from wsme_gpcr.plotting import plot_comparison_grid
 
-D = "/tmp/claude-0/-home-user-python-potato/e6c23a7d-0f3f-50fe-a92b-cd58fe8f9e63/scratchpad/gpcrdb_downloads/gpr4_gpr65"
+D = str(Path(__file__).resolve().parent)
+STRUCT = f"{D}/structures"
 PH_VALUES = [8.0, 7.5, 7.0, 6.5, 6.0, 5.5, 5.0]
 
 # transition (pH7) minus 3.0 J/mol, same matched-stability convention as GPR68
 STATES = {
-    "gpr4_active":    (f"{D}/gpr4_active_core.pdb",   -50.5 - 3.0),
-    "gpr4_inactive":  (f"{D}/gpr4_inactive_core.pdb", -50.7 - 3.0),
-    "gpr65_active":   (f"{D}/gpr65_active_core.pdb",  -46.3 - 3.0),
-    "gpr65_inactive": (f"{D}/gpr65_inactive_core.pdb",-54.1 - 3.0),
-    "gpr132_active":   (f"{D}/gpr132_active_core.pdb",  -55.1 - 3.0),
-    "gpr132_inactive": (f"{D}/gpr132_inactive_core.pdb",-65.7 - 3.0),
+    "gpr4_active":    (f"{STRUCT}/gpr4_active_core.pdb",   -50.5 - 3.0),
+    "gpr4_inactive":  (f"{STRUCT}/gpr4_inactive_core.pdb", -50.7 - 3.0),
+    "gpr65_active":   (f"{STRUCT}/gpr65_active_core.pdb",  -46.3 - 3.0),
+    "gpr65_inactive": (f"{STRUCT}/gpr65_inactive_core.pdb",-54.1 - 3.0),
+    "gpr132_active":   (f"{STRUCT}/gpr132_active_core.pdb",  -55.1 - 3.0),
+    "gpr132_inactive": (f"{STRUCT}/gpr132_inactive_core.pdb",-65.7 - 3.0),
 }
 
 summary = {}
