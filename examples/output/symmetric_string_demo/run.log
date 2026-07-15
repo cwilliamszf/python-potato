@@ -787,3 +787,736 @@ Chains found in input structure:
   NOTE: 1 disulfide bond(s) (cystine crosslink) detected from SG-SG proximity and modeled as explicit covalent S-S bonds:
       CYS186/A       -- CYS115/A        S-S = 2.01 Å
 Prepared structure: 4991 atoms (with hydrogens), total mass 34977.6 Da
+
+Potential-energy decomposition (minimized structure):
+  Bond stretching                                   173.95 kcal/mol
+  Angle bending                                     541.96 kcal/mol
+  Torsions (proper + improper)                     3404.63 kcal/mol
+  Nonbonded (van der Waals + electrostatics, raw sum)   -6950.10 kcal/mol
+      - vdW (Lennard-Jones)                         -1585.73 kcal/mol
+      - Electrostatics (Coulomb)                    -5364.37 kcal/mol
+      - (LJ + Coulomb) - raw nonbonded residual     -0.0013 kcal/mol  (sanity check, should be ~0)
+  Implicit solvation (GB polar + nonpolar SA)     -8766.10 kcal/mol
+
+  TOTAL potential energy U_MM (0 K, includes solvation)  -11595.65 kcal/mol
+
+RRHO thermochemistry at T = 310.15 K:
+  Vibrational modes from: Cα anisotropic network model (ANM), cutoff=15.0 Å, γ=1.0 kcal/mol/Å²
+  921 vibrational modes retained (after removing 6 trans/rot modes)
+  S_trans =   240.05 J/mol/K   S_rot =   252.56 J/mol/K   S_vib = 21422.99 J/mol/K
+  S_total = 21915.59 J/mol/K  (5237.9526 cal/mol/K)
+  Zero-point energy            50.68 kcal/mol
+  Thermal energy (T,R,V)      520.46 kcal/mol
+  H = U_MM + E_thermal + ZPE + PV         -11023.89 kcal/mol
+  T*S_total                                 1624.55 kcal/mol
+
+  G = H - T*S                             -12648.44 kcal/mol
+    [1/11] path_00_f0.00 (f=0.00): G = -12648.44 kcal/mol, RMSD-to-active=0.00 A, RMSD-to-inactive=2.36 A (elapsed 58s)
+==============================================================================
+Chains found in input structure:
+  chain 'A': 309 standard residues
+==============================================================================
+  NOTE: completing 0 missing heavy atom(s) and 1 missing terminal atom(s) (truncated/disordered side chains in the deposited structure).
+  NOTE: 1 disulfide bond(s) (cystine crosslink) detected from SG-SG proximity and modeled as explicit covalent S-S bonds:
+      CYS186/A       -- CYS115/A        S-S = 2.00 Å
+Prepared structure: 4991 atoms (with hydrogens), total mass 34977.6 Da
+
+Potential-energy decomposition (minimized structure):
+  Bond stretching                                   173.64 kcal/mol
+  Angle bending                                     542.80 kcal/mol
+  Torsions (proper + improper)                     3411.52 kcal/mol
+  Nonbonded (van der Waals + electrostatics, raw sum)   -6908.72 kcal/mol
+      - vdW (Lennard-Jones)                         -1585.17 kcal/mol
+      - Electrostatics (Coulomb)                    -5323.54 kcal/mol
+      - (LJ + Coulomb) - raw nonbonded residual     -0.0014 kcal/mol  (sanity check, should be ~0)
+  Implicit solvation (GB polar + nonpolar SA)     -8815.26 kcal/mol
+
+  TOTAL potential energy U_MM (0 K, includes solvation)  -11596.01 kcal/mol
+
+RRHO thermochemistry at T = 310.15 K:
+  Vibrational modes from: Cα anisotropic network model (ANM), cutoff=15.0 Å, γ=1.0 kcal/mol/Å²
+  921 vibrational modes retained (after removing 6 trans/rot modes)
+  S_trans =   240.05 J/mol/K   S_rot =   252.58 J/mol/K   S_vib = 21428.63 J/mol/K
+  S_total = 21921.26 J/mol/K  (5239.3060 cal/mol/K)
+  Zero-point energy            50.66 kcal/mol
+  Thermal energy (T,R,V)      520.49 kcal/mol
+  H = U_MM + E_thermal + ZPE + PV         -11024.25 kcal/mol
+  T*S_total                                 1624.97 kcal/mol
+
+  G = H - T*S                             -12649.22 kcal/mol
+    [2/11] path_01_f0.10 (f=0.10): G = -12649.22 kcal/mol, RMSD-to-active=0.24 A, RMSD-to-inactive=2.12 A (elapsed 112s)
+==============================================================================
+Chains found in input structure:
+  chain 'A': 309 standard residues
+==============================================================================
+  NOTE: completing 0 missing heavy atom(s) and 1 missing terminal atom(s) (truncated/disordered side chains in the deposited structure).
+  NOTE: 1 disulfide bond(s) (cystine crosslink) detected from SG-SG proximity and modeled as explicit covalent S-S bonds:
+      CYS186/A       -- CYS115/A        S-S = 1.99 Å
+Prepared structure: 4991 atoms (with hydrogens), total mass 34977.6 Da
+
+Potential-energy decomposition (minimized structure):
+  Bond stretching                                   174.07 kcal/mol
+  Angle bending                                     542.44 kcal/mol
+  Torsions (proper + improper)                     3418.71 kcal/mol
+  Nonbonded (van der Waals + electrostatics, raw sum)   -6912.12 kcal/mol
+      - vdW (Lennard-Jones)                         -1573.16 kcal/mol
+      - Electrostatics (Coulomb)                    -5338.96 kcal/mol
+      - (LJ + Coulomb) - raw nonbonded residual      0.0005 kcal/mol  (sanity check, should be ~0)
+  Implicit solvation (GB polar + nonpolar SA)     -8798.31 kcal/mol
+
+  TOTAL potential energy U_MM (0 K, includes solvation)  -11575.22 kcal/mol
+
+RRHO thermochemistry at T = 310.15 K:
+  Vibrational modes from: Cα anisotropic network model (ANM), cutoff=15.0 Å, γ=1.0 kcal/mol/Å²
+  921 vibrational modes retained (after removing 6 trans/rot modes)
+  S_trans =   240.05 J/mol/K   S_rot =   252.61 J/mol/K   S_vib = 21432.30 J/mol/K
+  S_total = 21924.96 J/mol/K  (5240.1915 cal/mol/K)
+  Zero-point energy            50.61 kcal/mol
+  Thermal energy (T,R,V)      520.53 kcal/mol
+  H = U_MM + E_thermal + ZPE + PV         -11003.46 kcal/mol
+  T*S_total                                 1625.25 kcal/mol
+
+  G = H - T*S                             -12628.71 kcal/mol
+    [3/11] path_02_f0.20 (f=0.20): G = -12628.71 kcal/mol, RMSD-to-active=0.47 A, RMSD-to-inactive=1.89 A (elapsed 176s)
+==============================================================================
+Chains found in input structure:
+  chain 'A': 309 standard residues
+==============================================================================
+  NOTE: completing 0 missing heavy atom(s) and 1 missing terminal atom(s) (truncated/disordered side chains in the deposited structure).
+  NOTE: 1 disulfide bond(s) (cystine crosslink) detected from SG-SG proximity and modeled as explicit covalent S-S bonds:
+      CYS186/A       -- CYS115/A        S-S = 1.99 Å
+Prepared structure: 4991 atoms (with hydrogens), total mass 34977.6 Da
+
+Potential-energy decomposition (minimized structure):
+  Bond stretching                                   173.12 kcal/mol
+  Angle bending                                     546.53 kcal/mol
+  Torsions (proper + improper)                     3432.82 kcal/mol
+  Nonbonded (van der Waals + electrostatics, raw sum)   -6798.74 kcal/mol
+      - vdW (Lennard-Jones)                         -1559.43 kcal/mol
+      - Electrostatics (Coulomb)                    -5239.31 kcal/mol
+      - (LJ + Coulomb) - raw nonbonded residual      0.0007 kcal/mol  (sanity check, should be ~0)
+  Implicit solvation (GB polar + nonpolar SA)     -8860.56 kcal/mol
+
+  TOTAL potential energy U_MM (0 K, includes solvation)  -11506.84 kcal/mol
+
+RRHO thermochemistry at T = 310.15 K:
+  Vibrational modes from: Cα anisotropic network model (ANM), cutoff=15.0 Å, γ=1.0 kcal/mol/Å²
+  921 vibrational modes retained (after removing 6 trans/rot modes)
+  S_trans =   240.05 J/mol/K   S_rot =   252.64 J/mol/K   S_vib = 21450.88 J/mol/K
+  S_total = 21943.57 J/mol/K  (5244.6389 cal/mol/K)
+  Zero-point energy            50.49 kcal/mol
+  Thermal energy (T,R,V)      520.65 kcal/mol
+  H = U_MM + E_thermal + ZPE + PV         -10935.09 kcal/mol
+  T*S_total                                 1626.62 kcal/mol
+
+  G = H - T*S                             -12561.72 kcal/mol
+    [4/11] path_03_f0.30 (f=0.30): G = -12561.72 kcal/mol, RMSD-to-active=0.71 A, RMSD-to-inactive=1.65 A (elapsed 233s)
+==============================================================================
+Chains found in input structure:
+  chain 'A': 309 standard residues
+==============================================================================
+  NOTE: completing 0 missing heavy atom(s) and 1 missing terminal atom(s) (truncated/disordered side chains in the deposited structure).
+  NOTE: 1 disulfide bond(s) (cystine crosslink) detected from SG-SG proximity and modeled as explicit covalent S-S bonds:
+      CYS186/A       -- CYS115/A        S-S = 1.98 Å
+Prepared structure: 4991 atoms (with hydrogens), total mass 34977.6 Da
+
+Potential-energy decomposition (minimized structure):
+  Bond stretching                                   176.29 kcal/mol
+  Angle bending                                     569.67 kcal/mol
+  Torsions (proper + improper)                     3523.35 kcal/mol
+  Nonbonded (van der Waals + electrostatics, raw sum)   -6736.48 kcal/mol
+      - vdW (Lennard-Jones)                         -1500.10 kcal/mol
+      - Electrostatics (Coulomb)                    -5236.38 kcal/mol
+      - (LJ + Coulomb) - raw nonbonded residual      0.0006 kcal/mol  (sanity check, should be ~0)
+  Implicit solvation (GB polar + nonpolar SA)     -8826.45 kcal/mol
+
+  TOTAL potential energy U_MM (0 K, includes solvation)  -11293.62 kcal/mol
+
+RRHO thermochemistry at T = 310.15 K:
+  Vibrational modes from: Cα anisotropic network model (ANM), cutoff=15.0 Å, γ=1.0 kcal/mol/Å²
+  921 vibrational modes retained (after removing 6 trans/rot modes)
+  S_trans =   240.05 J/mol/K   S_rot =   252.68 J/mol/K   S_vib = 21473.37 J/mol/K
+  S_total = 21966.10 J/mol/K  (5250.0227 cal/mol/K)
+  Zero-point energy            50.36 kcal/mol
+  Thermal energy (T,R,V)      520.77 kcal/mol
+  H = U_MM + E_thermal + ZPE + PV         -10721.88 kcal/mol
+  T*S_total                                 1628.29 kcal/mol
+
+  G = H - T*S                             -12350.17 kcal/mol
+    [5/11] path_04_f0.40 (f=0.40): G = -12350.17 kcal/mol, RMSD-to-active=0.94 A, RMSD-to-inactive=1.42 A (elapsed 299s)
+==============================================================================
+Chains found in input structure:
+  chain 'A': 309 standard residues
+==============================================================================
+  NOTE: completing 0 missing heavy atom(s) and 1 missing terminal atom(s) (truncated/disordered side chains in the deposited structure).
+  NOTE: 1 disulfide bond(s) (cystine crosslink) detected from SG-SG proximity and modeled as explicit covalent S-S bonds:
+      CYS186/A       -- CYS115/A        S-S = 1.98 Å
+Prepared structure: 4991 atoms (with hydrogens), total mass 34977.6 Da
+
+Potential-energy decomposition (minimized structure):
+  Bond stretching                                   179.42 kcal/mol
+  Angle bending                                     574.44 kcal/mol
+  Torsions (proper + improper)                     3540.68 kcal/mol
+  Nonbonded (van der Waals + electrostatics, raw sum)   -6574.05 kcal/mol
+      - vdW (Lennard-Jones)                         -1494.48 kcal/mol
+      - Electrostatics (Coulomb)                    -5079.57 kcal/mol
+      - (LJ + Coulomb) - raw nonbonded residual      0.0001 kcal/mol  (sanity check, should be ~0)
+  Implicit solvation (GB polar + nonpolar SA)     -8967.59 kcal/mol
+
+  TOTAL potential energy U_MM (0 K, includes solvation)  -11247.09 kcal/mol
+
+RRHO thermochemistry at T = 310.15 K:
+  Vibrational modes from: Cα anisotropic network model (ANM), cutoff=15.0 Å, γ=1.0 kcal/mol/Å²
+  921 vibrational modes retained (after removing 6 trans/rot modes)
+  S_trans =   240.05 J/mol/K   S_rot =   252.71 J/mol/K   S_vib = 21476.65 J/mol/K
+  S_total = 21969.41 J/mol/K  (5250.8152 cal/mol/K)
+  Zero-point energy            50.32 kcal/mol
+  Thermal energy (T,R,V)      520.80 kcal/mol
+  H = U_MM + E_thermal + ZPE + PV         -10675.36 kcal/mol
+  T*S_total                                 1628.54 kcal/mol
+
+  G = H - T*S                             -12303.90 kcal/mol
+    [6/11] path_05_f0.50 (f=0.50): G = -12303.90 kcal/mol, RMSD-to-active=1.18 A, RMSD-to-inactive=1.18 A (elapsed 366s)
+==============================================================================
+Chains found in input structure:
+  chain 'A': 309 standard residues
+==============================================================================
+  NOTE: completing 0 missing heavy atom(s) and 1 missing terminal atom(s) (truncated/disordered side chains in the deposited structure).
+  NOTE: 1 disulfide bond(s) (cystine crosslink) detected from SG-SG proximity and modeled as explicit covalent S-S bonds:
+      CYS186/A       -- CYS115/A        S-S = 1.98 Å
+Prepared structure: 4991 atoms (with hydrogens), total mass 34977.6 Da
+
+Potential-energy decomposition (minimized structure):
+  Bond stretching                                   177.07 kcal/mol
+  Angle bending                                     566.49 kcal/mol
+  Torsions (proper + improper)                     3463.79 kcal/mol
+  Nonbonded (van der Waals + electrostatics, raw sum)   -6676.75 kcal/mol
+      - vdW (Lennard-Jones)                         -1516.67 kcal/mol
+      - Electrostatics (Coulomb)                    -5160.08 kcal/mol
+      - (LJ + Coulomb) - raw nonbonded residual      0.0001 kcal/mol  (sanity check, should be ~0)
+  Implicit solvation (GB polar + nonpolar SA)     -8929.67 kcal/mol
+
+  TOTAL potential energy U_MM (0 K, includes solvation)  -11399.07 kcal/mol
+
+RRHO thermochemistry at T = 310.15 K:
+  Vibrational modes from: Cα anisotropic network model (ANM), cutoff=15.0 Å, γ=1.0 kcal/mol/Å²
+  921 vibrational modes retained (after removing 6 trans/rot modes)
+  S_trans =   240.05 J/mol/K   S_rot =   252.73 J/mol/K   S_vib = 21490.23 J/mol/K
+  S_total = 21983.01 J/mol/K  (5254.0656 cal/mol/K)
+  Zero-point energy            50.20 kcal/mol
+  Thermal energy (T,R,V)      520.91 kcal/mol
+  H = U_MM + E_thermal + ZPE + PV         -10827.34 kcal/mol
+  T*S_total                                 1629.55 kcal/mol
+
+  G = H - T*S                             -12456.89 kcal/mol
+    [7/11] path_06_f0.60 (f=0.60): G = -12456.89 kcal/mol, RMSD-to-active=1.42 A, RMSD-to-inactive=0.94 A (elapsed 429s)
+==============================================================================
+Chains found in input structure:
+  chain 'A': 309 standard residues
+==============================================================================
+  NOTE: completing 0 missing heavy atom(s) and 1 missing terminal atom(s) (truncated/disordered side chains in the deposited structure).
+  NOTE: 1 disulfide bond(s) (cystine crosslink) detected from SG-SG proximity and modeled as explicit covalent S-S bonds:
+      CYS186/A       -- CYS115/A        S-S = 1.99 Å
+Prepared structure: 4991 atoms (with hydrogens), total mass 34977.6 Da
+
+Potential-energy decomposition (minimized structure):
+  Bond stretching                                   176.55 kcal/mol
+  Angle bending                                     548.76 kcal/mol
+  Torsions (proper + improper)                     3427.80 kcal/mol
+  Nonbonded (van der Waals + electrostatics, raw sum)   -6696.29 kcal/mol
+      - vdW (Lennard-Jones)                         -1549.69 kcal/mol
+      - Electrostatics (Coulomb)                    -5146.60 kcal/mol
+      - (LJ + Coulomb) - raw nonbonded residual     -0.0012 kcal/mol  (sanity check, should be ~0)
+  Implicit solvation (GB polar + nonpolar SA)     -8934.79 kcal/mol
+
+  TOTAL potential energy U_MM (0 K, includes solvation)  -11477.97 kcal/mol
+
+RRHO thermochemistry at T = 310.15 K:
+  Vibrational modes from: Cα anisotropic network model (ANM), cutoff=15.0 Å, γ=1.0 kcal/mol/Å²
+  921 vibrational modes retained (after removing 6 trans/rot modes)
+  S_trans =   240.05 J/mol/K   S_rot =   252.74 J/mol/K   S_vib = 21506.40 J/mol/K
+  S_total = 21999.20 J/mol/K  (5257.9342 cal/mol/K)
+  Zero-point energy            50.12 kcal/mol
+  Thermal energy (T,R,V)      520.98 kcal/mol
+  H = U_MM + E_thermal + ZPE + PV         -10906.24 kcal/mol
+  T*S_total                                 1630.75 kcal/mol
+
+  G = H - T*S                             -12536.99 kcal/mol
+    [8/11] path_07_f0.70 (f=0.70): G = -12536.99 kcal/mol, RMSD-to-active=1.65 A, RMSD-to-inactive=0.71 A (elapsed 488s)
+==============================================================================
+Chains found in input structure:
+  chain 'A': 309 standard residues
+==============================================================================
+  NOTE: completing 0 missing heavy atom(s) and 1 missing terminal atom(s) (truncated/disordered side chains in the deposited structure).
+  NOTE: 1 disulfide bond(s) (cystine crosslink) detected from SG-SG proximity and modeled as explicit covalent S-S bonds:
+      CYS186/A       -- CYS115/A        S-S = 2.00 Å
+Prepared structure: 4991 atoms (with hydrogens), total mass 34977.6 Da
+
+Potential-energy decomposition (minimized structure):
+  Bond stretching                                   177.82 kcal/mol
+  Angle bending                                     548.86 kcal/mol
+  Torsions (proper + improper)                     3412.32 kcal/mol
+  Nonbonded (van der Waals + electrostatics, raw sum)   -6740.07 kcal/mol
+      - vdW (Lennard-Jones)                         -1567.12 kcal/mol
+      - Electrostatics (Coulomb)                    -5172.94 kcal/mol
+      - (LJ + Coulomb) - raw nonbonded residual      0.0005 kcal/mol  (sanity check, should be ~0)
+  Implicit solvation (GB polar + nonpolar SA)     -8906.36 kcal/mol
+
+  TOTAL potential energy U_MM (0 K, includes solvation)  -11507.41 kcal/mol
+
+RRHO thermochemistry at T = 310.15 K:
+  Vibrational modes from: Cα anisotropic network model (ANM), cutoff=15.0 Å, γ=1.0 kcal/mol/Å²
+  921 vibrational modes retained (after removing 6 trans/rot modes)
+  S_trans =   240.05 J/mol/K   S_rot =   252.76 J/mol/K   S_vib = 21506.42 J/mol/K
+  S_total = 21999.23 J/mol/K  (5257.9428 cal/mol/K)
+  Zero-point energy            50.13 kcal/mol
+  Thermal energy (T,R,V)      520.97 kcal/mol
+  H = U_MM + E_thermal + ZPE + PV         -10935.69 kcal/mol
+  T*S_total                                 1630.75 kcal/mol
+
+  G = H - T*S                             -12566.44 kcal/mol
+    [9/11] path_08_f0.80 (f=0.80): G = -12566.44 kcal/mol, RMSD-to-active=1.89 A, RMSD-to-inactive=0.47 A (elapsed 550s)
+==============================================================================
+Chains found in input structure:
+  chain 'A': 309 standard residues
+==============================================================================
+  NOTE: completing 0 missing heavy atom(s) and 1 missing terminal atom(s) (truncated/disordered side chains in the deposited structure).
+  NOTE: 1 disulfide bond(s) (cystine crosslink) detected from SG-SG proximity and modeled as explicit covalent S-S bonds:
+      CYS186/A       -- CYS115/A        S-S = 2.01 Å
+Prepared structure: 4991 atoms (with hydrogens), total mass 34977.6 Da
+
+Potential-energy decomposition (minimized structure):
+  Bond stretching                                   177.93 kcal/mol
+  Angle bending                                     548.45 kcal/mol
+  Torsions (proper + improper)                     3407.81 kcal/mol
+  Nonbonded (van der Waals + electrostatics, raw sum)   -6739.03 kcal/mol
+      - vdW (Lennard-Jones)                         -1580.80 kcal/mol
+      - Electrostatics (Coulomb)                    -5158.23 kcal/mol
+      - (LJ + Coulomb) - raw nonbonded residual      0.0002 kcal/mol  (sanity check, should be ~0)
+  Implicit solvation (GB polar + nonpolar SA)     -8919.85 kcal/mol
+
+  TOTAL potential energy U_MM (0 K, includes solvation)  -11524.68 kcal/mol
+
+RRHO thermochemistry at T = 310.15 K:
+  Vibrational modes from: Cα anisotropic network model (ANM), cutoff=15.0 Å, γ=1.0 kcal/mol/Å²
+  921 vibrational modes retained (after removing 6 trans/rot modes)
+  S_trans =   240.05 J/mol/K   S_rot =   252.78 J/mol/K   S_vib = 21500.23 J/mol/K
+  S_total = 21993.05 J/mol/K  (5256.4660 cal/mol/K)
+  Zero-point energy            50.20 kcal/mol
+  Thermal energy (T,R,V)      520.92 kcal/mol
+  H = U_MM + E_thermal + ZPE + PV         -10952.96 kcal/mol
+  T*S_total                                 1630.29 kcal/mol
+
+  G = H - T*S                             -12583.25 kcal/mol
+    [10/11] path_09_f0.90 (f=0.90): G = -12583.25 kcal/mol, RMSD-to-active=2.12 A, RMSD-to-inactive=0.24 A (elapsed 606s)
+==============================================================================
+Chains found in input structure:
+  chain 'A': 309 standard residues
+==============================================================================
+  NOTE: completing 0 missing heavy atom(s) and 1 missing terminal atom(s) (truncated/disordered side chains in the deposited structure).
+  NOTE: 1 disulfide bond(s) (cystine crosslink) detected from SG-SG proximity and modeled as explicit covalent S-S bonds:
+      CYS186/A       -- CYS115/A        S-S = 2.02 Å
+Prepared structure: 4991 atoms (with hydrogens), total mass 34977.6 Da
+
+Potential-energy decomposition (minimized structure):
+  Bond stretching                                   179.10 kcal/mol
+  Angle bending                                     546.17 kcal/mol
+  Torsions (proper + improper)                     3404.49 kcal/mol
+  Nonbonded (van der Waals + electrostatics, raw sum)   -6772.48 kcal/mol
+      - vdW (Lennard-Jones)                         -1573.80 kcal/mol
+      - Electrostatics (Coulomb)                    -5198.68 kcal/mol
+      - (LJ + Coulomb) - raw nonbonded residual      0.0006 kcal/mol  (sanity check, should be ~0)
+  Implicit solvation (GB polar + nonpolar SA)     -8917.67 kcal/mol
+
+  TOTAL potential energy U_MM (0 K, includes solvation)  -11560.39 kcal/mol
+
+RRHO thermochemistry at T = 310.15 K:
+  Vibrational modes from: Cα anisotropic network model (ANM), cutoff=15.0 Å, γ=1.0 kcal/mol/Å²
+  921 vibrational modes retained (after removing 6 trans/rot modes)
+  S_trans =   240.05 J/mol/K   S_rot =   252.81 J/mol/K   S_vib = 21513.76 J/mol/K
+  S_total = 22006.61 J/mol/K  (5259.7070 cal/mol/K)
+  Zero-point energy            50.13 kcal/mol
+  Thermal energy (T,R,V)      520.98 kcal/mol
+  H = U_MM + E_thermal + ZPE + PV         -10988.66 kcal/mol
+  T*S_total                                 1631.30 kcal/mol
+
+  G = H - T*S                             -12619.96 kcal/mol
+    [11/11] path_10_f1.00 (f=1.00): G = -12619.96 kcal/mol, RMSD-to-active=2.36 A, RMSD-to-inactive=0.00 A (elapsed 668s)
+
+  Running real Gibbs free-energy calculations for GPR132 at pH 6.0 (11 images, ~40-90s each)...
+==============================================================================
+Chains found in input structure:
+  chain 'A': 309 standard residues
+==============================================================================
+  NOTE: completing 0 missing heavy atom(s) and 1 missing terminal atom(s) (truncated/disordered side chains in the deposited structure).
+  NOTE: 1 disulfide bond(s) (cystine crosslink) detected from SG-SG proximity and modeled as explicit covalent S-S bonds:
+      CYS186/A       -- CYS115/A        S-S = 2.01 Å
+Prepared structure: 4999 atoms (with hydrogens), total mass 34985.7 Da
+
+Potential-energy decomposition (minimized structure):
+  Bond stretching                                   173.70 kcal/mol
+  Angle bending                                     567.24 kcal/mol
+  Torsions (proper + improper)                     3402.70 kcal/mol
+  Nonbonded (van der Waals + electrostatics, raw sum)   -6381.11 kcal/mol
+      - vdW (Lennard-Jones)                         -1578.57 kcal/mol
+      - Electrostatics (Coulomb)                    -4802.53 kcal/mol
+      - (LJ + Coulomb) - raw nonbonded residual     -0.0004 kcal/mol  (sanity check, should be ~0)
+  Implicit solvation (GB polar + nonpolar SA)     -9234.59 kcal/mol
+
+  TOTAL potential energy U_MM (0 K, includes solvation)  -11472.06 kcal/mol
+
+RRHO thermochemistry at T = 310.15 K:
+  Vibrational modes from: Cα anisotropic network model (ANM), cutoff=15.0 Å, γ=1.0 kcal/mol/Å²
+  921 vibrational modes retained (after removing 6 trans/rot modes)
+  S_trans =   240.05 J/mol/K   S_rot =   252.56 J/mol/K   S_vib = 21431.88 J/mol/K
+  S_total = 21924.50 J/mol/K  (5240.0803 cal/mol/K)
+  Zero-point energy            50.63 kcal/mol
+  Thermal energy (T,R,V)      520.51 kcal/mol
+  H = U_MM + E_thermal + ZPE + PV         -10900.30 kcal/mol
+  T*S_total                                 1625.21 kcal/mol
+
+  G = H - T*S                             -12525.51 kcal/mol
+    [1/11] path_00_f0.00 (f=0.00): G = -12525.51 kcal/mol, RMSD-to-active=0.00 A, RMSD-to-inactive=2.36 A (elapsed 70s)
+==============================================================================
+Chains found in input structure:
+  chain 'A': 309 standard residues
+==============================================================================
+  NOTE: completing 0 missing heavy atom(s) and 1 missing terminal atom(s) (truncated/disordered side chains in the deposited structure).
+  NOTE: 1 disulfide bond(s) (cystine crosslink) detected from SG-SG proximity and modeled as explicit covalent S-S bonds:
+      CYS186/A       -- CYS115/A        S-S = 2.00 Å
+Prepared structure: 4999 atoms (with hydrogens), total mass 34985.7 Da
+
+Potential-energy decomposition (minimized structure):
+  Bond stretching                                   174.51 kcal/mol
+  Angle bending                                     562.32 kcal/mol
+  Torsions (proper + improper)                     3401.72 kcal/mol
+  Nonbonded (van der Waals + electrostatics, raw sum)   -6337.23 kcal/mol
+      - vdW (Lennard-Jones)                         -1579.06 kcal/mol
+      - Electrostatics (Coulomb)                    -4758.17 kcal/mol
+      - (LJ + Coulomb) - raw nonbonded residual      0.0007 kcal/mol  (sanity check, should be ~0)
+  Implicit solvation (GB polar + nonpolar SA)     -9275.75 kcal/mol
+
+  TOTAL potential energy U_MM (0 K, includes solvation)  -11474.43 kcal/mol
+
+RRHO thermochemistry at T = 310.15 K:
+  Vibrational modes from: Cα anisotropic network model (ANM), cutoff=15.0 Å, γ=1.0 kcal/mol/Å²
+  921 vibrational modes retained (after removing 6 trans/rot modes)
+  S_trans =   240.05 J/mol/K   S_rot =   252.58 J/mol/K   S_vib = 21429.39 J/mol/K
+  S_total = 21922.03 J/mol/K  (5239.4907 cal/mol/K)
+  Zero-point energy            50.64 kcal/mol
+  Thermal energy (T,R,V)      520.50 kcal/mol
+  H = U_MM + E_thermal + ZPE + PV         -10902.67 kcal/mol
+  T*S_total                                 1625.03 kcal/mol
+
+  G = H - T*S                             -12527.70 kcal/mol
+    [2/11] path_01_f0.10 (f=0.10): G = -12527.70 kcal/mol, RMSD-to-active=0.24 A, RMSD-to-inactive=2.12 A (elapsed 127s)
+==============================================================================
+Chains found in input structure:
+  chain 'A': 309 standard residues
+==============================================================================
+  NOTE: completing 0 missing heavy atom(s) and 1 missing terminal atom(s) (truncated/disordered side chains in the deposited structure).
+  NOTE: 1 disulfide bond(s) (cystine crosslink) detected from SG-SG proximity and modeled as explicit covalent S-S bonds:
+      CYS186/A       -- CYS115/A        S-S = 1.99 Å
+Prepared structure: 4999 atoms (with hydrogens), total mass 34985.7 Da
+
+Potential-energy decomposition (minimized structure):
+  Bond stretching                                   173.02 kcal/mol
+  Angle bending                                     562.68 kcal/mol
+  Torsions (proper + improper)                     3416.99 kcal/mol
+  Nonbonded (van der Waals + electrostatics, raw sum)   -6336.40 kcal/mol
+      - vdW (Lennard-Jones)                         -1574.33 kcal/mol
+      - Electrostatics (Coulomb)                    -4762.07 kcal/mol
+      - (LJ + Coulomb) - raw nonbonded residual     -0.0002 kcal/mol  (sanity check, should be ~0)
+  Implicit solvation (GB polar + nonpolar SA)     -9259.19 kcal/mol
+
+  TOTAL potential energy U_MM (0 K, includes solvation)  -11442.91 kcal/mol
+
+RRHO thermochemistry at T = 310.15 K:
+  Vibrational modes from: Cα anisotropic network model (ANM), cutoff=15.0 Å, γ=1.0 kcal/mol/Å²
+  921 vibrational modes retained (after removing 6 trans/rot modes)
+  S_trans =   240.05 J/mol/K   S_rot =   252.61 J/mol/K   S_vib = 21446.43 J/mol/K
+  S_total = 21939.10 J/mol/K  (5243.5710 cal/mol/K)
+  Zero-point energy            50.53 kcal/mol
+  Thermal energy (T,R,V)      520.60 kcal/mol
+  H = U_MM + E_thermal + ZPE + PV         -10871.16 kcal/mol
+  T*S_total                                 1626.29 kcal/mol
+
+  G = H - T*S                             -12497.45 kcal/mol
+    [3/11] path_02_f0.20 (f=0.20): G = -12497.45 kcal/mol, RMSD-to-active=0.47 A, RMSD-to-inactive=1.89 A (elapsed 185s)
+==============================================================================
+Chains found in input structure:
+  chain 'A': 309 standard residues
+==============================================================================
+  NOTE: completing 0 missing heavy atom(s) and 1 missing terminal atom(s) (truncated/disordered side chains in the deposited structure).
+  NOTE: 1 disulfide bond(s) (cystine crosslink) detected from SG-SG proximity and modeled as explicit covalent S-S bonds:
+      CYS186/A       -- CYS115/A        S-S = 1.99 Å
+Prepared structure: 4999 atoms (with hydrogens), total mass 34985.7 Da
+
+Potential-energy decomposition (minimized structure):
+  Bond stretching                                   175.42 kcal/mol
+  Angle bending                                     568.72 kcal/mol
+  Torsions (proper + improper)                     3435.88 kcal/mol
+  Nonbonded (van der Waals + electrostatics, raw sum)   -6257.14 kcal/mol
+      - vdW (Lennard-Jones)                         -1554.96 kcal/mol
+      - Electrostatics (Coulomb)                    -4702.18 kcal/mol
+      - (LJ + Coulomb) - raw nonbonded residual      0.0006 kcal/mol  (sanity check, should be ~0)
+  Implicit solvation (GB polar + nonpolar SA)     -9308.04 kcal/mol
+
+  TOTAL potential energy U_MM (0 K, includes solvation)  -11385.15 kcal/mol
+
+RRHO thermochemistry at T = 310.15 K:
+  Vibrational modes from: Cα anisotropic network model (ANM), cutoff=15.0 Å, γ=1.0 kcal/mol/Å²
+  921 vibrational modes retained (after removing 6 trans/rot modes)
+  S_trans =   240.05 J/mol/K   S_rot =   252.64 J/mol/K   S_vib = 21457.64 J/mol/K
+  S_total = 21950.34 J/mol/K  (5246.2567 cal/mol/K)
+  Zero-point energy            50.45 kcal/mol
+  Thermal energy (T,R,V)      520.68 kcal/mol
+  H = U_MM + E_thermal + ZPE + PV         -10813.41 kcal/mol
+  T*S_total                                 1627.13 kcal/mol
+
+  G = H - T*S                             -12440.54 kcal/mol
+    [4/11] path_03_f0.30 (f=0.30): G = -12440.54 kcal/mol, RMSD-to-active=0.71 A, RMSD-to-inactive=1.65 A (elapsed 245s)
+==============================================================================
+Chains found in input structure:
+  chain 'A': 309 standard residues
+==============================================================================
+  NOTE: completing 0 missing heavy atom(s) and 1 missing terminal atom(s) (truncated/disordered side chains in the deposited structure).
+  NOTE: 1 disulfide bond(s) (cystine crosslink) detected from SG-SG proximity and modeled as explicit covalent S-S bonds:
+      CYS186/A       -- CYS115/A        S-S = 1.98 Å
+Prepared structure: 4999 atoms (with hydrogens), total mass 34985.7 Da
+
+Potential-energy decomposition (minimized structure):
+  Bond stretching                                   175.63 kcal/mol
+  Angle bending                                     600.01 kcal/mol
+  Torsions (proper + improper)                     3515.73 kcal/mol
+  Nonbonded (van der Waals + electrostatics, raw sum)   -6087.83 kcal/mol
+      - vdW (Lennard-Jones)                         -1497.99 kcal/mol
+      - Electrostatics (Coulomb)                    -4589.84 kcal/mol
+      - (LJ + Coulomb) - raw nonbonded residual      0.0005 kcal/mol  (sanity check, should be ~0)
+  Implicit solvation (GB polar + nonpolar SA)     -9338.03 kcal/mol
+
+  TOTAL potential energy U_MM (0 K, includes solvation)  -11134.49 kcal/mol
+
+RRHO thermochemistry at T = 310.15 K:
+  Vibrational modes from: Cα anisotropic network model (ANM), cutoff=15.0 Å, γ=1.0 kcal/mol/Å²
+  921 vibrational modes retained (after removing 6 trans/rot modes)
+  S_trans =   240.05 J/mol/K   S_rot =   252.68 J/mol/K   S_vib = 21466.75 J/mol/K
+  S_total = 21959.48 J/mol/K  (5248.4423 cal/mol/K)
+  Zero-point energy            50.38 kcal/mol
+  Thermal energy (T,R,V)      520.74 kcal/mol
+  H = U_MM + E_thermal + ZPE + PV         -10562.75 kcal/mol
+  T*S_total                                 1627.80 kcal/mol
+
+  G = H - T*S                             -12190.56 kcal/mol
+    [5/11] path_04_f0.40 (f=0.40): G = -12190.56 kcal/mol, RMSD-to-active=0.94 A, RMSD-to-inactive=1.42 A (elapsed 310s)
+==============================================================================
+Chains found in input structure:
+  chain 'A': 309 standard residues
+==============================================================================
+  NOTE: completing 0 missing heavy atom(s) and 1 missing terminal atom(s) (truncated/disordered side chains in the deposited structure).
+  NOTE: 1 disulfide bond(s) (cystine crosslink) detected from SG-SG proximity and modeled as explicit covalent S-S bonds:
+      CYS186/A       -- CYS115/A        S-S = 1.98 Å
+Prepared structure: 4999 atoms (with hydrogens), total mass 34985.7 Da
+
+Potential-energy decomposition (minimized structure):
+  Bond stretching                                   180.23 kcal/mol
+  Angle bending                                     596.17 kcal/mol
+  Torsions (proper + improper)                     3547.99 kcal/mol
+  Nonbonded (van der Waals + electrostatics, raw sum)   -6001.26 kcal/mol
+      - vdW (Lennard-Jones)                         -1484.76 kcal/mol
+      - Electrostatics (Coulomb)                    -4516.50 kcal/mol
+      - (LJ + Coulomb) - raw nonbonded residual     -0.0004 kcal/mol  (sanity check, should be ~0)
+  Implicit solvation (GB polar + nonpolar SA)     -9437.96 kcal/mol
+
+  TOTAL potential energy U_MM (0 K, includes solvation)  -11114.82 kcal/mol
+
+RRHO thermochemistry at T = 310.15 K:
+  Vibrational modes from: Cα anisotropic network model (ANM), cutoff=15.0 Å, γ=1.0 kcal/mol/Å²
+  921 vibrational modes retained (after removing 6 trans/rot modes)
+  S_trans =   240.05 J/mol/K   S_rot =   252.71 J/mol/K   S_vib = 21484.53 J/mol/K
+  S_total = 21977.29 J/mol/K  (5252.6989 cal/mol/K)
+  Zero-point energy            50.26 kcal/mol
+  Thermal energy (T,R,V)      520.85 kcal/mol
+  H = U_MM + E_thermal + ZPE + PV         -10543.09 kcal/mol
+  T*S_total                                 1629.12 kcal/mol
+
+  G = H - T*S                             -12172.22 kcal/mol
+    [6/11] path_05_f0.50 (f=0.50): G = -12172.22 kcal/mol, RMSD-to-active=1.18 A, RMSD-to-inactive=1.18 A (elapsed 369s)
+==============================================================================
+Chains found in input structure:
+  chain 'A': 309 standard residues
+==============================================================================
+  NOTE: completing 0 missing heavy atom(s) and 1 missing terminal atom(s) (truncated/disordered side chains in the deposited structure).
+  NOTE: 1 disulfide bond(s) (cystine crosslink) detected from SG-SG proximity and modeled as explicit covalent S-S bonds:
+      CYS186/A       -- CYS115/A        S-S = 1.98 Å
+Prepared structure: 4999 atoms (with hydrogens), total mass 34985.7 Da
+
+Potential-energy decomposition (minimized structure):
+  Bond stretching                                   178.12 kcal/mol
+  Angle bending                                     595.20 kcal/mol
+  Torsions (proper + improper)                     3473.51 kcal/mol
+  Nonbonded (van der Waals + electrostatics, raw sum)   -6130.68 kcal/mol
+      - vdW (Lennard-Jones)                         -1531.04 kcal/mol
+      - Electrostatics (Coulomb)                    -4599.64 kcal/mol
+      - (LJ + Coulomb) - raw nonbonded residual     -0.0002 kcal/mol  (sanity check, should be ~0)
+  Implicit solvation (GB polar + nonpolar SA)     -9366.86 kcal/mol
+
+  TOTAL potential energy U_MM (0 K, includes solvation)  -11250.71 kcal/mol
+
+RRHO thermochemistry at T = 310.15 K:
+  Vibrational modes from: Cα anisotropic network model (ANM), cutoff=15.0 Å, γ=1.0 kcal/mol/Å²
+  921 vibrational modes retained (after removing 6 trans/rot modes)
+  S_trans =   240.05 J/mol/K   S_rot =   252.72 J/mol/K   S_vib = 21482.66 J/mol/K
+  S_total = 21975.44 J/mol/K  (5252.2562 cal/mol/K)
+  Zero-point energy            50.25 kcal/mol
+  Thermal energy (T,R,V)      520.86 kcal/mol
+  H = U_MM + E_thermal + ZPE + PV         -10678.98 kcal/mol
+  T*S_total                                 1628.99 kcal/mol
+
+  G = H - T*S                             -12307.97 kcal/mol
+    [7/11] path_06_f0.60 (f=0.60): G = -12307.97 kcal/mol, RMSD-to-active=1.42 A, RMSD-to-inactive=0.94 A (elapsed 433s)
+==============================================================================
+Chains found in input structure:
+  chain 'A': 309 standard residues
+==============================================================================
+  NOTE: completing 0 missing heavy atom(s) and 1 missing terminal atom(s) (truncated/disordered side chains in the deposited structure).
+  NOTE: 1 disulfide bond(s) (cystine crosslink) detected from SG-SG proximity and modeled as explicit covalent S-S bonds:
+      CYS186/A       -- CYS115/A        S-S = 1.99 Å
+Prepared structure: 4999 atoms (with hydrogens), total mass 34985.7 Da
+
+Potential-energy decomposition (minimized structure):
+  Bond stretching                                   175.83 kcal/mol
+  Angle bending                                     578.35 kcal/mol
+  Torsions (proper + improper)                     3445.47 kcal/mol
+  Nonbonded (van der Waals + electrostatics, raw sum)   -6157.87 kcal/mol
+      - vdW (Lennard-Jones)                         -1550.30 kcal/mol
+      - Electrostatics (Coulomb)                    -4607.58 kcal/mol
+      - (LJ + Coulomb) - raw nonbonded residual     -0.0005 kcal/mol  (sanity check, should be ~0)
+  Implicit solvation (GB polar + nonpolar SA)     -9364.93 kcal/mol
+
+  TOTAL potential energy U_MM (0 K, includes solvation)  -11323.15 kcal/mol
+
+RRHO thermochemistry at T = 310.15 K:
+  Vibrational modes from: Cα anisotropic network model (ANM), cutoff=15.0 Å, γ=1.0 kcal/mol/Å²
+  921 vibrational modes retained (after removing 6 trans/rot modes)
+  S_trans =   240.05 J/mol/K   S_rot =   252.75 J/mol/K   S_vib = 21506.82 J/mol/K
+  S_total = 21999.61 J/mol/K  (5258.0340 cal/mol/K)
+  Zero-point energy            50.13 kcal/mol
+  Thermal energy (T,R,V)      520.98 kcal/mol
+  H = U_MM + E_thermal + ZPE + PV         -10751.43 kcal/mol
+  T*S_total                                 1630.78 kcal/mol
+
+  G = H - T*S                             -12382.20 kcal/mol
+    [8/11] path_07_f0.70 (f=0.70): G = -12382.20 kcal/mol, RMSD-to-active=1.65 A, RMSD-to-inactive=0.71 A (elapsed 488s)
+==============================================================================
+Chains found in input structure:
+  chain 'A': 309 standard residues
+==============================================================================
+  NOTE: completing 0 missing heavy atom(s) and 1 missing terminal atom(s) (truncated/disordered side chains in the deposited structure).
+  NOTE: 1 disulfide bond(s) (cystine crosslink) detected from SG-SG proximity and modeled as explicit covalent S-S bonds:
+      CYS186/A       -- CYS115/A        S-S = 2.00 Å
+Prepared structure: 4999 atoms (with hydrogens), total mass 34985.7 Da
+
+Potential-energy decomposition (minimized structure):
+  Bond stretching                                   174.88 kcal/mol
+  Angle bending                                     573.24 kcal/mol
+  Torsions (proper + improper)                     3416.57 kcal/mol
+  Nonbonded (van der Waals + electrostatics, raw sum)   -6183.81 kcal/mol
+      - vdW (Lennard-Jones)                         -1566.54 kcal/mol
+      - Electrostatics (Coulomb)                    -4617.27 kcal/mol
+      - (LJ + Coulomb) - raw nonbonded residual      0.0002 kcal/mol  (sanity check, should be ~0)
+  Implicit solvation (GB polar + nonpolar SA)     -9350.11 kcal/mol
+
+  TOTAL potential energy U_MM (0 K, includes solvation)  -11369.24 kcal/mol
+
+RRHO thermochemistry at T = 310.15 K:
+  Vibrational modes from: Cα anisotropic network model (ANM), cutoff=15.0 Å, γ=1.0 kcal/mol/Å²
+  921 vibrational modes retained (after removing 6 trans/rot modes)
+  S_trans =   240.05 J/mol/K   S_rot =   252.76 J/mol/K   S_vib = 21508.16 J/mol/K
+  S_total = 22000.98 J/mol/K  (5258.3595 cal/mol/K)
+  Zero-point energy            50.13 kcal/mol
+  Thermal energy (T,R,V)      520.98 kcal/mol
+  H = U_MM + E_thermal + ZPE + PV         -10797.52 kcal/mol
+  T*S_total                                 1630.88 kcal/mol
+
+  G = H - T*S                             -12428.40 kcal/mol
+    [9/11] path_08_f0.80 (f=0.80): G = -12428.40 kcal/mol, RMSD-to-active=1.89 A, RMSD-to-inactive=0.47 A (elapsed 551s)
+==============================================================================
+Chains found in input structure:
+  chain 'A': 309 standard residues
+==============================================================================
+  NOTE: completing 0 missing heavy atom(s) and 1 missing terminal atom(s) (truncated/disordered side chains in the deposited structure).
+  NOTE: 1 disulfide bond(s) (cystine crosslink) detected from SG-SG proximity and modeled as explicit covalent S-S bonds:
+      CYS186/A       -- CYS115/A        S-S = 2.01 Å
+Prepared structure: 4999 atoms (with hydrogens), total mass 34985.7 Da
+
+Potential-energy decomposition (minimized structure):
+  Bond stretching                                   179.46 kcal/mol
+  Angle bending                                     569.07 kcal/mol
+  Torsions (proper + improper)                     3403.55 kcal/mol
+  Nonbonded (van der Waals + electrostatics, raw sum)   -6212.61 kcal/mol
+      - vdW (Lennard-Jones)                         -1571.38 kcal/mol
+      - Electrostatics (Coulomb)                    -4641.23 kcal/mol
+      - (LJ + Coulomb) - raw nonbonded residual     -0.0004 kcal/mol  (sanity check, should be ~0)
+  Implicit solvation (GB polar + nonpolar SA)     -9362.70 kcal/mol
+
+  TOTAL potential energy U_MM (0 K, includes solvation)  -11423.24 kcal/mol
+
+RRHO thermochemistry at T = 310.15 K:
+  Vibrational modes from: Cα anisotropic network model (ANM), cutoff=15.0 Å, γ=1.0 kcal/mol/Å²
+  921 vibrational modes retained (after removing 6 trans/rot modes)
+  S_trans =   240.05 J/mol/K   S_rot =   252.78 J/mol/K   S_vib = 21503.95 J/mol/K
+  S_total = 21996.78 J/mol/K  (5257.3577 cal/mol/K)
+  Zero-point energy            50.17 kcal/mol
+  Thermal energy (T,R,V)      520.94 kcal/mol
+  H = U_MM + E_thermal + ZPE + PV         -10851.51 kcal/mol
+  T*S_total                                 1630.57 kcal/mol
+
+  G = H - T*S                             -12482.08 kcal/mol
+    [10/11] path_09_f0.90 (f=0.90): G = -12482.08 kcal/mol, RMSD-to-active=2.12 A, RMSD-to-inactive=0.24 A (elapsed 606s)
+==============================================================================
+Chains found in input structure:
+  chain 'A': 309 standard residues
+==============================================================================
+  NOTE: completing 0 missing heavy atom(s) and 1 missing terminal atom(s) (truncated/disordered side chains in the deposited structure).
+  NOTE: 1 disulfide bond(s) (cystine crosslink) detected from SG-SG proximity and modeled as explicit covalent S-S bonds:
+      CYS186/A       -- CYS115/A        S-S = 2.02 Å
+Prepared structure: 4999 atoms (with hydrogens), total mass 34985.7 Da
+
+Potential-energy decomposition (minimized structure):
+  Bond stretching                                   176.21 kcal/mol
+  Angle bending                                     572.49 kcal/mol
+  Torsions (proper + improper)                     3393.73 kcal/mol
+  Nonbonded (van der Waals + electrostatics, raw sum)   -6182.11 kcal/mol
+      - vdW (Lennard-Jones)                         -1564.89 kcal/mol
+      - Electrostatics (Coulomb)                    -4617.22 kcal/mol
+      - (LJ + Coulomb) - raw nonbonded residual      0.0005 kcal/mol  (sanity check, should be ~0)
+  Implicit solvation (GB polar + nonpolar SA)     -9377.76 kcal/mol
+
+  TOTAL potential energy U_MM (0 K, includes solvation)  -11417.45 kcal/mol
+
+RRHO thermochemistry at T = 310.15 K:
+  Vibrational modes from: Cα anisotropic network model (ANM), cutoff=15.0 Å, γ=1.0 kcal/mol/Å²
+  921 vibrational modes retained (after removing 6 trans/rot modes)
+  S_trans =   240.05 J/mol/K   S_rot =   252.81 J/mol/K   S_vib = 21506.85 J/mol/K
+  S_total = 21999.71 J/mol/K  (5258.0570 cal/mol/K)
+  Zero-point energy            50.17 kcal/mol
+  Thermal energy (T,R,V)      520.94 kcal/mol
+  H = U_MM + E_thermal + ZPE + PV         -10845.72 kcal/mol
+  T*S_total                                 1630.79 kcal/mol
+
+  G = H - T*S                             -12476.51 kcal/mol
+    [11/11] path_10_f1.00 (f=1.00): G = -12476.51 kcal/mol, RMSD-to-active=2.36 A, RMSD-to-inactive=0.00 A (elapsed 672s)
+
+GPR132 DONE. Results in /home/user/python-potato/examples/output/symmetric_string_demo/gpr132
+  Core endpoint RMSD: 2.36 A
+  pH 7.4: barrier=344.5 kcal/mol at f=0.50, endpoint shift (inactive-active)=+28.5 kcal/mol
+  pH 6.0: barrier=353.3 kcal/mol at f=0.50, endpoint shift (inactive-active)=+49.0 kcal/mol
+  Barrier change pH7.4->6.0: +8.7 kcal/mol
+  Uniform pH offset (active endpoint): +122.9 kcal/mol
+
+======================================================================
+ALL RECEPTORS DONE
+======================================================================
+  GPR68: TM6 disp=1.18 A [FAIL], barrier change pH7.4->6.0=-14.3 kcal/mol
+  GPR132: TM6 disp=4.87 A [PASS], barrier change pH7.4->6.0=+8.7 kcal/mol

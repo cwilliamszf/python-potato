@@ -112,32 +112,43 @@ total) as a tool-2 substitute (GPU-bound ColabFold folding isn't available
 in this environment). Results are committed under
 [`examples/output/gpr68_demo/`](examples/output/gpr68_demo/README.md).
 
-`examples/gpcr_pipeline_gpr68_string_demo.py` fills in the space *between*
-the two endpoints that the ANM approach above couldn't reach: a linear
-Cartesian interpolation path (11 images) between the real active and
-inactive structures, each locally relaxed and scored with the same real
-Gibbs energy pipeline -- a "linear-interpolation-with-relaxation" starting
-guess for a full string method, not a converged one (see its README for
-what that distinction means). It resolved a clean, real ~137 kcal/mol
-barrier peaking at the path's midpoint, and also documents a genuine
-tool-4 pitfall discovered while using it (the Boltzmann-weighted KDE
-landscape estimator collapses onto a single point when per-image energy
-differences vastly exceed RT). Results:
-[`examples/output/gpr68_string_demo/`](examples/output/gpr68_string_demo/README.md).
+`examples/gpcr_pipeline_gpr68_string_demo.py` and
+`examples/gpcr_pipeline_gpr132_string_demo.py` filled in the space
+*between* the two endpoints via 11-image linear interpolation paths, each
+image locally relaxed and scored with the same real Gibbs energy
+pipeline. **Both are now superseded** -- see below.
 
-`examples/gpcr_pipeline_gpr132_string_demo.py` /
-`examples/gpcr_pipeline_gpr132_string_ph6_demo.py` run the same
-interpolated-path method on real **GPR132 (G2A)**, another proton-sensing
-class-A GPCR, reusing GPR68's receptor-agnostic pipeline code directly.
-GPR132's raw input data needed two real data-quality fixes first (trimming
-disordered N/C-terminal tails that differed by up to 72 Angstrom between
-independently-modeled endpoints, and rigid-body superposing the two
-endpoint structures which -- unlike GPR68's -- were not already in the same
-reference frame), both diagnosed and documented rather than silently
-patched. The result is a genuinely different pH-response signature from
-GPR68: a much larger absolute barrier (~347 vs. ~132 kcal/mol) whose
-*shape* is essentially pH-independent, in contrast to GPR68's barrier,
-which flattened by ~46% at low pH. Results:
+### Corrected, symmetric re-run (GPR68 vs. GPR132)
+
+A methodology review correctly identified that the two runs above used
+*different* geometric preprocessing (GPR68: no superposition at all;
+GPR132: an ad hoc manual one), confounding the exact cross-receptor
+comparison they were meant to support -- an unremoved rotation/translation
+offset between two independently-generated structure files is a
+file-format artifact, not biology.
+`examples/gpcr_pipeline_symmetric_string_demo.py` (with
+`examples/gpcr_pipeline_tm_topology.py`) fixes this: one protocol, applied
+identically to both receptors, no exceptions -- TM1-TM7 identified via
+real DSSP secondary structure anchored by conserved motifs, superposition
+on an invariant reference (TM1,2,3,4,5,7, excluding only TM6, the
+principal activation-associated mover) cross-checked against an
+independent outlier-rejecting superposition, and a hard gate (TM6
+cytoplasmic displacement >= 4 Å) below which a pair is excluded as not a
+genuine active/inactive transition.
+
+**Result: GPR68's original pair fails that gate** (TM6 displacement only
+1.18 Å after correct registration, vs. GPR132's 4.87 Å) -- its previously
+reported ~132-138 kcal/mol pH-dependent barrier was computed across a
+largely spurious frame-offset displacement, not a real conformational
+change, and should not be interpreted as evidence of proton-sensing
+behavior. GPR132's pair passes (marginally) and remains a plausible
+candidate, though its pH-dependence direction also changed under the
+corrected protocol (barrier now increases slightly, not decreases, from
+pH 7.4 to 6.0). Full diagnostic table, sanity gates, and side-by-side
+numbers: [`examples/output/symmetric_string_demo/`](examples/output/symmetric_string_demo/README.md).
+The superseded runs are kept for the record at
+[`examples/output/gpr68_string_demo/`](examples/output/gpr68_string_demo/README.md)
+and
 [`examples/output/gpr132_string_demo/`](examples/output/gpr132_string_demo/README.md).
 
 An earlier run on a stand-in structure (before the real GPR68 structure was
