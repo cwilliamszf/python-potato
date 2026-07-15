@@ -101,6 +101,16 @@ two estimation modes depending on what tool 3 actually outputs:
 Both a smooth (Gaussian KDE, better for sparse AlphaFold-style ensembles) and
 a raw weighted-histogram estimator are available.
 
+### Real end-to-end run (tools 1, 3, 4 real; tool 2 substituted)
+
+`examples/gpcr_pipeline_real_demo.py` runs the actual tool 1 (PROPKA3
+pKa prediction) and tool 3 (AMBER ff14SB + GBn2 + RRHO Gibbs energy via
+OpenMM/PDBFixer) code against a real structure, with a lightweight
+Calpha-ANM ensemble standing in for tool 2 (GPU-bound ColabFold folding
+isn't available in this environment). Results, plots, and a full writeup
+of what's real vs. substituted are committed under
+[`examples/output/real_demo/`](examples/output/real_demo/README.md).
+
 ### Setup
 
 ```bash

@@ -1,7 +1,8 @@
 __pycache__/
 *.pyc
 .pytest_cache/
-examples/output/
+examples/output/*
+!examples/output/real_demo/
 gibbs/run_output.log
 gibbs/__pycache__/
 *.egg-info/
