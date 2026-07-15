@@ -292,7 +292,15 @@ def superpose_invariant_core(active_structure, inactive_structure, chain_id, tm_
     """Kabsch-superposes inactive_structure onto active_structure using
     only the invariant-core CA atoms (TM1-7 minus `exclude`), then applies
     the resulting rotation+translation to EVERY atom of inactive_structure
-    in place. Returns the Superimposer (².rms is the fit RMSD)."""
+    in place. Returns the Superimposer (².rms is the fit RMSD).
+
+    Requires both structures to have identical residue coverage across
+    the invariant core (true for the GPR68/GPR132 homology models, which
+    share one modeling pipeline/template) -- raises TopologyError
+    otherwise rather than silently truncating. For structures with
+    genuinely different coverage (e.g. independently-solved cryo-EM
+    structures with different disordered/unresolved regions), use
+    `superpose_invariant_core_common` instead."""
     active_atoms = invariant_core_ca_atoms(active_structure, chain_id, tm_ranges, exclude)
     inactive_atoms = invariant_core_ca_atoms(inactive_structure, chain_id, tm_ranges, exclude)
     if len(active_atoms) != len(inactive_atoms):
@@ -303,6 +311,43 @@ def superpose_invariant_core(active_structure, inactive_structure, chain_id, tm_
     sup.set_atoms(active_atoms, inactive_atoms)
     sup.apply(list(inactive_structure.get_atoms()))
     return sup
+
+
+def superpose_invariant_core_common(active_structure, inactive_structure, chain_id, tm_ranges, exclude=(6,)):
+    """Like `superpose_invariant_core`, but for structures that don't have
+    identical residue coverage of the invariant core (e.g. two
+    independently-solved cryo-EM structures with different unresolved
+    loop/terminus stretches): fits on the INTERSECTION of resnums present
+    in both, rather than requiring an exact match. Returns
+    (Superimposer, common_resnum_count, active_core_total_count) so the
+    caller can report what fraction of the intended core was actually
+    used for the fit."""
+    chain_a = active_structure[0][chain_id]
+    chain_i = inactive_structure[0][chain_id]
+    keep_ranges = [rng for tm, rng in tm_ranges.items() if tm not in exclude]
+
+    def core_ca_by_resnum(chain):
+        out = {}
+        for res in chain:
+            if res.id[0] != " ":
+                continue
+            resnum = res.id[1]
+            if any(lo <= resnum <= hi for lo, hi in keep_ranges) and "CA" in res:
+                out[resnum] = res["CA"]
+        return out
+
+    a_by_resnum = core_ca_by_resnum(chain_a)
+    i_by_resnum = core_ca_by_resnum(chain_i)
+    common = sorted(set(a_by_resnum) & set(i_by_resnum))
+    if not common:
+        raise TopologyError("No shared invariant-core residues between active and inactive structures")
+
+    active_atoms = [a_by_resnum[rn] for rn in common]
+    inactive_atoms = [i_by_resnum[rn] for rn in common]
+    sup = Superimposer()
+    sup.set_atoms(active_atoms, inactive_atoms)
+    sup.apply(list(inactive_structure.get_atoms()))
+    return sup, len(common), len(a_by_resnum)
 
 
 def per_helix_rmsd(active_structure, inactive_structure, chain_id, tm_ranges):
