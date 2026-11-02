@@ -1,0 +1,24 @@
+{
+ "data_dir": "C:\\path\\to\\data\\261012_184423_293phluorinpilotdrugs",
+ "plate_folders": {
+  "2h": "261012_190058_Plate 1",
+  "24h": "261013_092344_Plate 2",
+  "48h": "261014_095240_Plate 3",
+  "72h": "261015_083507_Plate 4"
+ },
+ "acquisition_start": {
+  "2h": "2026-10-12 19:00:58",
+  "24h": "2026-10-13 09:23:44",
+  "48h": "2026-10-14 09:52:40",
+  "72h": "2026-10-15 08:35:07"
+ },
+ "cell_line": "HEK293",
+ "camera_gain": 10,
+ "name": "HEK293_exp1",
+ "exclude_wells_all_tp": [],
+ "vis_debris": [],
+ "notes": "Timepoint labels are the nominal post-treatment times given by the experimenter; acquisition_start is from the Cytation folder names. 7 z-slices, 40 um step, no Cytation ZProj export.",
+ "segmentation": "v2",
+ "alpha_fixed": 0.3,
+ "low_signal_sbr": 1.15
+}

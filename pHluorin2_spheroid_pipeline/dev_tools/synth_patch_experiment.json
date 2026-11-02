@@ -1,0 +1,11 @@
+{
+ "name": "synthetic_patch_dynamics",
+ "data_dir": "set SPHEROID_DATA_DIR to the folder written by make_synth_patches.py",
+ "plate_folders": {"24h": "261001_105300_Plate 1", "48h": "261002_173508_Plate 3", "72h": "261003_211651_Plate 1"},
+ "exclude_wells_all_tp": ["H5", "H6"],
+ "vis_debris": [],
+ "alpha_fixed": 0.3,
+ "alpha_force": true,
+ "low_signal_sbr": 1.03,
+ "notes": "Synthetic plates from dev_tools/make_synth_patches.py (experiment-1 layout and ZProj export). The background fraction is fixed at 0.3, close to the real plates (0.22-0.32), so signal-loss spots read as acidic as they would on real data."
+}

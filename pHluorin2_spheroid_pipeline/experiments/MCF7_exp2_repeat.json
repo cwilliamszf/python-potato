@@ -1,0 +1,28 @@
+{
+ "data_dir": "C:\\path\\to\\data\\261012_193330_MCF7pHluorinpilotdrugsrepeat",
+ "plate_folders": {
+  "2h": "261012_193330_Plate 1",
+  "24h": "261013_084820_Plate 2",
+  "48h": "261014_105148_Plate 3",
+  "72h": "261015_095705_Plate 4"
+ },
+ "acquisition_start": {
+  "2h": "2026-10-12 19:33:30",
+  "24h": "2026-10-13 08:48:20",
+  "48h": "2026-10-14 10:51:48",
+  "72h": "2026-10-15 09:57:05"
+ },
+ "cell_line": "MCF7",
+ "camera_gain": 20,
+ "name": "MCF7_exp2_repeat",
+ "exclude_wells_all_tp": [
+  "A8",
+  "A10"
+ ],
+ "vis_debris": [],
+ "notes": "Timepoint labels are the nominal post-treatment times given by the experimenter; acquisition_start is from the Cytation folder names. 7 z-slices, 40 um step, no Cytation ZProj export.",
+ "segmentation": "v2",
+ "alpha_fixed": 0.3,
+ "low_signal_sbr": 1.15,
+ "exclude_reason": "A8 (1 uM TMZ) and A10 (0.5 uM OGM): attached 405-bright fibre saturates 0.2-34% of the spheroid mask (qc_scan); ratio 0.58-0.75 vs replicates 0.95-1.2"
+}

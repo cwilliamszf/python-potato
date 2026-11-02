@@ -1,0 +1,641 @@
+{
+ "data_dir": "C:\\path\\to\\data\\261019_155302_T47DpHluorindrugscreenpilot",
+ "plate_folders": {
+  "24h": "261019_155302_Plate 1",
+  "48h": "261020_092906_Plate 2",
+  "72h": "261021_092749_Plate 3"
+ },
+ "acquisition_start": {
+  "24h": "2026-10-19 15:53:21",
+  "48h": "2026-10-20 09:29:42",
+  "72h": "2026-10-21 09:28:24"
+ },
+ "cell_line": "T47D",
+ "camera_gain": 24,
+ "name": "T47D_exp5",
+ "bf_channel": "Phase Contrast",
+ "segmentation": "v2",
+ "alpha_fixed": 0.3,
+ "alpha_force": true,
+ "low_signal_sbr": 1.15,
+ "exclude_wells_all_tp": [],
+ "vis_debris": [],
+ "layout_wells": {
+  "A": [
+   "DMSO",
+   "DMSO",
+   "DMSO",
+   "Fluorobrite",
+   "Fluorobrite",
+   "Fluorobrite",
+   "Dorso 2.5uM",
+   "Erastin 25uM",
+   "TMZ 500uM",
+   "0.5uM OGM",
+   "0.5uM OGM",
+   "0.5uM OGM"
+  ],
+  "B": [
+   "Oz L",
+   "Oz L",
+   "Oz L",
+   "Oz M",
+   "Oz M",
+   "Oz H",
+   "Oz M",
+   "Oz H",
+   "Oz H",
+   "1uM OGM",
+   "1uM OGM",
+   "1uM OGM"
+  ],
+  "C": [
+   "Rot L",
+   "Rot L",
+   "Rot L",
+   "Rot M",
+   "Rot M",
+   "Rot M",
+   "Rot H",
+   "Rot H",
+   "Rot H",
+   "5uM OGM",
+   "5uM OGM",
+   "5uM OGM"
+  ],
+  "D": [
+   "3BP L",
+   "3BP L",
+   "3BP L",
+   "3BP M",
+   "3BP M",
+   "3BP M",
+   "3BP H",
+   "3BP H",
+   "3BP H",
+   "20uM OGM",
+   "20uM OGM",
+   "20uM OGM"
+  ],
+  "E": [
+   "Phlor L",
+   "Phlor L",
+   "Phlor L",
+   "Phlor M",
+   "Phlor M",
+   "Phlor M",
+   "Phlor H",
+   "Phlor H",
+   "Phlor H",
+   "0.5uM Ogerin",
+   "0.5uM Ogerin",
+   "0.5uM Ogerin"
+  ],
+  "F": [
+   "Olig L",
+   "Olig L",
+   "Olig L",
+   "Olig M",
+   "Olig M",
+   "Olig M",
+   "Olig H",
+   "Olig H",
+   "Olig H",
+   "5uM Ogerin",
+   "5uM Ogerin",
+   "5uM Ogerin"
+  ],
+  "G": [
+   "Ace L",
+   "Ace L",
+   "Ace L",
+   "Ace M",
+   "Ace M",
+   "Ace M",
+   "Ace H",
+   "Ace H",
+   "Ace H",
+   "20uM Ogerin",
+   "20uM Ogerin",
+   "20uM Ogerin"
+  ],
+  "H": [
+   "Baf L",
+   "Baf L",
+   "Baf L",
+   "Baf M",
+   "Baf M",
+   "Baf M",
+   "Baf H",
+   "Baf H",
+   "Baf H",
+   "50uM Ogerin",
+   "50uM Ogerin",
+   "50uM Ogerin"
+  ]
+ },
+ "cond_info": {
+  "DMSO": [
+   "DMSO",
+   0,
+   0
+  ],
+  "Fluorobrite": [
+   "Fluorobrite",
+   0,
+   0
+  ],
+  "Dorso 2.5uM": [
+   "Dorso",
+   2.5,
+   1
+  ],
+  "Erastin 25uM": [
+   "Erastin",
+   25,
+   1
+  ],
+  "TMZ 500uM": [
+   "TMZ",
+   500,
+   1
+  ],
+  "Oz L": [
+   "Oz",
+   0.01,
+   1
+  ],
+  "Oz M": [
+   "Oz",
+   0.1,
+   2
+  ],
+  "Oz H": [
+   "Oz",
+   1.0,
+   3
+  ],
+  "Baf L": [
+   "Baf",
+   0.005,
+   1
+  ],
+  "Baf M": [
+   "Baf",
+   0.02,
+   2
+  ],
+  "Baf H": [
+   "Baf",
+   0.1,
+   3
+  ],
+  "Rot L": [
+   "Rot",
+   0.01,
+   1
+  ],
+  "Rot M": [
+   "Rot",
+   0.1,
+   2
+  ],
+  "Rot H": [
+   "Rot",
+   1.0,
+   3
+  ],
+  "3BP L": [
+   "3BP",
+   25,
+   1
+  ],
+  "3BP M": [
+   "3BP",
+   50,
+   2
+  ],
+  "3BP H": [
+   "3BP",
+   100,
+   3
+  ],
+  "Phlor L": [
+   "Phlor",
+   25,
+   1
+  ],
+  "Phlor M": [
+   "Phlor",
+   75,
+   2
+  ],
+  "Phlor H": [
+   "Phlor",
+   150,
+   3
+  ],
+  "Olig L": [
+   "Olig",
+   0.03,
+   1
+  ],
+  "Olig M": [
+   "Olig",
+   0.1,
+   2
+  ],
+  "Olig H": [
+   "Olig",
+   0.3,
+   3
+  ],
+  "Ace L": [
+   "Ace",
+   10,
+   1
+  ],
+  "Ace M": [
+   "Ace",
+   100,
+   2
+  ],
+  "Ace H": [
+   "Ace",
+   200,
+   3
+  ],
+  "0.5uM OGM": [
+   "OGM",
+   0.5,
+   1
+  ],
+  "1uM OGM": [
+   "OGM",
+   1.0,
+   2
+  ],
+  "5uM OGM": [
+   "OGM",
+   5.0,
+   3
+  ],
+  "20uM OGM": [
+   "OGM",
+   20.0,
+   4
+  ],
+  "0.5uM Ogerin": [
+   "Ogerin",
+   0.5,
+   1
+  ],
+  "5uM Ogerin": [
+   "Ogerin",
+   5.0,
+   2
+  ],
+  "20uM Ogerin": [
+   "Ogerin",
+   20.0,
+   3
+  ],
+  "50uM Ogerin": [
+   "Ogerin",
+   50.0,
+   4
+  ]
+ },
+ "compounds": [
+  "Oz",
+  "Baf",
+  "Rot",
+  "3BP",
+  "Phlor",
+  "Olig",
+  "Ace",
+  "OGM",
+  "Ogerin",
+  "TMZ",
+  "Dorso",
+  "Erastin",
+  "Fluorobrite"
+ ],
+ "fig_compounds": [
+  "Oz",
+  "Baf",
+  "Rot",
+  "3BP",
+  "Phlor",
+  "Olig",
+  "Ace",
+  "OGM",
+  "Ogerin"
+ ],
+ "map_series": [
+  "Oz",
+  "Baf",
+  "Rot",
+  "3BP",
+  "Phlor",
+  "Olig",
+  "Ace",
+  "OGM",
+  "Ogerin",
+  "Controls"
+ ],
+ "display_order": [
+  "DMSO",
+  "Fluorobrite",
+  "Oz L",
+  "Oz M",
+  "Oz H",
+  "Baf L",
+  "Baf M",
+  "Baf H",
+  "Rot L",
+  "Rot M",
+  "Rot H",
+  "3BP L",
+  "3BP M",
+  "3BP H",
+  "Phlor L",
+  "Phlor M",
+  "Phlor H",
+  "Olig L",
+  "Olig M",
+  "Olig H",
+  "Ace L",
+  "Ace M",
+  "Ace H",
+  "0.5uM OGM",
+  "1uM OGM",
+  "5uM OGM",
+  "20uM OGM",
+  "0.5uM Ogerin",
+  "5uM Ogerin",
+  "20uM Ogerin",
+  "50uM Ogerin",
+  "Dorso 2.5uM",
+  "Erastin 25uM",
+  "TMZ 500uM"
+ ],
+ "series": {
+  "Oz": [
+   [
+    "DMSO",
+    "DMSO"
+   ],
+   [
+    "Oz L",
+    "low"
+   ],
+   [
+    "Oz M",
+    "mid"
+   ],
+   [
+    "Oz H",
+    "high"
+   ]
+  ],
+  "Baf": [
+   [
+    "DMSO",
+    "DMSO"
+   ],
+   [
+    "Baf L",
+    "low"
+   ],
+   [
+    "Baf M",
+    "mid"
+   ],
+   [
+    "Baf H",
+    "high"
+   ]
+  ],
+  "Rot": [
+   [
+    "DMSO",
+    "DMSO"
+   ],
+   [
+    "Rot L",
+    "low"
+   ],
+   [
+    "Rot M",
+    "mid"
+   ],
+   [
+    "Rot H",
+    "high"
+   ]
+  ],
+  "3BP": [
+   [
+    "DMSO",
+    "DMSO"
+   ],
+   [
+    "3BP L",
+    "low"
+   ],
+   [
+    "3BP M",
+    "mid"
+   ],
+   [
+    "3BP H",
+    "high"
+   ]
+  ],
+  "Phlor": [
+   [
+    "DMSO",
+    "DMSO"
+   ],
+   [
+    "Phlor L",
+    "low"
+   ],
+   [
+    "Phlor M",
+    "mid"
+   ],
+   [
+    "Phlor H",
+    "high"
+   ]
+  ],
+  "Olig": [
+   [
+    "DMSO",
+    "DMSO"
+   ],
+   [
+    "Olig L",
+    "low"
+   ],
+   [
+    "Olig M",
+    "mid"
+   ],
+   [
+    "Olig H",
+    "high"
+   ]
+  ],
+  "Ace": [
+   [
+    "DMSO",
+    "DMSO"
+   ],
+   [
+    "Ace L",
+    "low"
+   ],
+   [
+    "Ace M",
+    "mid"
+   ],
+   [
+    "Ace H",
+    "high"
+   ]
+  ],
+  "OGM": [
+   [
+    "DMSO",
+    "DMSO"
+   ],
+   [
+    "0.5uM OGM",
+    "0.5 µM"
+   ],
+   [
+    "1uM OGM",
+    "1 µM"
+   ],
+   [
+    "5uM OGM",
+    "5 µM"
+   ],
+   [
+    "20uM OGM",
+    "20 µM"
+   ]
+  ],
+  "Ogerin": [
+   [
+    "DMSO",
+    "DMSO"
+   ],
+   [
+    "0.5uM Ogerin",
+    "0.5 µM"
+   ],
+   [
+    "5uM Ogerin",
+    "5 µM"
+   ],
+   [
+    "20uM Ogerin",
+    "20 µM"
+   ],
+   [
+    "50uM Ogerin",
+    "50 µM"
+   ]
+  ],
+  "Controls": [
+   [
+    "DMSO",
+    "DMSO"
+   ],
+   [
+    "Fluorobrite",
+    "FluoroBrite"
+   ],
+   [
+    "Dorso 2.5uM",
+    "dorsomorphin 2.5 µM"
+   ],
+   [
+    "Erastin 25uM",
+    "erastin 25 µM"
+   ],
+   [
+    "TMZ 500uM",
+    "TMZ 500 µM"
+   ]
+  ]
+ },
+ "perm_family_compounds": [
+  "DMSO",
+  "Oz",
+  "Baf",
+  "Rot",
+  "3BP",
+  "Phlor",
+  "Olig",
+  "Ace",
+  "OGM",
+  "Ogerin"
+ ],
+ "ctrl_conditions": [
+  "DMSO",
+  "Fluorobrite",
+  "Phlor L",
+  "Phlor M",
+  "Phlor H",
+  "0.5uM OGM",
+  "0.5uM Ogerin"
+ ],
+ "null_conditions": [
+  "DMSO",
+  "Fluorobrite",
+  "Phlor L",
+  "Phlor M",
+  "Phlor H",
+  "0.5uM OGM",
+  "0.5uM Ogerin"
+ ],
+ "fullname": {
+  "Oz": "Omeprazole",
+  "Baf": "Bafilomycin A1",
+  "Rot": "Rotenone",
+  "3BP": "3-Bromopyruvate",
+  "Phlor": "Phloretin",
+  "Olig": "Oligomycin",
+  "Ace": "Acetazolamide",
+  "OGM": "OGM",
+  "Ogerin": "Ogerin",
+  "TMZ": "Temozolomide",
+  "Dorso": "Dorsomorphin",
+  "Erastin": "Erastin",
+  "Fluorobrite": "FluoroBrite"
+ },
+ "hue": {
+  "Oz": "Oranges",
+  "Baf": "Reds",
+  "Rot": "Purples",
+  "3BP": "copper_r",
+  "Phlor": "RdPu",
+  "Olig": "Blues",
+  "Ace": "YlOrBr",
+  "OGM": "Greens",
+  "Ogerin": "GnBu"
+ },
+ "shape_qc": {
+  "circularity_min": 0.8,
+  "solidity_min": 0.95,
+  "edge_roughness_max": 0.08,
+  "z_ref_condition": "DMSO",
+  "exclude": false
+ },
+ "notes": "T47D pHluorin2-GPI spheroid pilot. Nominal timepoint labels 24/48/72 h; actual read starts 10/19 15:53, 10/20 09:29, 10/21 09:28, i.e. 17.6 h then 24.0 h apart. 9 z-slices at 40 um, 10x, 1367 um / 1960 px, millicell96ULA u-bottom, no Cytation ZProj export, transmitted channel is 'Phase Contrast'. Fluorescence CameraGain 24 (exp1 22.9, MCF7 repeat 20, HEK293 10), LED 10, 5 ms, flat-field correction on, saturation 65504. L/M/H concentrations are the same dose sheet as the MCF7 screens (user-confirmed): omeprazole 10/100/1000 nM, bafilomycin A1 5/20/100 nM, rotenone 10/100/1000 nM, 3-BP 25/50/100 uM, phloretin 25/75/150 uM, oligomycin 30/100/300 nM, acetazolamide 10/100/200 uM. Row B is plated irregularly (user-confirmed): Oz M = B4,B5,B7 and Oz H = B6,B8,B9. A7/A8/A9 are single wells (dorsomorphin 2.5 uM, erastin 25 uM, TMZ 500 uM) and are descriptive only. shape_qc exclude is False in this config: the roundness flags are computed but not folded into qc_exclude, because T47D forms poorer spheroids and the gate is chosen after inspecting retention."
+}
